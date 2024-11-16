@@ -2653,7 +2653,8 @@ if st.button("Get Data"):
                                     {'range': [85, 100], 'color': "#37bc9b", 'name': 'Strong Pos'}]}))
                         fig.add_annotation(x=0.5, y=0.25, text=label, showarrow=False, font=dict(size=20))
                         fig.update_layout(
-                            font=dict(size=14)
+                            font=dict(size=14),
+                            margin=dict(t=30, b=30, l=50, r=50)
                             )
                         return fig
                     #thresholds for table
