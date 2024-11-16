@@ -514,7 +514,7 @@ def get_stock_data(ticker, apiKey=None):
 main_col1, main_col2 = st.columns([3,1])
 with main_col1:
     st.title("US Stock Analysis Tool")
-    input_col1, input_col2, input_col3 = st.columns([2, 3, 1])
+    input_col1, input_col2, input_col3 = st.columns([1, 3, 1])
     with input_col1:
         ticker = st.text_input("Enter US Stock Ticker:", "AAPL")
     with input_col2:
