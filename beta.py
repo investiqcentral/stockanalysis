@@ -12,8 +12,6 @@ import datetime
 import re
 from dateutil.relativedelta import relativedelta
 import pytz
-from streamlit_option_menu import option_menu
-
 
 st.set_page_config(page_title='US Stock Analysis Tool', layout='wide', page_icon="./Image/logo.png")
 
