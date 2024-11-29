@@ -12,6 +12,8 @@ import datetime
 import re
 from dateutil.relativedelta import relativedelta
 import pytz
+from streamlit_option_menu import option_menu
+
 
 st.set_page_config(page_title='US Stock Analysis Tool', layout='wide', page_icon="./Image/logo.png")
 
@@ -1588,7 +1590,8 @@ if st.button("Get Data"):
 #############################################            #############################################
         with statements_data:
 #Income Statement
-            st.subheader("Income Statement", divider ='gray')
+            st.subheader("Income Statement (P&L)", divider ='gray')
+            st.info("Notes: An income statement or profit and loss account shows the company's revenues and expenses during a particular period. It indicates how the revenues (also known as the “top line”) are transformed into the net income or net profit (the result after all revenues and expenses have been accounted for). The purpose of the income statement is to show managers and investors whether the company made money (profit) or lost money (loss) during the period being reported. It provides insight into a company’s operations, efficiency, management, and performance relative to others in the same sector.")
             try:
                 income_statement = income_statement_tb  
                 quarterly_income_statement = quarterly_income_statement_tb
@@ -1659,7 +1662,8 @@ if st.button("Get Data"):
             ''
 
 #Balance Sheet
-            st.subheader("Balance Sheet", divider ='gray')
+            st.subheader("Balance Sheet (Financial Position)", divider ='gray')
+            st.info("Notes: A balance sheet is a financial statement that reports a company's assets, liabilities, and shareholder equity. It provides a snapshot of a company's finances (what it owns and owes) as of the date of publication. The balance sheet adheres to an equation that equates assets with the sum of liabilities and shareholder equity.")
             try:
                 balance_sheet = balance_sheet_tb
                 quarterly_balance_sheet = quarterly_balance_sheet_tb
@@ -1728,7 +1732,8 @@ if st.button("Get Data"):
             ''
         
 #Cashflow Statement
-            st.subheader("Cashflow Statement", divider ='gray')
+            st.subheader("Cashflow Statement (CFS)", divider ='gray')
+            st.info("Notes: A cash flow statement summarizes the amount of cash and cash equivalents entering and leaving a company. The CFS highlights a company's cash management, including how well it generates cash. This financial statement complements the balance sheet and the income statement. The main components of the CFS are cash from three areas: Operating activities, investing activities, and financing activities.")
             cashflow_statement = cashflow_statement_tb
             quarterly_cashflow_statement = quarterly_cashflow_statement_tb
             try:
@@ -1774,7 +1779,8 @@ if st.button("Get Data"):
                 fig.update_xaxes(
                     type='category',
                     categoryorder='category ascending'
-                )       
+                )
+                st.info("Operating activities should be positive (+ve). Investing activities should be negative (-ve). Financing activities should be negative (-ve).")       
                 st.plotly_chart(fig, use_container_width=True)
                 #
                 # cashflow_statement.fillna(0, inplace=True)
@@ -2011,6 +2017,428 @@ if st.button("Get Data"):
                 except Exception as e:
                     st.warning(f"Growth: No data available.")
             st.caption("Data source: Stockanalysis.com")
+            ''
+
+            def highlight_result(val):
+                if val == 'GOOD':
+                    color = 'green'
+                elif val == 'BAD':
+                    color = 'red'
+                else:
+                    color ='#AAB2BD'
+                return f'background-color: {color}; color: white'
+
+            st.subheader("Financial Statements Checklist", divider ='gray')
+            st.caption("These checklists are derived from the concepts outlined by Brian Feroldi for analyzing financial statements.")
+            st.info("Many companies may have valid reasons to violate these rules. Every negative result should be re-examined to understand the underlying reasons for its occurrence.")
+            fscol1, fscol2, fscol3 =st.columns([3,3,3])
+            with fscol1:
+                # growth rate drop check
+                try:
+                    eps_select = ['Diluted EPS']
+                    eps_values = income_statement.loc[eps_select].fillna(0).values.flatten()
+                    eps_values = [float(eps_value) for eps_value in eps_values]
+                    has_negative_value = any(value < 0 for value in eps_values)
+                    if has_negative_value:
+                        drop_result = "BAD"
+                    else:
+                        try:
+                            ebitda_values = sa_metrics_df2[sa_metrics_df2['Fiscal Year'].isin(['EBITDA'])].iloc[:, 2:].fillna(0).values.flatten()
+                            ebitda_values = pd.Series(ebitda_values).fillna(0)
+                            ebitda_values = [int(value.replace(",", "")) for value in ebitda_values]
+                            ebitda_growth_rates = [((ebitda_values[i] - ebitda_values[i + 1]) / ebitda_values[i + 1]) * 100 for i in range(len(ebitda_values) - 1)]
+                            drop_threshold = -10
+                            is_drop = ebitda_growth_rates[0] < drop_threshold
+                            if is_drop: drop_result = "BAD"
+                            else: drop_result = "GOOD"
+                        except: drop_result = 'N/A'
+                except: drop_result = 'N/A'   
+                # revenue check
+                try:
+                    revenue_select = ['Total Revenue']
+                    revenue_values = income_statement.loc[revenue_select].fillna(0).values.flatten()
+                    revenue_values = [float(revenue_value) for revenue_value in revenue_values]
+                    is_revenue_growing = all(revenue_values[i] >= revenue_values[i + 1] for i in range(len(revenue_values) - 1))
+                    if is_revenue_growing: revenue_result = "GOOD"
+                    else: revenue_result = "BAD"
+                except: revenue_result = 'N/A'
+                # gross margin check
+                try: 
+                    gross_margin_values = sa_metrics_df2[sa_metrics_df2['Fiscal Year'].isin(['Gross Margin'])].iloc[:, 2:].fillna(0).values.flatten()
+                    gross_margin_values = [value.rstrip('%') if isinstance(value, str) else value for value in gross_margin_values]
+                    gross_margin_values = pd.to_numeric(gross_margin_values, errors='coerce')
+                    gross_margin_values = pd.Series(gross_margin_values).fillna(0)
+                    gross_margin_values = [float(value) for value in gross_margin_values]
+                    is_gross_growing = all(gross_margin_values[i] >= gross_margin_values[i + 1] for i in range(len(gross_margin_values) - 1))
+                    if is_gross_growing: gross_growing_result = "GOOD"
+                    else: gross_growing_result = "BAD"
+                except: gross_growing_result = 'N/A'
+                # operating expense vs revenue
+                try:
+                    op_expense_select = ['Operating Expense']
+                    op_expense_values = income_statement.loc[op_expense_select].fillna(0).values.flatten()
+                    op_expense_values = [float(op_expense_value) for op_expense_value in op_expense_values]
+                    def calculate_growth_rates(values):
+                        growth_rates = []
+                        for i in range(len(values) - 1):
+                            if values[i + 1] != 0:  
+                                growth_rate = (values[i] - values[i + 1]) / values[i + 1] * 100
+                                growth_rates.append(growth_rate)
+                            else:
+                                growth_rates.append(None)  
+                        return growth_rates
+                    revenue_growth_rates = calculate_growth_rates(revenue_values)
+                    op_expense_growth_rates = calculate_growth_rates(op_expense_values)
+                    revenue_growth_avg_rate = pd.Series(revenue_growth_rates).replace(0, np.nan).mean()
+                    op_expense_avg_rate = pd.Series(op_expense_growth_rates).replace(0, np.nan).mean()
+                    op_expenses_grow_faster = op_expense_avg_rate > revenue_growth_avg_rate
+                    if op_expenses_grow_faster: op_expense_result = "BAD"
+                    else: op_expense_result = "GOOD"
+                except: op_expense_result = 'N/A'
+                # operating expenses check
+                try:
+                    op_expense_values_filtered = [value for value in op_expense_values if value > 0]
+                    percentile_90 = np.percentile(op_expense_values_filtered, 90)
+                    large_charges = [value for value in op_expense_values if value >= percentile_90]
+                    large_charges_frequency = len(large_charges)
+                    frequent_occurrence_threshold = 2
+                    extraordinary_charges = large_charges_frequency >= frequent_occurrence_threshold
+                    if extraordinary_charges: hop_exp_result= "BAD"
+                    else: hop_exp_result = "GOOD"
+                except: hop_exp_result = 'N/A'
+                # dilution check
+                try:
+                    share_change_values = sa_metrics_df2[sa_metrics_df2['Fiscal Year'].isin(['Shares Change (YoY)'])].iloc[:, 2:].fillna(0).values.flatten()
+                    share_change_values = [value.rstrip('%') if isinstance(value, str) else value for value in share_change_values]
+                    share_change_values = pd.to_numeric(share_change_values, errors='coerce')
+                    share_change_values = pd.Series(share_change_values).fillna(0)
+                    share_change_values = [float(value) for value in share_change_values]
+                    if share_change_values[0] > 0: share_dilution_result = "BAD"
+                    else: share_dilution_result = "GOOD"
+                except: share_dilution_result = 'N/A'
+                # tax rate check
+                try: 
+                    tax_select = ['Tax Rate For Calcs']
+                    tax_rate_values = income_statement.loc[tax_select].fillna(0).values.flatten()
+                    tax_rate_values = [float(tax_rate_value) for tax_rate_value in tax_rate_values]
+                    decline_value = tax_rate_values[0]-tax_rate_values[1]
+                    if decline_value<0: tax_rate_result= "BAD"
+                    else: tax_rate_result = "GOOD"
+                except: tax_rate_result = 'N/A'
+                income_checklist_data = [
+                {"Income Statment Checklist": "Growth rate should be consistently increasing", "Result": drop_result},
+                {"Income Statment Checklist": "Revenue should be consistently growing", "Result": revenue_result},
+                {"Income Statment Checklist": "Gross margin should be consistently growing", "Result": gross_growing_result},
+                {"Income Statment Checklist": "Opex growth rate < Revenue growth rate", "Result": op_expense_result},
+                {"Income Statment Checklist": "Large operating expenses should not exist", "Result": hop_exp_result},
+                {"Income Statment Checklist": "High share dilution should not exist", "Result": share_dilution_result},
+                {"Income Statment Checklist": "Sudden decline of tax rate should not exist", "Result": tax_rate_result}
+                ]
+                df_income = pd.DataFrame(income_checklist_data)
+                st.dataframe(df_income.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
+            
+            with fscol2:
+                #cash and debt ####### #Total Debt and Current Assets
+                try:
+                    totaldebt_value = balance_sheet.loc['Total Debt'].iloc[0]
+                    if pd.isna(totaldebt_value):
+                        totaldebt_value = 0
+                except:
+                    totaldebt_value = 0
+                try:
+                    currentasset_value = balance_sheet.loc['Current Assets'].iloc[0]
+                    if pd.isna(currentasset_value):
+                        currentasset_value = 0
+                except:
+                    currentasset_value = 0
+                try:
+                    if totaldebt_value / currentasset_value < 1.1:
+                        debt_to_asset_result = 'GOOD'
+                    else: 
+                        debt_to_asset_result = 'BAD'
+                except:
+                    debt_to_asset_result = 'N/A'
+
+                try:
+                    cash_value = balance_sheet.loc['Cash And Cash Equivalents'].iloc[0]
+                    if pd.isna(cash_value):
+                        cash_value = 0
+                except:
+                    cash_value = 0
+                try:
+                    if cash_value > totaldebt_value:
+                        cash_and_debt_result = 'GOOD'
+                    else: 
+                        cash_and_debt_result = 'BAD'
+                except:
+                    cash_and_debt_result = 'N/A'
+                # Accounts receivable
+                try:
+                    accountReceivable_value = balance_sheet.loc['Accounts Receivable'].iloc[0]
+                    if pd.isna(accountReceivable_value):
+                        accountReceivable_value = 0
+                except:
+                    accountReceivable_value = 0
+                try:
+                    if accountReceivable_value > 0:
+                        accountReceivable_result = "BAD"
+                    else: accountReceivable_result = "GOOD"
+                except:
+                    accountReceivable_result = "N/A"
+                # Inventory
+                try:
+                    inventory_value = balance_sheet.loc['Inventory'].iloc[0]
+                    if pd.isna(inventory_value):
+                        inventory_value = 0
+                except:
+                    inventory_value = 0
+                try:
+                    if inventory_value > 0:
+                        inventory_result = "BAD"
+                    else: inventory_result = "GOOD"
+                except:
+                    inventory_result = "N/A"
+                # Current liabilities and cash
+                try:
+                    currentLiabilities_value = balance_sheet.loc['Current Liabilities'].iloc[0]
+                    if pd.isna(currentLiabilities_value):
+                        currentLiabilities_value = 0
+                except:
+                    currentLiabilities_value = 0
+                try:
+                    if currentLiabilities_value > cash_value:
+                        currentLiabilities_result = "BAD"
+                    else: currentLiabilities_result = "GOOD"
+                except:
+                    currentLiabilities_result = "N/A"
+                # short term & long term debt
+                try:
+                    sdebt_value = balance_sheet.loc['Short Term Debt'].iloc[0]
+                    if pd.isna(sdebt_value):
+                        sdebt_value = 0
+                except:
+                    sdebt_value = 0
+                try:
+                    ldebt_value = balance_sheet.loc['Long Term Debt'].iloc[0]
+                    if pd.isna(ldebt_value):
+                        ldebt_value = 0
+                except:
+                    ldebt_value = 0
+                try:
+                    if sdebt_value > 0 or ldebt_value > 0:
+                        snldebt_result = "BAD"
+                    else: snldebt_result = "GOOD"
+                except:
+                    snldebt_result = "N/A"
+                # goodwill and total asset
+                try:
+                    goodwill_value = balance_sheet.loc['Goodwill'].iloc[0]
+                    if pd.isna(goodwill_value):
+                        goodwill_value = 0
+                except:
+                    goodwill_value = 0
+                try:
+                    totalassets_value = balance_sheet.loc['Total Assets'].iloc[0]
+                    if pd.isna(totalassets_value):
+                        totalassets_value = 0
+                except:
+                    totalassets_value = 0
+                try:
+                    if goodwill_value > 0.1 * totalassets_value:
+                        goodwillandTotalassets_result = "BAD"
+                    else: goodwillandTotalassets_result = "GOOD"
+                except:
+                    goodwillandTotalassets_result = "N/A"
+                # preferred stocks
+                try:
+                    preferred_value = balance_sheet.loc['Preferred Stock'].iloc[0]
+                    if pd.isna(preferred_value):
+                        preferred_value = 0
+                except:
+                    preferred_value = 0
+                try:
+                    if preferred_value > 0: 
+                        preferred_result = 'BAD'
+                    else:
+                        preferred_result = 'GOOD'
+                except:
+                    preferred_result = 'N/A'
+                # retained earnings 
+                try:
+                    retained_earnings_select = ['Retained Earnings']
+                    retained_earnings_values = balance_sheet.loc[retained_earnings_select].fillna(0).values.flatten()
+                    retained_earnings_values = [float(retained_earnings_values) for retained_earnings_values in retained_earnings_values]
+                    no_negative_retained_earnings = all(retained_earnings >= 0 for retained_earnings in retained_earnings_values)
+                    retained_earnings_result = all(retained_earnings_values[i] >= retained_earnings_values[i+1] for i in range(len(retained_earnings_values) - 1))
+                except:
+                    no_negative_retained_earnings = retained_earnings_result = "N/A"
+                # treasury stock
+                try:
+                    treasury_value = balance_sheet.loc['Treasury Shares Number'].iloc[0]
+                    if pd.isna(treasury_value):
+                        treasury_value = 0
+                except:
+                    treasury_value = 0
+                try:
+                    if treasury_value > 0:
+                        treasury_result = 'GOOD'
+                    else: 
+                        treasury_result = 'BAD'
+                except:
+                    treasury_result = 'N/A'
+                # deferred revenue
+                try:
+                    deferredRevenue_value = balance_sheet.loc['Non Current Deferred Revenue'].iloc[0]
+                    if pd.isna(deferredRevenue_value):
+                        deferredRevenue_value = 0
+                except:
+                    deferredRevenue_value = 0
+                try:
+                    if deferredRevenue_value > 0:
+                        deferredRevenue_result = 'GOOD'
+                    else: 
+                        deferredRevenue_result = 'BAD'
+                except:
+                    deferredRevenue_result = 'N/A'
+                  
+                balance_checklist_data = [
+                {"Balance Sheet Checklist": "Cash should be more than debt", "Result": debt_to_asset_result},
+                {"Balance Sheet Checklist": "Accounts receivables should not exist", "Result": accountReceivable_result},
+                {"Balance Sheet Checklist": "Inventory should not exist", "Result": inventory_result},
+                {"Balance Sheet Checklist": "Current liabilities < Cash", "Result": currentLiabilities_result},
+                {"Balance Sheet Checklist": "No short-term and long-term debts", "Result": snldebt_result},
+                {"Balance Sheet Checklist": "Goodwill should be less than 10% of total assets", "Result": goodwillandTotalassets_result},
+                {"Balance Sheet Checklist": "Preferred stocks should not exist", "Result": preferred_result},
+                {"Balance Sheet Checklist": "Retained earnings should be positive", "Result": 'GOOD' if no_negative_retained_earnings else 'BAD'},
+                {"Balance Sheet Checklist": "Retained earnings should be growing", "Result": 'GOOD' if retained_earnings_result else 'BAD'},
+                {"Balance Sheet Checklist": "Treasury stocks should exist", "Result": treasury_result},
+                {"Balance Sheet Checklist": "Deferred revenue should exist", "Result": deferredRevenue_result}
+                ]
+                df_balance = pd.DataFrame(balance_checklist_data)
+                st.dataframe(df_balance.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
+
+            with fscol3:
+                # net income
+                try:
+                    netIncome_select = ['Net Income From Continuing Operations']
+                    netIncome_values = cashflow_statement.loc[netIncome_select].fillna(0).values.flatten()
+                    netIncome_values = [float(netIncome_values) for netIncome_values in netIncome_values]
+                    no_negative_netIncome = all(netIncome >= 0 for netIncome in netIncome_values)
+                    netIncome_result = all(netIncome_values[i] >= netIncome_values[i+1] for i in range(len(netIncome_values) - 1))
+                except: no_negative_netIncome = netIncome_result = "N/A"
+                # share based compensation and net income
+                try:
+                    shareBasedCompensation_value = cashflow_statement.loc['Stock Based Compensation'].iloc[0]
+                    if pd.isna(shareBasedCompensation_value):
+                        shareBasedCompensation_value = 0
+                except:
+                    shareBasedCompensation_value = 0
+                try:
+                    netIncome_value = cashflow_statement.loc['Net Income From Continuing Operations'].iloc[0]
+                    if pd.isna(netIncome_value):
+                        netIncome_value = 0
+                except:
+                    netIncome_value = 0
+                try:
+                    if shareBasedCompensation_value < 0.1 * netIncome_value:
+                        shareBased_and_netIncome_result = 'GOOD'
+                    else: 
+                        shareBased_and_netIncome_result = 'BAD'
+                except:
+                    shareBased_and_netIncome_result = 'N/A'
+                # operating cash flow
+                try:
+                    operatingCash_value = cashflow_statement.loc['Operating Cash Flow'].iloc[0]
+                    if pd.isna(operatingCash_value):
+                        operatingCash_value = 0
+                except:
+                    operatingCash_value = 0
+                try:
+                    if operatingCash_value > netIncome_value:
+                        operating_result = 'GOOD'
+                    else: 
+                        operating_result = 'BAD'
+                except: 
+                    operating_result = 'N/A'
+                # free cash flow
+                try:
+                    fcf_value = cashflow_statement.loc['Free Cash Flow'].iloc[0]
+                    if pd.isna(fcf_value):
+                        fcf_value = 0
+                except:
+                    fcf_value = 0
+                try:
+                    if fcf_value > netIncome_value:
+                        fcf_result = 'GOOD'
+                    else: 
+                        fcf_result = 'BAD'
+                except: 
+                    fcf_result = 'N/A'
+                # CAPEX
+                try:
+                    capex_value = cashflow_statement.loc['Capital Expenditure'].iloc[0]
+                    netincome_number = income_statement.loc['Net Income'].iloc[0]
+                    if pd.isna(capex_value):
+                        capex_value = 0
+                except:
+                    capex_value = 0
+                try:
+                    if capex_value / netincome_number < 0.25:
+                        capex_result = 'GOOD'
+                    else:
+                        capex_result = 'BAD'
+                except:
+                    capex_result = 'N/A'
+                # debt reduction
+                try:
+                    debtIssuance_select = ['Issuance Of Debt']
+                    debtIssuance_values = cashflow_statement.loc[debtIssuance_select].fillna(0).values.flatten()
+                    debtIssuance_values = [float(debtIssuance_values) for debtIssuance_values in debtIssuance_values]
+                    negative_debtIssuance = all(debtIssuance <= 0 for debtIssuance in debtIssuance_values)
+                except: negative_debtIssuance = "N/A"
+                # stock repurchase
+                try:
+                    stock_repurchase_value = cashflow_statement.loc['Repurchase Of Capital Stock'].iloc[0]
+                    if pd.isna(stock_repurchase_value):
+                        stock_repurchase_value = 0
+                except:
+                    stock_repurchase_value = 0
+                try:
+                    if stock_repurchase_value <= 0:
+                        stock_repurchase_result = 'GOOD'
+                    else:
+                        stock_repurchase_result = 'BAD'
+                except:
+                    stock_repurchase_result = 'N/A'
+                # dividend paid
+                try:
+                    dividendPaid_select = ['Cash Dividends Paid']
+                    dividendPaid_values = cashflow_statement.loc[dividendPaid_select].fillna(0).values.flatten()
+                    dividendPaid_values = [float(dividendPaid_values) for dividendPaid_values in dividendPaid_values]
+                    negative_dividendPaid = all(dividendPaid <= 0 for dividendPaid in dividendPaid_values)
+                except: negative_dividendPaid = "N/A"
+                # changes in cash balance
+                try:
+                    cic_select = ['Changes In Cash']
+                    cic_values = cashflow_statement.loc[cic_select].fillna(0).values.flatten()
+                    cic_values = [float(cid_values) for cid_values in cid_values]
+                    cic_result = all(cic_values[i] >= cic_values[i+1] for i in range(len(cic_values) - 1))
+                except: cic_result = "N/A"
+                cash_flow_checklist_data = [
+                {"Cash Flow Statement Checklist": "Net incomes should be positive", "Result": 'GOOD' if no_negative_netIncome else 'BAD'},
+                {"Cash Flow Statement Checklist": "Net incomes should be growing", "Result": 'GOOD' if netIncome_result else 'BAD'},
+                {"Cash Flow Statement Checklist": "Stock based compensation < 10% of net income", "Result": shareBased_and_netIncome_result},
+                {"Cash Flow Statement Checklist": "OCF should be higher than net income", "Result": operating_result},
+                {"Cash Flow Statement Checklist": "FCF should be higher than net income", "Result": fcf_result},
+                {"Cash Flow Statement Checklist": "CAPEX margin should be less than 25%", "Result": capex_result},
+                {"Cash Flow Statement Checklist": "Debt issuance should be negative", "Result": 'GOOD' if negative_debtIssuance else 'BAD'},
+                {"Cash Flow Statement Checklist": "Stock repurchase should be negative", "Result": stock_repurchase_result},
+                {"Cash Flow Statement Checklist": "Dividend paid should be negative", "Result": 'GOOD' if negative_dividendPaid else 'BAD'},
+                {"Cash Flow Statement Checklist": "Change in cash should be increasing", "Result": 'GOOD' if cic_result else 'BAD'}
+                ]
+                df_cash_flow = pd.DataFrame(cash_flow_checklist_data)
+                st.dataframe(df_cash_flow.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
+
 
 #############################################                    #############################################
 ############################################# Guru Analysis Data #############################################
@@ -2040,9 +2468,6 @@ if st.button("Get Data"):
             #st.write(netincome_value)
             #st.write(f'Longterm Debt: {lt_debt_result}')
             # EPS
-            eps_select = ['Diluted EPS']
-            eps_values = income_statement.loc[eps_select].fillna(0).values.flatten()
-            eps_values = [float(eps_value) for eps_value in eps_values]
             eps_current = float(eps_values[0])
             no_negative_earnings = all(eps >= 0 for eps in eps_values)
             generally_increasing = all(eps_values[i] >= eps_values[i+1] for i in range(len(eps_values) - 1))
@@ -2100,25 +2525,7 @@ if st.button("Get Data"):
             else:
                 current_ratio_result = 'BAD'
             # Total Debt and Current Assets
-            try:
-                totaldebt_value = balance_sheet.loc['Total Debt'].iloc[0]
-                if pd.isna(totaldebt_value):
-                    totaldebt_value = 0
-            except:
-                totaldebt_value = 0
-            try:
-                currentasset_value = balance_sheet.loc['Current Assets'].iloc[0]
-                if pd.isna(currentasset_value):
-                    currentasset_value = 0
-            except:
-                currentasset_value = 0
-            try:
-                if totaldebt_value / currentasset_value < 1.1:
-                    debt_to_asset_result = 'GOOD'
-                else: 
-                    debt_to_asset_result = 'BAD'
-            except:
-                debt_to_asset_result = 'N/A'
+            
             # PE Ratio
             pe = 'N/A' if peRatio == 'N/A' else peRatio
             if pe != 'N/A':
@@ -2238,19 +2645,7 @@ if st.button("Get Data"):
             else:
                 profitm_result = 'N/A'
             # Cash and Debt
-            try:
-                cash_value = balance_sheet.loc['Cash And Cash Equivalents'].iloc[0]
-                if pd.isna(cash_value):
-                    cash_value = 0
-            except:
-                cash_value = 0
-            try:
-                if cash_value > totaldebt_value:
-                    cash_and_debt_result = 'GOOD'
-                else: 
-                    cash_and_debt_result = 'BAD'
-            except:
-                cash_and_debt_result = 'N/A'
+            
             #Adjust Debt to Equity
             try:
                 liability_value = balance_sheet.loc['Total Liabilities Net Minority Interest'].iloc[0]
@@ -2278,24 +2673,9 @@ if st.button("Get Data"):
             except:
                 debt_to_equity_result = 'N/A'
             # Preferred stock
-            try:
-                preferred_value = balance_sheet.loc['Preferred Stock'].iloc[0]
-                if pd.isna(preferred_value):
-                    preferred_value = 0
-            except:
-                preferred_value = 0
-            try:
-                if preferred_value > 0: 
-                    preferred_result = 'BAD'
-                else:
-                    preferred_result = 'GOOD'
-            except:
-                preferred_result = 'N/A'
+            
             # Retained Earnings
-            retained_earnings_select = ['Retained Earnings']
-            retained_earnings_values = balance_sheet.loc[retained_earnings_select].fillna(0).values.flatten()
-            retained_earnings_values = [float(retained_earnings_values) for retained_earnings_values in retained_earnings_values]
-            retained_earnings_result = all(retained_earnings_values[i] >= retained_earnings_values[i+1] for i in range(len(retained_earnings_values) - 1))
+            
             # Treasury Stock
             try:
                 if treasury_share_value > 0:
@@ -2305,19 +2685,7 @@ if st.button("Get Data"):
             except:
                 treasury_share_result = 'N/A'
             # Capex Margin
-            try:
-                capex_value = cashflow_statement.loc['Capital Expenditure'].iloc[0]
-                if pd.isna(capex_value):
-                    capex_value = 0
-            except:
-                capex_value = 0
-            try:
-                if capex_value / netincome_value < 0.25:
-                    capex_result = 'GOOD'
-                else:
-                    capex_result = 'BAD'
-            except:
-                capex_result = 'N/A'
+            
             # PE and forward PE
             try:
                 if float(pe_value) < 25:
@@ -2429,15 +2797,6 @@ if st.button("Get Data"):
             ]
             df_peterlynch = pd.DataFrame(peterlynch_data)
 
-            def highlight_result(val):
-                if val == 'GOOD':
-                    color = 'green'
-                elif val == 'BAD':
-                    color = 'red'
-                else:
-                    color ='#AAB2BD'
-                return f'background-color: {color}; color: white'
-
             st.subheader("Warren Buffett", divider ='gray')
             guru_col1, guru_col2 = st.columns([2,3])
             with guru_col1:
@@ -2473,9 +2832,27 @@ if st.button("Get Data"):
 ############################################# Insider Trades #############################################
 #############################################                ############################################# 
         with insider_trades:
+            def highlight_insider_trades(val):
+                if val == 'Buy':
+                    bscolor = 'green'
+                elif val == 'Sell':
+                    bscolor = 'red'
+                else:
+                    bscolor ='#AAB2BD'
+                return f'background-color: {bscolor}; color: white'
             try:
                 insider_mb = pd.DataFrame(insider_mb).iloc[:, :-2]
-                st.dataframe(insider_mb, use_container_width=True, hide_index=True, height = 600)
+                def is_valid_date(value):
+                    try:
+                        pd.to_datetime(value)
+                        return True
+                    except ValueError:
+                        return False
+                unwanted_string = "Get Insider Trades Delivered To Your InboxEnter your email address below to receive a concise daily summary of insider buying activity, insider selling activity and changes in hedge fund holdings."
+                filtered_insider_mb = insider_mb[
+                    insider_mb["Transaction Date"].apply(lambda x: is_valid_date(x) and x != unwanted_string)
+                ]
+                st.dataframe(filtered_insider_mb.style.applymap(highlight_insider_trades, subset=['Buy/Sell']), use_container_width=True, hide_index=True, height = 600)
                 st.caption("Data source: Market Beat")
             except: st.warning("Insider information is not available.")
 
@@ -2654,7 +3031,7 @@ if st.button("Get Data"):
                         fig.add_annotation(x=0.5, y=0.25, text=label, showarrow=False, font=dict(size=20))
                         fig.update_layout(
                             font=dict(size=14),
-                            margin=dict(t=30, b=30, l=50, r=50)
+                            margin=dict(t=30, b=30, l=50, r=50),
                             )
                         return fig
                     #thresholds for table
@@ -2985,4 +3362,3 @@ if st.button("Get Data"):
     except Exception as e:
         st.error(f"Failed to fetch data. {str(e)}")
 ''
-
