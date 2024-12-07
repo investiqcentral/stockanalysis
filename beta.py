@@ -3361,5 +3361,6 @@ if st.button("Get Data"):
                 except: st.warning("Failed to get news.")
             ''
     except Exception as e:
-        st.error(f"Failed to fetch data. {str(e)}")
+        st.error(f"Failed to fetch data. Please check your ticker again.")
+        st.warning("This tool supports only tickers from the U.S. stock market. Please note that ETFs and cryptocurrencies are not available for analysis. If the entered ticker is valid but the tool does not display results, it may be due to missing data or a technical issue. Kindly try again later. If the issue persists, please contact the developer for further assistance.")
 ''
