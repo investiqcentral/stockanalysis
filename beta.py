@@ -1166,7 +1166,7 @@ if st.button("Get Data"):
                         three_yr_earnings_value = 'N/A' if three_yr_earnings == 'Upgrade' else three_yr_earnings
                         #three_yr_earnings = sa_growth_df.loc[sa_growth_df.iloc[:, 0] == 'EPS Growth', sa_growth_df.columns[8]].values[0]
                     except: three_yr_earnings_value = 'N/A'
-                    sub_gcol3[1].metric(label='+2Y EPS Growth',value=three_yr_earnings_value)
+                    sub_gcol3[1].metric(label='+3Y EPS Growth',value=three_yr_earnings_value)
 
                     st.caption("The growth estimation data is sourced from Stockanalysis.com.")
                     st.caption("Please note that estimated data may not always be accurate and should not be solely relied upon for making investment decisions.")
