@@ -3292,33 +3292,6 @@ if st.button("Get Data"):
 #############################################           #############################################
 
         with news_data:
-            if news:
-                try:
-                    st.caption("News data is sourced from Yahoo Finance.")
-                    num_columns = 3
-                    columns = st.columns(num_columns)
-                    for i, news_item in enumerate(news):
-                        title = news_item.get('title', 'No Title')
-                        publisher = news_item.get('publisher', 'No Publisher')
-                        link = news_item.get('link', '#')
-                        provider_publish_time = news_item.get('providerPublishTime', 0)
-                        publish_time = datetime.datetime.fromtimestamp(provider_publish_time, datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-                        thumbnails = news_item.get('thumbnail', {}).get('resolutions', [])
-                        thumbnail_url = thumbnails[0]['url'] if thumbnails else None
-                        column_index = i % num_columns
-                        with columns[column_index]:
-                            if thumbnail_url:
-                                st.image(thumbnail_url, width=200) 
-                            st.subheader(title)
-                            st.write(f"**Publisher**: {publisher}")
-                            st.write(f"**Link**: [Read more from this link]({link})")
-                            st.write(f"**Published on**: {publish_time}")
-                            st.write("---")
-                        if column_index == (num_columns - 1):
-                            st.write("")
-                except:
-                    st.warning("Failed to get news.")
-            else:
                 try:
                     st.caption("News data is sourced from Stockanalysis.com.")
                     news_url = f'https://stockanalysis.com/stocks/{ticker}/'
