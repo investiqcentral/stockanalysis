@@ -3292,46 +3292,46 @@ if st.button("Get Data"):
 #############################################           #############################################
 
         with news_data:
-                try:
-                    st.caption("News data is sourced from Stockanalysis.com.")
-                    news_url = f'https://stockanalysis.com/stocks/{ticker}/'
-                    news_page = requests.get(news_url)
-                    soup = BeautifulSoup(news_page.text, "html.parser")
-                    img_elements = soup.findAll("img", attrs={"class": "h-full w-full rounded object-cover"})
-                    img_urls = [img.get('src') for img in img_elements]
-                    titles = soup.findAll("h3", attrs={"class":"mb-2 mt-3 text-xl font-bold leading-snug sm:order-2 sm:mt-0 sm:leading-tight"})
-                    links = [title.find('a').get('href') for title in titles]
-                    paragraphs = soup.findAll("p", attrs={"class":"overflow-auto text-[0.95rem] text-light sm:order-3"})
-                    sources = soup.findAll("div", attrs={"class":"mt-1 text-sm text-faded sm:order-1 sm:mt-0"})
-                    news = []
-                    for i in range(len(titles)):
-                        news_item = {
-                            'title': titles[i].get_text(strip=True),
-                            'link': links[i],
-                            'thumbnail': {'resolutions': [{'url': img_urls[i]}]} if i < len(img_urls) else {},
-                            'publisher': sources[i].get_text(strip=True) if i < len(sources) else 'Unknown Publisher'
-                        }
-                        news.append(news_item)
-                    num_columns = 3
-                    columns = st.columns(num_columns)
-                    for i, news_item in enumerate(news):
-                        title = news_item.get('title', 'No Title')
-                        publisher = news_item.get('publisher', 'No Publisher')
-                        link = news_item.get('link', '#')
-                        provider_publish_time = news_item.get('providerPublishTime', 0)
-                        thumbnails = news_item.get('thumbnail', {}).get('resolutions', [])
-                        thumbnail_url = thumbnails[0]['url'] if thumbnails else None
-                        column_index = i % num_columns
-                        with columns[column_index]:
-                            if thumbnail_url:
-                                st.image(thumbnail_url, width=200)
-                            st.subheader(title)
-                            st.write(f"{publisher}")
-                            st.write(f"**Link**: [Read more from this link]({link})")
-                            st.write("---")
-                        if column_index == (num_columns - 1):
-                            st.write("")
-                except: st.warning("Failed to get news.")
+            try:
+                st.caption("News data is sourced from Stockanalysis.com.")
+                news_url = f'https://stockanalysis.com/stocks/{ticker}/'
+                news_page = requests.get(news_url)
+                soup = BeautifulSoup(news_page.text, "html.parser")
+                img_elements = soup.findAll("img", attrs={"class": "h-full w-full rounded object-cover"})
+                img_urls = [img.get('src') for img in img_elements]
+                titles = soup.findAll("h3", attrs={"class":"mb-2 mt-3 text-xl font-bold leading-snug sm:order-2 sm:mt-0 sm:leading-tight"})
+                links = [title.find('a').get('href') for title in titles]
+                paragraphs = soup.findAll("p", attrs={"class":"overflow-auto text-[0.95rem] text-light sm:order-3"})
+                sources = soup.findAll("div", attrs={"class":"mt-1 text-sm text-faded sm:order-1 sm:mt-0"})
+                news = []
+                for i in range(len(titles)):
+                    news_item = {
+                        'title': titles[i].get_text(strip=True),
+                        'link': links[i],
+                        'thumbnail': {'resolutions': [{'url': img_urls[i]}]} if i < len(img_urls) else {},
+                        'publisher': sources[i].get_text(strip=True) if i < len(sources) else 'Unknown Publisher'
+                    }
+                    news.append(news_item)
+                num_columns = 3
+                columns = st.columns(num_columns)
+                for i, news_item in enumerate(news):
+                    title = news_item.get('title', 'No Title')
+                    publisher = news_item.get('publisher', 'No Publisher')
+                    link = news_item.get('link', '#')
+                    provider_publish_time = news_item.get('providerPublishTime', 0)
+                    thumbnails = news_item.get('thumbnail', {}).get('resolutions', [])
+                    thumbnail_url = thumbnails[0]['url'] if thumbnails else None
+                    column_index = i % num_columns
+                    with columns[column_index]:
+                        if thumbnail_url:
+                            st.image(thumbnail_url, width=200)
+                        st.subheader(title)
+                        st.write(f"{publisher}")
+                        st.write(f"**Link**: [Read more from this link]({link})")
+                        st.write("---")
+                    if column_index == (num_columns - 1):
+                        st.write("")
+            except: st.warning("Failed to get news.")
             ''
     except Exception as e:
         st.error(f"Failed to fetch data. Please check your ticker again.")
