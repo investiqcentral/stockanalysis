@@ -1361,6 +1361,7 @@ if st.button("Get Data"):
         with comparison_data:
             try:
                 yf_com_df = yf_com
+                st.dataframe(yf_com_df)
                 yf_com_df_melted = yf_com_df.reset_index().melt(id_vars='Date', var_name='Ticker', value_name='Relative Return')
                 yf_com_df_melted['Ticker'] = yf_com_df_melted['Ticker'].replace({'^GSPC': 'S&P500', matching_etf: 'Sector'})
                 unique_years_sorted = yf_com_df_melted['Date'].dt.year.unique()
