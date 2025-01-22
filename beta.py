@@ -1359,7 +1359,6 @@ if st.button("Get Data"):
 #############################################            #############################################
 
         with comparison_data:
-            st.dataframe(yf_com)
             try:
                 yf_com_df = yf_com
                 yf_com_df_melted = yf_com_df.reset_index().melt(id_vars='Date', var_name='Ticker', value_name='Relative Return')
