@@ -3032,7 +3032,8 @@ if st.button("Get Data"):
                         fig.add_annotation(x=0.5, y=0.25, text=label, showarrow=False, font=dict(size=20))
                         fig.update_layout(
                             font=dict(size=14),
-                            margin=dict(t=30, b=30, l=50, r=50),
+                            margin=dict(t=0, b=0, l=50, r=50),
+                            height=350
                             )
                         return fig
                     #thresholds for table
@@ -3080,13 +3081,14 @@ if st.button("Get Data"):
                     tick_vals = data.index[::30]
                     tick_text = [date.strftime("%b %Y") for date in tick_vals]
                     fig.update_layout(
-                        title={"text":f"Moving Average and Price Data", "font": {"size": 30}},
+                        title={"text":f"Price Data with Moving Average & RSI", "font": {"size": 30}},
                         xaxis_rangeslider_visible=False,
                         xaxis=dict(
                             type="category",
                             showgrid=True,
                             ticktext=tick_text,
-                            tickvals=tick_vals
+                            tickvals=tick_vals,
+                            showticklabels=False 
                         ),
                         yaxis=dict(
                             title="Price (USD)",
@@ -3099,7 +3101,14 @@ if st.button("Get Data"):
                             showgrid=False,
                             range=[0, max_volume * 3],
                             showticklabels=False
-                        )
+                        ),
+                        margin=dict(l=0, r=0, t=None, b=0),
+                        height=None,
+                        legend=dict(
+                        yanchor="top",
+                        y=0.99,
+                        xanchor="left",
+                        x=0.010)
                     )
                     fig_macd.add_trace(go.Scatter(
                         x=macd_data.index, y=macd_data['MACD'],
@@ -3137,19 +3146,24 @@ if st.button("Get Data"):
                             ticktext=tick_text,
                             tickvals=tick_vals,
                             showgrid=True
-                        )
+                        ),
+                        legend=dict(
+                        yanchor="top",
+                        y=0.99,
+                        xanchor="left",
+                        x=0.010)
                     )
                     fig_rsi.add_trace(go.Scatter(
                         x=rsi_data.index, y=rsi_data['RSI'],
                         line=dict(color='#D772AD', width=1),
+                        showlegend=False,
                         name="RSI"
                     ))
-                    fig_rsi.add_hline(y=70, line=dict(color='red', width=1, dash='dash'), annotation_text="Overbought", annotation_position="top left")
-                    fig_rsi.add_hline(y=30, line=dict(color='green', width=1, dash='dash'), annotation_text="Oversold", annotation_position="bottom left")
+                    fig_rsi.add_hline(y=70, line=dict(color='red', width=1, dash='dash'),annotation_text="70", annotation_position="top left",showlegend=False, name="Overbought")
+                    fig_rsi.add_hline(y=30, line=dict(color='green', width=1, dash='dash'),annotation_text="30", annotation_position="bottom left",showlegend=False, name="Oversold")
                     tick_vals_rsi = rsi_data.index[::30]
                     tick_text_rsi = [date.strftime("%b %Y") for date in tick_vals_rsi]
                     fig_rsi.update_layout(
-                        title={"text":f"RSI Chart", "font": {"size": 30}},
                         xaxis_title="Date",
                         yaxis_title="RSI",
                         xaxis=dict(
@@ -3158,7 +3172,14 @@ if st.button("Get Data"):
                             tickvals=tick_vals_rsi,
                             showgrid=True
                         ),
-                        yaxis=dict(range=[0, 100])
+                        yaxis=dict(range=[0, 100], showgrid=False, showticklabels=True),
+                        height=200,
+                        margin=dict(l=0, r=0, t=0, b=0),
+                        legend=dict(
+                        yanchor="top",
+                        y=0.99,
+                        xanchor="left",
+                        x=0.010)
                     )
                     #
                     if macd_latest > signal_latest:
@@ -3227,15 +3248,20 @@ if st.button("Get Data"):
                             'Value': formatted_values,
                             'Signal': indicator_signals
                         })
-                        st.dataframe(summary_df,hide_index=True,use_container_width=True)
+                        st.dataframe(summary_df,hide_index=True,use_container_width=True, height=300)
                     #st.subheader("",divider = 'gray')
-
-                    macol1, macol2 = st.columns([3,1])
-                    with macol1:
-                        st.plotly_chart(fig)
-                    with macol2:
+                    gauge_col1, gauge_col2, gauge_col3 = st.columns([3,3,3])
+                    with gauge_col1:
                         st.plotly_chart(create_gauge("Moving Average Consensus", ma_score))
-                    ma_tcol1, ma_tcol2 = st.columns([3,3]) 
+                    with gauge_col2:
+                        st.plotly_chart(create_gauge("MACD Consensus", macd_score))
+                    with gauge_col3:
+                        st.plotly_chart(create_gauge("RSI Consensus", rsi_score))
+                    
+                    st.plotly_chart(fig)
+                    st.plotly_chart(fig_rsi)
+                    ''
+                    ma_tcol1, ma_tcol2 = st.columns([3,3])
                     with ma_tcol1:
                         st.write(get_signal(price, data['SMA20'][-1], 20))
                         st.write(get_signal(price, data['SMA50'][-1], 50))
@@ -3250,32 +3276,22 @@ if st.button("Get Data"):
                             st.write("🔵  No recent 50-200 SMAs crossover detected.")
                     with ma_tcol2:
                         st.info("SMAs calculate the average price over a period, treating all past prices equally. If the current stock price is above the SMA, it suggests a buy signal, as the price is above the historical average for that period. A sell signal is suggested when the current price is below the SMA.")
-                    st.subheader("",divider = 'gray')
-
-                    mdcol1, mdcol2 = st.columns([3,1])
-                    with mdcol1:
-                        st.plotly_chart(fig_macd)
-                    with mdcol2:
-                        st.plotly_chart(create_gauge("MACD Consensus", macd_score))
-                    md_tcol1, md_tcol2 = st.columns([3,3])
-                    with md_tcol1:
-                        st.write(macd_signal)
-                        st.write(crossover_signal)
-                    with md_tcol2:
-                        st.info("The MACD Line is above the Signal Line, indicating a bullish crossover and the stock might be trending upward, so we interpret this as a Buy signal. When the MACD Line is below the Signal Line, it means bearish crossover and the stock might be trending downward, so we interpret this as a Sell signal.")
-                    st.subheader("",divider = 'gray')
-
-                    rsicol1, rsicol2 = st.columns([3,1])
-                    with rsicol1:
-                        st.plotly_chart(fig_rsi)
-                    with rsicol2:
-                        st.plotly_chart(create_gauge("RSI Consensus", rsi_score))
+                    ''
                     rsi_tcol1, rsi_tcol2 = st.columns([3,3])
                     with rsi_tcol1:
                         st.write(rsi_signal)
                         st.write(trend_analysis)
                     with rsi_tcol2:
                         st.info("If RSI > 70, it generally indicates an Overbought condition. If RSI < 30, it generally indicates an Oversold condition. If RSI is between 30 and 70, it indicates a Neutral condition.")
+                    st.subheader("",divider = 'gray')
+                    
+                    st.plotly_chart(fig_macd)
+                    md_tcol1, md_tcol2 = st.columns([3,3])
+                    with md_tcol1:
+                        st.write(macd_signal)
+                        st.write(crossover_signal)
+                    with md_tcol2:
+                        st.info("The MACD Line is above the Signal Line, indicating a bullish crossover and the stock might be trending upward, so we interpret this as a Buy signal. When the MACD Line is below the Signal Line, it means bearish crossover and the stock might be trending downward, so we interpret this as a Sell signal.")
                     #st.subheader("",divider = 'gray')
             except: st.warning("Failed to request historical price data.")
 
