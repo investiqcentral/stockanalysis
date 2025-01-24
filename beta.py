@@ -482,9 +482,9 @@ def get_stock_data(ticker, apiKey=None):
         yf_com = relativereturn(yf.download(compare_tickers, start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'))['Close'])
     except: yf_com = matching_etf = ""
     try:
-        end_date = datetime.datetime.now().replace(tzinfo=pytz.UTC)
-        start_date = (end_date - datetime.timedelta(days=int(2 * 365))).replace(tzinfo=pytz.UTC)
-        start_date_1y = (end_date - datetime.timedelta(days=int(1 * 365))).replace(tzinfo=pytz.UTC)
+        end_date = datetime.datetime.today()
+        start_date = (end_date - datetime.timedelta(days=int(2 * 365)))
+        start_date_1y = (end_date - datetime.timedelta(days=int(1 * 365)))
         extended_data_r = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'), interval="1d")
         extended_data_r.columns = extended_data_r.columns.map('_'.join)
         extended_data_r.columns = ['Close', 'High', 'Low', 'Open', 'Volume']
@@ -2876,10 +2876,10 @@ if st.button("Get Data"):
                     extended_data['SMA20'] = extended_data['Close'].rolling(window=20).mean()
                     extended_data['SMA50'] = extended_data['Close'].rolling(window=50).mean()
                     extended_data['SMA200'] = extended_data['Close'].rolling(window=200).mean()
-                    last_year_start = (end_date - datetime.timedelta(days=int(1 * 365))).replace(tzinfo=pytz.UTC)
+                    last_year_start = (end_date - datetime.timedelta(days=int(1 * 365)))
                     data = extended_data.loc[extended_data.index >= last_year_start]
                     data.columns = data.columns.map('_'.join)
-                    data.columns = ['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume', 'SMA20', 'SMA50', 'SMA200']
+                    data.columns = ['Close', 'High', 'Low', 'Open', 'Volume', 'SMA20', 'SMA50', 'SMA200']
                     volume_colors = ['green' if data['Close'][i] >= data['Open'][i] else 'red' for i in range(len(data))]
                     max_volume = data['Volume'].max()
                     #MACD
@@ -3036,12 +3036,12 @@ if st.button("Get Data"):
                             )
                         return fig
                     #thresholds for table
-                    ta_data['STOCH Consensus'] = ta_data['%K'].apply(lambda x: consensus(x, [20, 40, 60, 80]))
-                    ta_data['ADX Consensus'] = ta_data['ADX'].apply(lambda x: "Strong Trend" if x > 25 else "Weak Trend")
-                    ta_data['Williams %R Consensus'] = ta_data['Williams %R'].apply(lambda x: consensus(x, [-80, -50, -20, 0]))
-                    ta_data['CCI Consensus'] = ta_data['CCI'].apply(lambda x: consensus(x, [-100, -50, 50, 100]))
-                    ta_data['ROC Consensus'] = ta_data['ROC'].apply(lambda x: consensus(x, [-5, 0, 5, 10]))
-                    ta_data['UO Consensus'] = ta_data['UO'].apply(lambda x: consensus(x, [30, 50, 70, 80]))
+                    ta_data['STOCH Consensus'] = ta_data['%K'].astype(float).apply(lambda x: consensus(x, [20, 40, 60, 80]))
+                    ta_data['ADX Consensus'] = ta_data['ADX'].astype(float).apply(lambda x: "Strong Trend" if x > 25 else "Weak Trend")
+                    ta_data['Williams %R Consensus'] = ta_data['Williams %R'].astype(float).apply(lambda x: consensus(x, [-80, -50, -20, 0]))
+                    ta_data['CCI Consensus'] = ta_data['CCI'].astype(float).apply(lambda x: consensus(x, [-100, -50, 50, 100]))
+                    ta_data['ROC Consensus'] = ta_data['ROC'].astype(float).apply(lambda x: consensus(x, [-5, 0, 5, 10]))
+                    ta_data['UO Consensus'] = ta_data['UO'].astype(float).apply(lambda x: consensus(x, [30, 50, 70, 80]))
                     #
                     fig.add_trace(go.Candlestick(
                         x=data.index,
