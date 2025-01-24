@@ -1201,7 +1201,7 @@ if st.button("Get Data"):
                             }
                         ))
                         fig.update_layout(
-                            height=350,
+                            height=300,
                             margin=dict(t=50, b=20, l=40, r=30)
                         )
                         st.plotly_chart(fig)
@@ -1234,7 +1234,7 @@ if st.button("Get Data"):
                             }
                         ))
                         fig.update_layout(
-                            height=350,
+                            height=300,
                             margin=dict(t=50, b=20, l=40, r=30)
                         )
                         st.plotly_chart(fig)
