@@ -1175,73 +1175,115 @@ if st.button("Get Data"):
 
 # Scores
             st.subheader('Scores', divider='gray')
-            score_col1, score_col2, score_col3, score_col4, score_col5 = st.columns([1,3,1,3,1])
-            with score_col2:
-                try:
-                    sa_altmanz_value = 'N/A' if sa_altmanz == 'N/A' else float(sa_altmanz)
-                    if sa_altmanz_value != 'N/A':
-                        fig = go.Figure(go.Indicator(
-                            title={"text":"Altman Z-Score", "font": {"size": 20}},
-                            mode="gauge+number",
-                            value=sa_altmanz_value,
-                            number={"font": {"size": 45}},
-                            gauge={
-                                'axis': {'range': [0, 4]}, 
-                                'bar': {'color': "#5F9BEB"},
-                                'steps': [
-                                    {'range': [0, 1.8], 'color': "#DA4453"},
-                                    {'range': [1.8, 3], 'color': "#F6BB42"},
-                                    {'range': [3, 4], 'color': "#8CC152"}
-                                ],
-                                # 'threshold': {
-                                #     'line': {'color': "black", 'width': 4},
-                                #     'thickness': 0.75,
-                                #     'value': sa_altmanz_value
-                                # }
-                            }
-                        ))
-                        fig.update_layout(
-                            height=300,
-                            margin=dict(t=50, b=20, l=40, r=30)
-                        )
-                        st.plotly_chart(fig)
-                    else:
-                        st.warning("Altman Z-Score data is not available.")
-                    st.caption("A score below 1.8 signals the company is likely headed for bankruptcy, while companies with scores above 3 are not likely to go bankrupt. Investors may consider purchasing a stock if its Altman Z-Score value is closer to 3 and selling, or shorting, a stock if the value is closer to 1.8.")
-                except: st.warning("Altman Z-Score data is not available.")
-            with score_col4:    
-                try:    
+            try:
+                score_col1, score_col2 = st.columns([2,3])
+                with score_col1:
                     sa_piotroski_value = 'N/A' if sa_piotroski == 'N/A' else float(sa_piotroski)
                     if sa_piotroski_value != 'N/A':
                         fig = go.Figure(go.Indicator(
-                            title={"text":"Piotroski F-Score", "font": {"size": 20}},
-                            mode="gauge+number",
-                            value=sa_piotroski_value,
-                            number={"font": {"size": 45}},
+                            mode="gauge",
                             gauge={
-                                'axis': {'range': [0, 9]},
-                                'bar': {'color': "#5F9BEB"},
+                                'shape': "bullet",
+                                'axis': {
+                                    'range': [0, 9], 
+                                    'visible': True,
+                                    'tickcolor': 'white',
+                                    'ticklen': 0,
+                                    'showticklabels': True,
+                                    'tickwidth': 0
+                                },
+                                'bar': {'color': "#5F9BEB", 'thickness':0.5},
+                                'threshold': {
+                                    'line': {'color': "blue", 'width': 0},
+                                    'thickness': 0.5,
+                                    'value': sa_piotroski_value
+                                },
                                 'steps': [
-                                    {'range': [0, 3], 'color': "#DA4453"},
-                                    {'range': [3, 6], 'color': "#F6BB42"},
-                                    {'range': [6, 9], 'color': "#8CC152"}
+                                    {'range': [0, 1.8], 'color': "#ED2C0A"},
+                                    {'range': [1.8, 3.6], 'color': "#F0702C"},
+                                    {'range': [3.6, 5.4], 'color': "#FBB907"},
+                                    {'range': [5.4, 7.2], 'color': "#B0B431"},
+                                    {'range': [7.2, 9], 'color': "#88B03E"}
                                 ],
-                                # 'threshold': {
-                                #     'line': {'color': "black", 'width': 4},
-                                #     'thickness': 0.75,
-                                #     'value': sa_piotroski_value
-                                # }
-                            }
+                            },
+                            value=sa_piotroski_value,
+                            domain={'x': [0.1, 1], 'y': [0, 1]},
+                            title={'text': f"{sa_piotroski_value:,.0f}/9"}
                         ))
+            
                         fig.update_layout(
-                            height=300,
-                            margin=dict(t=50, b=20, l=40, r=30)
+                            height=100,
+                            margin=dict(l=30, r=30, t=30, b=30),
+                            title={
+                                'text': "Piotroski F-Score",
+                                'y':1,
+                                'x':0,
+                                'xanchor':'left',
+                                'yanchor':'top',
+                                'font':{'size':20}
+                            }
                         )
-                        st.plotly_chart(fig)
+                        st.plotly_chart(fig, use_container_width=True)
                     else:
                         st.warning("Piotroski F-Score data is not available.")
+                with score_col2:
                     st.caption("A company with a high Piotroski F-Score (say, 7 or above) is likely to be in good financial health, and may therefore be a good investment. Conversely, a company with a low score (say, 3 or below) may be in poor financial health, and may therefore be a risky investment.")
-                except: st.warning("Piotroski F-Score data is not available.")
+            except Exception as e:
+                st.warning("Piotroski F-Score data is not available.")
+            
+            try:
+                score_col3, score_col4 = st.columns([2,3])
+                with score_col3:
+                    sa_altmanz_value = 'N/A' if sa_altmanz == 'N/A' else float(sa_altmanz)
+                    if sa_altmanz_value != 'N/A':
+                        fig = go.Figure(go.Indicator(
+                            mode="gauge",
+                            gauge={
+                                'shape': "bullet",
+                                'axis': {
+                                    'range': [0, 4], 
+                                    'visible': True,
+                                    'tickcolor': 'white',
+                                    'ticklen': 0,
+                                    'showticklabels': True,
+                                    'tickwidth': 0
+                                },
+                                'bar': {'color': "#5F9BEB", 'thickness':0.5},
+                                'threshold': {
+                                    'line': {'color': "blue", 'width': 0},
+                                    'thickness': 0.5,
+                                    'value': sa_altmanz_value
+                                },
+                                'steps': [
+                                    {'range': [0, 1.8], 'color': "#ED2C0A"},
+                                    {'range': [1.8, 3.0], 'color': "#FBB907"},
+                                    {'range': [3.0, 4.0], 'color': "#88B03E"}
+                                ],
+                            },
+                            value=sa_altmanz_value,
+                            domain={'x': [0.1, 1], 'y': [0, 1]},
+                            title={'text': f"{sa_altmanz_value}"}
+                        ))
+            
+                        fig.update_layout(
+                            height=100,
+                            margin=dict(l=30, r=30, t=30, b=30),
+                            title={
+                                'text': "Altman Z-Score",
+                                'y':1,
+                                'x':0,
+                                'xanchor':'left',
+                                'yanchor':'top',
+                                'font':{'size':20}
+                            }
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.warning("Altman Z-Score data is not available.")
+                with score_col4:
+                    st.caption("A score below 1.8 signals the company is likely headed for bankruptcy, while companies with scores above 3 are not likely to go bankrupt. Investors may consider purchasing a stock if its Altman Z-Score value is closer to 3 and selling, or shorting, a stock if the value is closer to 1.8.")
+            except Exception as e:
+                st.warning("Altman Z-Score data is not available.")
             st.caption("Data source: Stockanalysis.com")
 
 #Analysts Ratings
