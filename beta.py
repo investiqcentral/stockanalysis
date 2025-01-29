@@ -1618,6 +1618,7 @@ if st.button("Get Data"):
                                         title="Cumulative Relative Return",
                                         showgrid=True
                                     ),
+                                    legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                                     height=500,
                                 )
                                 st.plotly_chart(fig, use_container_width=True)
@@ -1677,6 +1678,7 @@ if st.button("Get Data"):
                     barmode='group', 
                     xaxis_title='Date',
                     yaxis_title='USD in Million',
+                    legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                     height=400
                 )
                 fig.update_xaxes(
@@ -1747,6 +1749,7 @@ if st.button("Get Data"):
                     barmode='group', 
                     xaxis_title='Date',
                     yaxis_title='USD in Million',
+                    legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                     height=400
                 )
                 fig.update_xaxes(
@@ -1817,6 +1820,7 @@ if st.button("Get Data"):
                     barmode='group', 
                     xaxis_title='Date',
                     yaxis_title='USD in Million',
+                    legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                     height=400
                 )
                 fig.update_xaxes(
