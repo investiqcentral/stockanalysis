@@ -1111,6 +1111,7 @@ if st.button("Get Data"):
                             yaxis_title='Value (%)',
                             xaxis=dict(tickmode='array', tickvals=growth_unique_years_sorted,showgrid=True),
                             yaxis=dict(showgrid=True),
+                            legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                             height=400
                         )
                         st.plotly_chart(fig_growth, use_container_width=True)
@@ -1436,6 +1437,7 @@ if st.button("Get Data"):
                         margin=dict(t=30, b=40, l=40, r=30),
                         xaxis=dict(title="Date", showticklabels=show_labels, showgrid=True), 
                         yaxis=dict(title="Cumulative Relative Return", showgrid=True),
+                        legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                         height=500,
                     )
                     st.plotly_chart(fig, use_container_width=True)
@@ -1521,6 +1523,7 @@ if st.button("Get Data"):
                                     title="Cumulative Relative Return",
                                     showgrid=True
                                 ),
+                                legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                                 height=500,
                             )
                             st.plotly_chart(fig, use_container_width=True)
