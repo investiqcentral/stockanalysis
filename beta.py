@@ -921,7 +921,7 @@ if st.button("Get Data"):
                             title_y=1,  
                             title_x=0.75, 
                             margin=dict(t=30, b=40, l=40, r=30),
-                            xaxis_title="Year",
+                            xaxis_title=None,
                             yaxis_title="Dividends (USD)",
                             xaxis=dict(type='category',tickangle=tick_angle),
                         )
@@ -961,7 +961,7 @@ if st.button("Get Data"):
                             title_y=1,  
                             title_x=0, 
                             margin=dict(t=30, b=40, l=40, r=30),
-                            xaxis_title='Date',
+                            xaxis_title=None,
                             yaxis_title='Earnings',
                             xaxis=dict(type='category',showgrid=True),
                             yaxis=dict(showgrid=True),
@@ -1032,7 +1032,7 @@ if st.button("Get Data"):
                                 title_x=0, 
                                 margin=dict(t=30, b=40, l=40, r=30),
                                 xaxis=dict(
-                                    title='Time Period',
+                                    title=None,
                                     categoryorder='array',
                                     showgrid=True,  
                                     categoryarray=['90 Days Ago', '60 Days Ago', '30 Days Ago', '7 Days Ago', 'Current'],
@@ -1070,7 +1070,7 @@ if st.button("Get Data"):
                                 title_y=1,  
                                 title_x=0, 
                                 margin=dict(t=30, b=30, l=40, r=30),
-                                xaxis_title='Year',
+                                xaxis_title=None,
                                 yaxis_title='Value',
                                 xaxis=dict(tickmode='array', tickvals=eps_unique_years_sorted, autorange='reversed',showgrid=True),
                                 yaxis=dict(showgrid=True),
@@ -1107,7 +1107,7 @@ if st.button("Get Data"):
                             title_y=1,  
                             title_x=0, 
                             margin=dict(t=30, b=30, l=40, r=30),
-                            xaxis_title='Year',
+                            xaxis_title=None,
                             yaxis_title='Value (%)',
                             xaxis=dict(tickmode='array', tickvals=growth_unique_years_sorted,showgrid=True),
                             yaxis=dict(showgrid=True),
@@ -1435,7 +1435,7 @@ if st.button("Get Data"):
                         title_y=1,  
                         title_x=0, 
                         margin=dict(t=30, b=40, l=40, r=30),
-                        xaxis=dict(title="Date", showticklabels=show_labels, showgrid=True), 
+                        xaxis=dict(title=None, showticklabels=show_labels, showgrid=True), 
                         yaxis=dict(title="Cumulative Relative Return", showgrid=True),
                         legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                         height=500,
@@ -1484,11 +1484,12 @@ if st.button("Get Data"):
                             y=dividend_data.iloc[0, 1:],
                             text=[f"{x:.2f}%" for x in dividend_data.iloc[0, 1:]],
                             textposition='auto',
+                            marker=dict(cornerradius=5),
                             marker_color=vscolors
                         ))
                         fig1.update_layout(
                             title={"text":"Dividend Yield Comparison","font": {"size": 22}},
-                            xaxis_title='Categories',
+                            xaxis_title=None,
                             yaxis_title='Dividend Yield (%)',
                             height=400,
                             showlegend=False
@@ -1501,23 +1502,21 @@ if st.button("Get Data"):
                         ratio_metrics = ['P/E Ratio', 'Price / Sales', 'Price / Cash', 'Price / Book']
                         ratio_data = numeric_df[numeric_df['Metric'].isin(ratio_metrics)]
                         fig2 = go.Figure()
-                        for column in mb_com_df.columns[1:]:
+                        for i,column in enumerate(mb_com_df.columns[1:]):
                             fig2.add_trace(go.Bar(
                                 name=column,
                                 x=ratio_metrics,
                                 y=ratio_data[column],
-                                text=ratio_data[column].round(2),
-                                textposition='auto',
-                                marker_color=['#4FC1E9', '#48CFAD', '#EC87C0', '#FFCE54']
+                                marker=dict(cornerradius=5),
+                                marker_color=vscolors[i]
                             ))
                         fig2.update_layout(
                             title={"text":"Ratios Comparison","font": {"size": 22}},
-                            xaxis_title='Ratios',
+                            xaxis_title=None,
                             yaxis_title='Value',
                             barmode='group',
                             height=500,
                             showlegend=True,
-                            legend_title='Categories',
                             legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
                         )
                         st.plotly_chart(fig2, use_container_width=True)
@@ -1528,23 +1527,21 @@ if st.button("Get Data"):
                         performance_metrics = ['7 Day Performance', '1 Month Performance', '1 Year Performance']
                         performance_data = numeric_df[numeric_df['Metric'].isin(performance_metrics)]
                         fig3 = go.Figure()
-                        for column in mb_com_df.columns[1:]:
+                        for i,column in enumerate(mb_com_df.columns[1:]):
                             fig3.add_trace(go.Bar(
                                 name=column,
                                 x=performance_metrics,
                                 y=performance_data[column],
-                                text=[f"{x:.2f}%" for x in performance_data[column]],
-                                textposition='auto',
-                                marker_color=['#4FC1E9', '#48CFAD', '#EC87C0', '#FFCE54']
+                                marker=dict(cornerradius=5),
+                                marker_color=vscolors[i]
                             ))
                         fig3.update_layout(
                             title={"text":"Performance Comparison","font": {"size": 22}},
-                            xaxis_title='Time Period',
+                            xaxis_title=None,
                             yaxis_title='Performance (%)',
                             barmode='group',
                             height=500,
                             showlegend=True,
-                            legend_title='Categories',
                             legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
                         )
                         st.plotly_chart(fig3, use_container_width=True)
@@ -1568,11 +1565,12 @@ if st.button("Get Data"):
                             y=income_values,
                             text=[f"${x:.2f}B" for x in income_values],
                             textposition='auto',
+                            marker=dict(cornerradius=5),
                             marker_color=vscolors
                         ))
                         fig4.update_layout(
                             title={"text":"Net Income Comparison (in Billions USD)","font": {"size": 22}},
-                            xaxis_title='Categories',
+                            xaxis_title=None,
                             yaxis_title='Net Income (Billion $)',
                             height=400,
                             showlegend=False
@@ -1612,11 +1610,12 @@ if st.button("Get Data"):
                             y=annual_data.iloc[0, 1:],
                             text=[f"${x:.2f}" for x in annual_data.iloc[0, 1:]],
                             textposition='auto',
+                            marker=dict(cornerradius=5),
                             marker_color=vscolors2[:3]
                         ))
                         fig1.update_layout(
                             title={"text":"Annual Dividend Comparison","font": {"size": 22}},
-                            xaxis_title='Categories',
+                            xaxis_title=None,
                             yaxis_title='Annual Dividend ($)',
                             height=400,
                             showlegend=False
@@ -1634,11 +1633,12 @@ if st.button("Get Data"):
                             y=yield_data.iloc[0, 1:],
                             text=[f"{x:.2f}%" for x in yield_data.iloc[0, 1:]],
                             textposition='auto',
+                            marker=dict(cornerradius=5),
                             marker_color=vscolors2[:3]
                         ))
                         fig2.update_layout(
                             title={"text":"Dividend Yield Comparison","font": {"size": 22}},
-                            xaxis_title='Categories',
+                            xaxis_title=None,
                             yaxis_title='Dividend Yield (%)',
                             height=400,
                             showlegend=False
@@ -1655,11 +1655,12 @@ if st.button("Get Data"):
                             y=growth_data.iloc[0, 1:],
                             text=[f"{x:.2f}%" for x in growth_data.iloc[0, 1:]],
                             textposition='auto',
+                            marker=dict(cornerradius=5),
                             marker_color=vscolors2[:3]
                         ))
                         fig3.update_layout(
                             title={"text":"Annualized 3-Year Dividend Growth Comparison","font": {"size": 22}},
-                            xaxis_title='Categories',
+                            xaxis_title=None,
                             yaxis_title='Growth Rate (%)',
                             height=400,
                             showlegend=False
@@ -1719,7 +1720,7 @@ if st.button("Get Data"):
                                 title_x=0,
                                 margin=dict(t=30, b=40, l=40, r=30),
                                 xaxis=dict(
-                                    title="Date",
+                                    title=None,
                                     showgrid=True
                                 ),
                                 yaxis=dict(
@@ -1813,7 +1814,7 @@ if st.button("Get Data"):
                                     title_x=0, 
                                     margin=dict(t=30, b=40, l=40, r=30),
                                     xaxis=dict(
-                                        title="Date",
+                                        title=None,
                                         showticklabels=show_labels,
                                         showgrid=True
                                     ),
@@ -1879,7 +1880,7 @@ if st.button("Get Data"):
                     title_x=0, 
                     margin=dict(t=30, b=40, l=40, r=30),
                     barmode='group', 
-                    xaxis_title='Date',
+                    xaxis_title=None,
                     yaxis_title='USD in Million',
                     legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                     height=400
@@ -1950,7 +1951,7 @@ if st.button("Get Data"):
                     title_x=0, 
                     margin=dict(t=30, b=40, l=40, r=30),
                     barmode='group', 
-                    xaxis_title='Date',
+                    xaxis_title=None,
                     yaxis_title='USD in Million',
                     legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                     height=400
@@ -2021,7 +2022,7 @@ if st.button("Get Data"):
                     title_x=0, 
                     margin=dict(t=30, b=40, l=40, r=30),
                     barmode='group', 
-                    xaxis_title='Date',
+                    xaxis_title=None,
                     yaxis_title='USD in Million',
                     legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
                     height=400
@@ -2080,7 +2081,7 @@ if st.button("Get Data"):
                         title_y=1,  
                         title_x=0, 
                         margin=dict(t=30, b=30, l=40, r=30),
-                        xaxis_title='Year',
+                        xaxis_title=None,
                         yaxis_title='Value',
                         xaxis=dict(tickmode='array', tickvals=unique_years_sorted, autorange='reversed',showgrid=True),
                         yaxis=dict(showgrid=True),
@@ -2114,7 +2115,7 @@ if st.button("Get Data"):
                         title_y=1,  
                         title_x=0, 
                         margin=dict(t=30, b=30, l=40, r=30),
-                        xaxis_title='Year',
+                        xaxis_title=None,
                         yaxis_title='Value',
                         xaxis=dict(tickmode='array', tickvals=unique_years_sorted, autorange='reversed',showgrid=True),
                         yaxis=dict(showgrid=True),
@@ -2150,7 +2151,7 @@ if st.button("Get Data"):
                         title_y=1,  
                         title_x=0, 
                         margin=dict(t=30, b=30, l=40, r=30),
-                        xaxis_title='Year',
+                        xaxis_title=None,
                         yaxis_title='Value (%)',
                         xaxis=dict(tickmode='array', tickvals=unique_years_sorted, autorange='reversed',showgrid=True),
                         yaxis=dict(showgrid=True),
@@ -2183,7 +2184,7 @@ if st.button("Get Data"):
                         title_y=1,  
                         title_x=0, 
                         margin=dict(t=30, b=30, l=40, r=30),
-                        xaxis_title='Year',
+                        xaxis_title=None,
                         yaxis_title='Value (%)',
                         xaxis=dict(tickmode='array', tickvals=unique_years_sorted, autorange='reversed',showgrid=True),
                         yaxis=dict(showgrid=True),
@@ -2222,7 +2223,7 @@ if st.button("Get Data"):
                         title_y=1,  
                         title_x=0, 
                         margin=dict(t=30, b=30, l=40, r=30),
-                        xaxis_title='Year',
+                        xaxis_title=None,
                         yaxis_title='Value (%)',
                         barmode='group',  
                         xaxis=dict(autorange='reversed'),
@@ -2257,7 +2258,7 @@ if st.button("Get Data"):
                         title_y=1,  
                         title_x=0, 
                         margin=dict(t=30, b=30, l=40, r=30),
-                        xaxis_title='Year',
+                        xaxis_title=None,
                         yaxis_title='Value (%)',
                         xaxis=dict(tickmode='array', tickvals=unique_years_sorted, autorange='reversed',showgrid=True),
                         yaxis=dict(showgrid=True),
@@ -3391,7 +3392,7 @@ if st.button("Get Data"):
                     tick_vals = macd_data.index[::30]
                     tick_text = [date.strftime("%b %Y") for date in tick_vals]
                     fig_macd.update_layout(
-                        title={"text":f"MACD Chart", "font": {"size": 30}}, xaxis_title="Date", yaxis_title="MACD Value",
+                        title={"text":f"MACD Chart", "font": {"size": 30}}, xaxis_title=None, yaxis_title="MACD Value",
                         xaxis_rangeslider_visible=False,
                         xaxis=dict(
                             type="category",
@@ -3416,7 +3417,7 @@ if st.button("Get Data"):
                     tick_vals_rsi = rsi_data.index[::30]
                     tick_text_rsi = [date.strftime("%b %Y") for date in tick_vals_rsi]
                     fig_rsi.update_layout(
-                        xaxis_title="Date",
+                        xaxis_title=None,
                         yaxis_title="RSI",
                         xaxis=dict(
                             type="category",
