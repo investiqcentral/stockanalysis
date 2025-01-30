@@ -1446,7 +1446,7 @@ if st.button("Get Data"):
                 st.warning(f'Error getting historical data. {e}')
             st.caption("Data source: Yahoo Finance")
             ''
-            col1,col2 = st.columns([3, 3])
+            col1,col2,col3 = st.columns([3,1, 3])
             with col1:
                 st.subheader("Industry and Sector", divider = 'gray')
                 #try:
@@ -1524,6 +1524,7 @@ if st.button("Get Data"):
                         st.plotly_chart(fig2, use_container_width=True)
                         st.caption("Data source: Market Beat")
                     except Exception as e:
+                        st.write(e)
                         st.warning("Ratio Comparison: No data available.")
 
                     try:
@@ -1552,6 +1553,7 @@ if st.button("Get Data"):
                         st.plotly_chart(fig3, use_container_width=True)
                         st.caption("Data source: Market Beat")
                     except Exception as e:
+                        st.write(e)
                         st.warning("Performance Comparison: No data available.")
 
                     try:
@@ -1588,7 +1590,7 @@ if st.button("Get Data"):
                 except Exception as e:
                     st.warning(f"Valuation Comparison: No data available.")
                 ''
-            with col2:
+            with col3:
                 st.subheader("Dividend", divider = 'gray')
                 #try:
                 #    st.subheader('Dividends Comparison')
@@ -1625,6 +1627,7 @@ if st.button("Get Data"):
                             showlegend=False
                         )
                         st.plotly_chart(fig1, use_container_width=True)
+                        st.caption("Data source: Market Beat")
                     except Exception as e:
                         st.warning("Annual Dividend Comparison: No data available.")
 
@@ -1646,6 +1649,7 @@ if st.button("Get Data"):
                             showlegend=False
                         )
                         st.plotly_chart(fig2, use_container_width=True)
+                        st.caption("Data source: Market Beat")
                     except Exception as e:
                         st.warning("Dividend Yield Comparison: No data available.")
 
@@ -1667,6 +1671,7 @@ if st.button("Get Data"):
                             showlegend=False
                         )
                         st.plotly_chart(fig3, use_container_width=True)
+                        st.caption("Data source: Market Beat")
                     except Exception as e:
                         st.warning("Dividend Growth Comparison: No data available.")
                             
