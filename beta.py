@@ -1487,7 +1487,7 @@ if st.button("Get Data"):
                             marker_color=vscolors
                         ))
                         fig1.update_layout(
-                            title={"text","Dividend Yield Comparison","font": {"size": 22}},
+                            title={"text":"Dividend Yield Comparison","font": {"size": 22}},
                             xaxis_title='Categories',
                             yaxis_title='Dividend Yield (%)',
                             height=400,
@@ -1589,7 +1589,7 @@ if st.button("Get Data"):
                     st.warning(f"Valuation Comparison: No data available.")
                 ''
             with col2:
-                st.subheader("Industry and Sector", divider = 'gray')
+                st.subheader("Dividend", divider = 'gray')
                 #try:
                 #    st.subheader('Dividends Comparison')
                 #    def highlight_company(s):
@@ -1618,7 +1618,7 @@ if st.button("Get Data"):
                             marker_color=vscolors2[:3]
                         ))
                         fig1.update_layout(
-                            title='Annual Dividend Comparison',
+                            title={"text":"Annual Dividend Comparison","font": {"size": 22}},
                             xaxis_title='Categories',
                             yaxis_title='Annual Dividend ($)',
                             height=400,
@@ -1639,7 +1639,7 @@ if st.button("Get Data"):
                             marker_color=vscolors2[:3]
                         ))
                         fig2.update_layout(
-                            title='Dividend Yield Comparison',
+                            title={"text":"Dividend Yield Comparison","font": {"size": 22}},
                             xaxis_title='Categories',
                             yaxis_title='Dividend Yield (%)',
                             height=400,
@@ -1660,7 +1660,7 @@ if st.button("Get Data"):
                             marker_color=vscolors2[:3]
                         ))
                         fig3.update_layout(
-                            title='Annualized 3-Year Dividend Growth Comparison',
+                            title={"text":"Annualized 3-Year Dividend Growth Comparison","font": {"size": 22}},
                             xaxis_title='Categories',
                             yaxis_title='Growth Rate (%)',
                             height=400,
