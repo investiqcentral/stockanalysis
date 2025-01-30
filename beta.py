@@ -1621,7 +1621,6 @@ if st.button("Get Data"):
                             showlegend=False
                         )
                         st.plotly_chart(fig1, use_container_width=True)
-                        st.caption("Data source: Market Beat")
                     except Exception as e:
                         st.warning("Annual Dividend Comparison: No data available.")
 
