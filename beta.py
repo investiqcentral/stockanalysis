@@ -1494,7 +1494,6 @@ if st.button("Get Data"):
                             showlegend=False
                         )
                         st.plotly_chart(fig1, use_container_width=True)
-                        st.caption("Data source: Market Beat")
                     except Exception as e:
                         st.warning("Dividend Yield Comparison: No data available.")
                         
@@ -1509,7 +1508,7 @@ if st.button("Get Data"):
                                 y=ratio_data[column],
                                 text=ratio_data[column].round(2),
                                 textposition='auto',
-                                marker_color=vscolors[i]
+                                marker_color=['#4FC1E9', '#48CFAD', '#EC87C0', '#FFCE54']
                             ))
                         fig2.update_layout(
                             title={"text":"Ratios Comparison","font": {"size": 22}},
@@ -1522,9 +1521,7 @@ if st.button("Get Data"):
                             legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
                         )
                         st.plotly_chart(fig2, use_container_width=True)
-                        st.caption("Data source: Market Beat")
                     except Exception as e:
-                        st.write(e)
                         st.warning("Ratio Comparison: No data available.")
 
                     try:
@@ -1538,7 +1535,7 @@ if st.button("Get Data"):
                                 y=performance_data[column],
                                 text=[f"{x:.2f}%" for x in performance_data[column]],
                                 textposition='auto',
-                                marker_color=vscolors[i]
+                                marker_color=['#4FC1E9', '#48CFAD', '#EC87C0', '#FFCE54']
                             ))
                         fig3.update_layout(
                             title={"text":"Performance Comparison","font": {"size": 22}},
@@ -1551,9 +1548,7 @@ if st.button("Get Data"):
                             legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
                         )
                         st.plotly_chart(fig3, use_container_width=True)
-                        st.caption("Data source: Market Beat")
                     except Exception as e:
-                        st.write(e)
                         st.warning("Performance Comparison: No data available.")
 
                     try:
@@ -1583,12 +1578,12 @@ if st.button("Get Data"):
                             showlegend=False
                         )
                         st.plotly_chart(fig4, use_container_width=True)
-                        st.caption("Data source: Market Beat")
                     except Exception as e:
                         st.warning("Net Income Comparison: No data available.")
                         
                 except Exception as e:
                     st.warning(f"Valuation Comparison: No data available.")
+                st.caption("Data source: Market Beat")
                 ''
             with col3:
                 st.subheader("Dividend", divider = 'gray')
@@ -1649,7 +1644,6 @@ if st.button("Get Data"):
                             showlegend=False
                         )
                         st.plotly_chart(fig2, use_container_width=True)
-                        st.caption("Data source: Market Beat")
                     except Exception as e:
                         st.warning("Dividend Yield Comparison: No data available.")
 
@@ -1671,12 +1665,12 @@ if st.button("Get Data"):
                             showlegend=False
                         )
                         st.plotly_chart(fig3, use_container_width=True)
-                        st.caption("Data source: Market Beat")
                     except Exception as e:
                         st.warning("Dividend Growth Comparison: No data available.")
                             
                 except Exception as e:
                     st.warning(f"Dividends Comparison: No data available.")
+                st.caption("Data source: Market Beat")
                 ''
 
             try:
