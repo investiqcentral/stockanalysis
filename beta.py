@@ -1750,7 +1750,9 @@ if st.button("Get Data"):
                         plot_relative_return_comparison(mb_alt_df_melted, custom_colors, ticker1)
                         st.caption("Data source: Yahoo Finance")
                 except:
-                    SPECIAL_TICKERS = {'NVDA', 'ARM', 'NXPI', 'LHX', 'AVGO', 'QCOM', 'TXN', 'INTC', 'STM'}
+                    SPECIAL_TICKERS = {'NVDA', 'ARM', 'NXPI', 'LHX', 'AVGO', 'QCOM', 'TXN', 'INTC', 'STM',
+                                      'THO', 'EME', 'KBR', 'ACM', 'PCAR'
+                                      }
                     def clean_ticker_name(text):
                         for ticker in SPECIAL_TICKERS:
                             if text.startswith(ticker):
