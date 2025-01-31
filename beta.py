@@ -1464,6 +1464,95 @@ if st.button("Get Data"):
                         vscolors = ['#4FC1E9', '#48CFAD', '#EC87C0', '#FFCE54']
                         try:
                             numeric_df = mb_com_df.copy()
+                            def convert_to_billions(value):
+                                if 'T' in value:
+                                    return float(value.replace('$', '').replace('T', '')) * 1000
+                                elif 'B' in value:
+                                    return float(value.replace('$', '').replace('B', ''))
+                                elif 'M' in value:
+                                    return float(value.replace('$', '').replace('M', '')) / 1000
+                                return float(value.replace('$', ''))
+                            income_data = mb_com_df[mb_com_df['Metric'] == 'Net Income']
+                            income_values = [convert_to_billions(str(x)) for x in income_data.iloc[0, 1:]]
+                            fig4 = go.Figure()
+                            fig4.add_trace(go.Bar(
+                                x=mb_com_df.columns[1:],
+                                y=income_values,
+                                text=[f"${x:.2f}B" for x in income_values],
+                                textposition='auto',
+                                marker=dict(cornerradius=5),
+                                marker_color=vscolors
+                            ))
+                            fig4.update_layout(
+                                title={"text":"Net Income Comparison (in Billions USD)","font": {"size": 22}},
+                                xaxis_title=None,
+                                yaxis_title='Net Income (Billion $)',
+                                height=400,
+                                showlegend=False
+                            )
+                            st.plotly_chart(fig4, use_container_width=True)
+                        except Exception as e:
+                            st.warning("Net Income Comparison: No data available.")
+                            
+                with col2:            
+                        try:
+                            ratio_metrics = ['P/E Ratio', 'Price / Sales', 'Price / Cash', 'Price / Book']
+                            ratio_data = numeric_df[numeric_df['Metric'].isin(ratio_metrics)]
+                            fig2 = go.Figure()
+                            for i,column in enumerate(mb_com_df.columns[1:]):
+                                fig2.add_trace(go.Bar(
+                                    name=column,
+                                    x=ratio_metrics,
+                                    y=ratio_data[column],
+                                    text=ratio_data[column],  
+                                    textposition='auto',
+                                    textangle=-90,
+                                    marker=dict(cornerradius=5),
+                                    marker_color=vscolors[i]
+                                ))
+                            fig2.update_layout(
+                                title={"text":"Ratios Comparison","font": {"size": 22}},
+                                xaxis_title=None,
+                                yaxis_title='Value',
+                                barmode='group',
+                                height=400,
+                                showlegend=True,
+                                legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
+                            )
+                            st.plotly_chart(fig2, use_container_width=True)
+                        except Exception as e:
+                            st.warning("Ratio Comparison: No data available.")
+                col3,col4 = st.columns([3,3])
+                with col3:
+                        try:
+                            performance_metrics = ['7 Day Performance', '1 Month Performance', '1 Year Performance']
+                            performance_data = numeric_df[numeric_df['Metric'].isin(performance_metrics)]
+                            fig3 = go.Figure()
+                            for i,column in enumerate(mb_com_df.columns[1:]):
+                                fig3.add_trace(go.Bar(
+                                    name=column,
+                                    x=performance_metrics,
+                                    y=performance_data[column],
+                                    text=performance_data[column],
+                                    textposition='auto',
+                                    textangle=-90,
+                                    marker=dict(cornerradius=5),
+                                    marker_color=vscolors[i]
+                                ))
+                            fig3.update_layout(
+                                title={"text":"Performance Comparison","font": {"size": 22}},
+                                xaxis_title=None,
+                                yaxis_title='Performance (%)',
+                                barmode='group',
+                                height=400,
+                                showlegend=True,
+                                legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
+                            )
+                            st.plotly_chart(fig3, use_container_width=True)
+                        except Exception as e:
+                            st.warning("Performance Comparison: No data available.")
+                with col4:
+                        try:
                             def convert_value(x):
                                 if not isinstance(x, str):
                                     return x
@@ -1498,88 +1587,7 @@ if st.button("Get Data"):
                             st.plotly_chart(fig1, use_container_width=True)
                         except Exception as e:
                             st.warning("Dividend Yield Comparison: No data available.")
-                with col2:            
-                        try:
-                            ratio_metrics = ['P/E Ratio', 'Price / Sales', 'Price / Cash', 'Price / Book']
-                            ratio_data = numeric_df[numeric_df['Metric'].isin(ratio_metrics)]
-                            fig2 = go.Figure()
-                            for i,column in enumerate(mb_com_df.columns[1:]):
-                                fig2.add_trace(go.Bar(
-                                    name=column,
-                                    x=ratio_metrics,
-                                    y=ratio_data[column],
-                                    marker=dict(cornerradius=5),
-                                    marker_color=vscolors[i]
-                                ))
-                            fig2.update_layout(
-                                title={"text":"Ratios Comparison","font": {"size": 22}},
-                                xaxis_title=None,
-                                yaxis_title='Value',
-                                barmode='group',
-                                height=400,
-                                showlegend=True,
-                                legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
-                            )
-                            st.plotly_chart(fig2, use_container_width=True)
-                        except Exception as e:
-                            st.warning("Ratio Comparison: No data available.")
-                col3,col4 = st.columns([3,3])
-                with col3:
-                        try:
-                            performance_metrics = ['7 Day Performance', '1 Month Performance', '1 Year Performance']
-                            performance_data = numeric_df[numeric_df['Metric'].isin(performance_metrics)]
-                            fig3 = go.Figure()
-                            for i,column in enumerate(mb_com_df.columns[1:]):
-                                fig3.add_trace(go.Bar(
-                                    name=column,
-                                    x=performance_metrics,
-                                    y=performance_data[column],
-                                    marker=dict(cornerradius=5),
-                                    marker_color=vscolors[i]
-                                ))
-                            fig3.update_layout(
-                                title={"text":"Performance Comparison","font": {"size": 22}},
-                                xaxis_title=None,
-                                yaxis_title='Performance (%)',
-                                barmode='group',
-                                height=400,
-                                showlegend=True,
-                                legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
-                            )
-                            st.plotly_chart(fig3, use_container_width=True)
-                        except Exception as e:
-                            st.warning("Performance Comparison: No data available.")
-                with col4:
-                        try:
-                            def convert_to_billions(value):
-                                if 'T' in value:
-                                    return float(value.replace('$', '').replace('T', '')) * 1000
-                                elif 'B' in value:
-                                    return float(value.replace('$', '').replace('B', ''))
-                                elif 'M' in value:
-                                    return float(value.replace('$', '').replace('M', '')) / 1000
-                                return float(value.replace('$', ''))
-                            income_data = mb_com_df[mb_com_df['Metric'] == 'Net Income']
-                            income_values = [convert_to_billions(str(x)) for x in income_data.iloc[0, 1:]]
-                            fig4 = go.Figure()
-                            fig4.add_trace(go.Bar(
-                                x=mb_com_df.columns[1:],
-                                y=income_values,
-                                text=[f"${x:.2f}B" for x in income_values],
-                                textposition='auto',
-                                marker=dict(cornerradius=5),
-                                marker_color=vscolors
-                            ))
-                            fig4.update_layout(
-                                title={"text":"Net Income Comparison (in Billions USD)","font": {"size": 22}},
-                                xaxis_title=None,
-                                yaxis_title='Net Income (Billion $)',
-                                height=400,
-                                showlegend=False
-                            )
-                            st.plotly_chart(fig4, use_container_width=True)
-                        except Exception as e:
-                            st.warning("Net Income Comparison: No data available.")
+                            
             except Exception as e:
                 st.warning(f"Valuation Comparison: No data available.")
             st.caption("Data source: Market Beat")
@@ -1742,7 +1750,12 @@ if st.button("Get Data"):
                         plot_relative_return_comparison(mb_alt_df_melted, custom_colors, ticker1)
                         st.caption("Data source: Yahoo Finance")
                 except:
+                    SPECIAL_TICKERS = {'NVDA', 'ARM', 'NXPI', 'LHX', 'AVGO', 'QCOM', 'TXN', 'INTC', 'STM'}
                     def clean_ticker_name(text):
+                        for ticker in SPECIAL_TICKERS:
+                            if text.startswith(ticker):
+                                remaining = text[len(ticker):].strip()
+                                return f"{ticker} {remaining}"
                         match = re.match(r"([A-Z]+)([A-Z][a-z].*)", text)
                         if match:
                             ticker, name = match.groups()
