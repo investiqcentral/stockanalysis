@@ -1751,7 +1751,7 @@ if st.button("Get Data"):
                         st.caption("Data source: Yahoo Finance")
                 except:
                     SPECIAL_TICKERS = {'NVDA', 'ARM', 'NXPI', 'LHX', 'AVGO', 'QCOM', 'TXN', 'INTC', 'STM',
-                                      'THO', 'EME', 'KBR', 'ACM', 'PCAR'
+                                      'THO', 'EME', 'KBR', 'ACM', 'PCAR', 'HPQ'
                                       }
                     def clean_ticker_name(text):
                         for ticker in SPECIAL_TICKERS:
@@ -3303,7 +3303,7 @@ if st.button("Get Data"):
                         fig.add_annotation(x=0.5, y=0.25, text=label, showarrow=False, font=dict(size=20))
                         fig.update_layout(
                             font=dict(size=14),
-                            margin=dict(t=0, b=0, l=50, r=50),
+                            margin=dict(t=10, b=0, l=50, r=50),
                             height=350
                             )
                         return fig
