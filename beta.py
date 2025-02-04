@@ -1402,48 +1402,85 @@ if st.button("Get Data"):
 #############################################            #############################################
 
         with comparison_data:
-            try:
-                yf_com_df = yf_com
-                yf_com_df_melted = yf_com_df.reset_index().melt(id_vars='Date', var_name='Ticker', value_name='Relative Return')
-                yf_com_df_melted['Ticker'] = yf_com_df_melted['Ticker'].replace({'^GSPC': 'S&P500', matching_etf: 'Sector'})
-                unique_years_sorted = yf_com_df_melted['Date'].dt.year.unique()
-                custom_colors = {
-                        upper_ticker: '#DA4453',  
-                        'S&P500': '#5E9BEB',
-                        'Sector': '#FFCE54'
-                }
-                def plot_relative_return_chart(yf_com_df_melted, custom_colors, upper_ticker):
-                    df_plot = yf_com_df_melted.copy()
-                    fig = go.Figure()
-                    for ticker in df_plot['Ticker'].unique():
-                        df_ticker = df_plot[df_plot['Ticker'] == ticker]
-                        show_labels = True if ticker == df_plot['Ticker'].unique()[-1] else False
-                        fig.add_trace(
-                            go.Scatter(
-                                x=df_ticker['Date'],
-                                y=df_ticker['Relative Return'],
-                                mode='lines',
-                                name=ticker,
-                                line=dict(color=custom_colors.get(ticker, '#1f77b4'), shape='spline', smoothing=1.3),
-                                showlegend=True,
-                                hoverinfo="text",
-                                text=[f"{date}: {ret:.2f}%" for date, ret in zip(df_ticker['Date'], df_ticker['Relative Return'])]
+            compcol1,compcol2 = st.columns([3,1])
+            with compcol1:
+                try:
+                    yf_com_df = yf_com
+                    yf_com_df_melted = yf_com_df.reset_index().melt(id_vars='Date', var_name='Ticker', value_name='Relative Return')
+                    yf_com_df_melted['Ticker'] = yf_com_df_melted['Ticker'].replace({'^GSPC': 'S&P500', matching_etf: 'Sector'})
+                    unique_years_sorted = yf_com_df_melted['Date'].dt.year.unique()
+                    custom_colors = {
+                            upper_ticker: '#DA4453',  
+                            'S&P500': '#5E9BEB',
+                            'Sector': '#FFCE54'
+                    }
+                    def plot_relative_return_chart(yf_com_df_melted, custom_colors, upper_ticker):
+                        df_plot = yf_com_df_melted.copy()
+                        fig = go.Figure()
+                        for ticker in df_plot['Ticker'].unique():
+                            df_ticker = df_plot[df_plot['Ticker'] == ticker]
+                            show_labels = True if ticker == df_plot['Ticker'].unique()[-1] else False
+                            fig.add_trace(
+                                go.Scatter(
+                                    x=df_ticker['Date'],
+                                    y=df_ticker['Relative Return'],
+                                    mode='lines',
+                                    name=ticker,
+                                    line=dict(color=custom_colors.get(ticker, '#1f77b4'), shape='spline', smoothing=1.3),
+                                    showlegend=True,
+                                    hoverinfo="text",
+                                    text=[f"{date}: {ret:.2f}%" for date, ret in zip(df_ticker['Date'], df_ticker['Relative Return'])]
+                                )
                             )
+                        fig.update_layout(
+                            title={"text":f'{upper_ticker} - 5 Years Price Performance Comparison With Indices', "font": {"size": 22}},
+                            title_y=1,  
+                            title_x=0, 
+                            margin=dict(t=30, b=40, l=40, r=30),
+                            xaxis=dict(title=None, showticklabels=show_labels, showgrid=True), 
+                            yaxis=dict(title="Cumulative Relative Return", showgrid=True),
+                            legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
+                            height=500,
                         )
-                    fig.update_layout(
-                        title={"text":f'{upper_ticker} - 5 Years Price Performance Comparison With Indices', "font": {"size": 22}},
-                        title_y=1,  
-                        title_x=0, 
-                        margin=dict(t=30, b=40, l=40, r=30),
-                        xaxis=dict(title=None, showticklabels=show_labels, showgrid=True), 
-                        yaxis=dict(title="Cumulative Relative Return", showgrid=True),
-                        legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
-                        height=500,
+                        st.plotly_chart(fig, use_container_width=True)
+                    plot_relative_return_chart(yf_com_df_melted, custom_colors, upper_ticker)
+                except Exception as e:
+                    st.warning(f'Error getting historical data. {e}')
+
+            with compcol2:
+                try:
+                    st.subheader("Performance after 5 years")
+                    last_values = yf_com_df_melted.groupby('Ticker').last()
+                    st.metric(
+                        label=upper_ticker,
+                        value=f"{last_values.loc[upper_ticker, 'Relative Return']:.2f}%"
                     )
-                    st.plotly_chart(fig, use_container_width=True)
-                plot_relative_return_chart(yf_com_df_melted, custom_colors, upper_ticker)
-            except Exception as e:
-                st.warning(f'Error getting historical data. {e}')
+                    st.metric(
+                        label="Sector",
+                        value=f"{last_values.loc['Sector', 'Relative Return']:.2f}%"
+                    )
+                    st.metric(
+                        label="S&P500",
+                        value=f"{last_values.loc['S&P500', 'Relative Return']:.2f}%"
+                    )
+                    stock_return = last_values.loc[upper_ticker, 'Relative Return']
+                    sector_return = last_values.loc['Sector', 'Relative Return']
+                    sp500_return = last_values.loc['S&P500', 'Relative Return']
+                    
+                    performance_text = f"{upper_ticker} has "
+                    if stock_return > sector_return and stock_return > sp500_return:
+                        performance_text += f"outperformed both its sector ({sector_return:.2f}%) and S&P500 ({sp500_return:.2f}%) with a return of {stock_return:.2f}%"
+                    elif stock_return < sector_return and stock_return < sp500_return:
+                        performance_text += f"underperformed both its sector ({sector_return:.2f}%) and S&P500 ({sp500_return:.2f}%) with a return of {stock_return:.2f}%"
+                    else:
+                        performance_text += f"shown mixed performance with a return of {stock_return:.2f}% compared to its sector ({sector_return:.2f}%) and S&P500 ({sp500_return:.2f}%)"
+                    
+                    st.write("")
+                    st.write(performance_text)
+                except Exception as e:
+                    st.write("")
+                ''
+                
             st.caption("Data source: Yahoo Finance")
             ''
             st.subheader("Industry and Sector Comparison", divider = 'gray')
