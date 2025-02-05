@@ -3305,6 +3305,8 @@ if st.button("Get Data"):
                                     name="Candlestick",
                                     showlegend=False,
                                     increasing_line_width=0.5, decreasing_line_width=0.5,
+                                    increasing_line_color='rgba(0,150,0,1)',
+                                    decreasing_line_color='rgba(150,0,0,1)',
                                     opacity=1
                                 ))
                                 fig.add_trace(go.Scatter(
@@ -3443,6 +3445,8 @@ if st.button("Get Data"):
                                     name="Price",
                                     showlegend=False,
                                     increasing_line_width=0.5, decreasing_line_width=0.5,
+                                    increasing_line_color='rgba(0,150,0,1)',
+                                    decreasing_line_color='rgba(150,0,0,1)',
                                     opacity=1
                                 ))
                                 fig_bb.add_trace(go.Scatter(
@@ -3509,6 +3513,8 @@ if st.button("Get Data"):
                                     name="Price",
                                     showlegend=False,
                                     increasing_line_width=0.5, decreasing_line_width=0.5,
+                                    increasing_line_color='rgba(0,150,0,1)',
+                                    decreasing_line_color='rgba(150,0,0,1)',
                                     opacity=1
                                 ))
                                 support_levels, resistance_levels = find_support_resistance(data)
