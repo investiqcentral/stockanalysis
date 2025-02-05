@@ -938,9 +938,9 @@ if st.button("Get Data"):
                     elif last_eps_difference > 0:
                         st.markdown(''':green[Last Earnings Beat!]''')
                         st.caption("The last actual EPS data exceeded the estimate EPS data.")
-                    st.caption(f"Next Earning - {earningsDate}")
                     else:
                         st.caption("No EPS data.")
+                    st.caption(f"Next Earning - {earningsDate}")
             
                 with ecol3:
                     try:
