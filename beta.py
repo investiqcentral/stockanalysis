@@ -938,6 +938,7 @@ if st.button("Get Data"):
                     elif last_eps_difference > 0:
                         st.markdown(''':green[Last Earnings Beat!]''')
                         st.caption("The last actual EPS data exceeded the estimate EPS data.")
+                    st.caption(f"Next Earning - {earningsDate}")
                     else:
                         st.caption("No EPS data.")
             
@@ -1426,7 +1427,7 @@ if st.button("Get Data"):
                         performance_text += f"shown mixed performance with a return of {stock_return:.2f}% compared to its sector ({sector_return:.2f}%) and S&P500 ({sp500_return:.2f}%)"
                     
                     st.write("")
-                    st.write(performance_text)
+                    st.caption(performance_text)
                 except Exception as e:
                     st.write("")
                 ''
@@ -1789,7 +1790,7 @@ if st.button("Get Data"):
                         worst_return = last_values.loc[worst_performer, 'Relative Return']
                         
                         summary = f"Among the competitors, {best_performer} showed the strongest performance with {best_return:.2f}% return, while {worst_performer} had the lowest return at {worst_return:.2f}%."
-                        st.write(summary)       
+                        st.caption(summary)       
                     except Exception as e:
                         st.write("")
             except Exception as e:
