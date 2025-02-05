@@ -489,7 +489,13 @@ if st.button("Get Data"):
         marketCap_value = 'N/A' if marketCap == 'N/A' else f'${marketCap/1000000:,.2f}'
         col1, col2, col3, col4 = st.columns([2, 1, 1, 3])
         with col1:
-            st.image(picture_url, width= 250)
+            #st.image(picture_url, width= 250)
+            background_color = '#C5C6C7'
+            st.markdown(f"""
+                <div style="display: flex; justify-content: center; background-color: {background_color}; padding: 10px; border-radius: 10px;">
+                    <img src="{picture_url}" width="250">
+                </div>
+                """,unsafe_allow_html=True)
 
         with col3:
             sharesOutstanding_value = 'N/A' if sharesOutstanding == 'N/A' else f'{sharesOutstanding/1000000000:,.2f}B'
