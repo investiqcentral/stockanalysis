@@ -614,9 +614,14 @@ if st.button("Get Data"):
                 #st.markdown(f'Current price of the stock is <span style="color:blue;">{assessment}</span>.', unsafe_allow_html=True)
                 st.write(f'Morningstar Current Assessment: {assessment}')
                 ''
-                st.caption(f"An economic moat refers to a company's ability to maintain competitive advantages to protect its long-term profits and market share from competitors.<br>Moat Assessment Date: {moatDate}", unsafe_allow_html=True)
-                st.caption(f"The Star Rating is determined by three factors: a stock's current price, Morningstar's estimate of the stock's fair value, and the uncertainty rating of the fair value. The bigger the discount, the higher the star rating. Four- and 5-star ratings mean the stock is undervalued, while a 3-star rating means it's fairly valued, and 1- and 2-star stocks are overvalued. When looking for investments, a 5-star stock is generally a better opportunity than a 1-star stock.<br>Fair Value Assessment Date: {fvDate}", unsafe_allow_html=True)
-                st.caption("Data source: Morning Star")
+                try:
+                    formatted_moat_date = datetime.datetime.strptime(moatDate, "%Y-%m-%dT%H:%M:%S.%f").strftime("%Y-%m-%d")
+                    formatted_fv_date = datetime.datetime.strptime(fvDate, "%Y-%m-%dT%H:%M:%S.%f").strftime("%Y-%m-%d")
+                    st.caption(f"An economic moat refers to a company's ability to maintain competitive advantages to protect its long-term profits and market share from competitors.<br>Moat Assessment Date: {formatted_moat_date}", unsafe_allow_html=True)
+                    st.caption(f"The Star Rating is determined by three factors: a stock's current price, Morningstar's estimate of the stock's fair value, and the uncertainty rating of the fair value. The bigger the discount, the higher the star rating. Four- and 5-star ratings mean the stock is undervalued, while a 3-star rating means it's fairly valued, and 1- and 2-star stocks are overvalued. When looking for investments, a 5-star stock is generally a better opportunity than a 1-star stock.<br>Fair Value Assessment Date: {formatted_fv_date}", unsafe_allow_html=True)
+                    st.caption("Data source: Morning Star")
+                except Exception as e:
+                    st.write("")
                 ''
 
 #Quant Rating
