@@ -3507,6 +3507,8 @@ if st.button("Get Data"):
                                     x=0.010)
                                 )
                                 #
+                                current_price = data['Close'].iloc[-1]
+                                support_levels, resistance_levels = find_support_resistance(data)
                                 fig_sr.add_trace(go.Candlestick(
                                     x=data.index,
                                     open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'],
@@ -3517,42 +3519,39 @@ if st.button("Get Data"):
                                     decreasing_line_color='rgba(150,0,0,1)',
                                     opacity=1
                                 ))
-                                support_levels, resistance_levels = find_support_resistance(data)
-                                for start_date, level in resistance_levels:
+                                all_levels = [(date, level) for date, level in resistance_levels + support_levels]
+                                all_levels = sorted(all_levels, key=lambda x: x[1], reverse=True)
+                                used_positions = set()
+                                label_spacing = 2  
+                                for start_date, level in all_levels:
+                                    is_resistance = current_price < level
+                                    line_color = 'red' if is_resistance else 'green'
+                                    label_prefix = 'R: ' if is_resistance else 'S: '
                                     fig_sr.add_trace(go.Scatter(
                                         x=[start_date, data.index[-1]],
                                         y=[level, level],
                                         mode='lines',
-                                        line=dict(color='red', width=1, dash='dot'),
+                                        line=dict(color=line_color, width=1, dash='dot'),
                                         opacity=0.7,
                                         showlegend=False,
-                                        name=f"Resistance {level:.2f}"
+                                        name=f"{'Resistance' if is_resistance else 'Support'} {level:.2f}"
                                     ))
+                                    label_y = level
+                                    while label_y in used_positions:
+                                        label_y += label_spacing if is_resistance else -label_spacing
+                                    used_positions.add(label_y)
                                     fig_sr.add_annotation(
-                                        x=start_date,
-                                        y=level,
-                                        text=f"R: {level:.2f}",
-                                        showarrow=False,
-                                        yshift=10,
-                                        font=dict(size=10, color='red')
-                                    )
-                                for start_date, level in support_levels:
-                                    fig_sr.add_trace(go.Scatter(
-                                        x=[start_date, data.index[-1]],
-                                        y=[level, level],
-                                        mode='lines',
-                                        line=dict(color='green', width=1, dash='dot'),
-                                        opacity=0.7,
-                                        showlegend=False,
-                                        name=f"Support {level:.2f}"
-                                    ))
-                                    fig_sr.add_annotation(
-                                        x=start_date,
-                                        y=level,
-                                        text=f"S: {level:.2f}",
-                                        showarrow=False,
-                                        yshift=-10,
-                                        font=dict(size=10, color='green')
+                                        x=data.index[-1],
+                                        y=label_y,
+                                        text=f"{label_prefix}{level:.2f}",
+                                        showarrow=True if label_y != level else False,
+                                        arrowhead=2,
+                                        arrowsize=1,
+                                        arrowwidth=1,
+                                        arrowcolor=line_color,
+                                        xshift=50,
+                                        font=dict(size=10, color=line_color),
+                                        xanchor='left'
                                     )
                                 fig_sr.update_layout(
                                     title={"text": "Support and Resistance Levels", "font": {"size": 30}},
@@ -3718,20 +3717,26 @@ if st.button("Get Data"):
                                 sr_col1, sr_col2 = st.columns([3,3])
                                 with sr_col1:
                                     msr_col1,msr_col2 = st.columns([3,3])
-                                    sorted_resistance = sorted(resistance_levels, key=lambda x: x[1], reverse=True)
-                                    sorted_support = sorted(support_levels, key=lambda x: x[1], reverse=True)
+                                    all_levels = [(date, level) for date, level in resistance_levels + support_levels]
+                                    all_levels = sorted(all_levels, key=lambda x: x[1], reverse=True)
                                     with msr_col1:
                                         ''
                                         ''
                                         st.subheader("Resistance Levels:")
-                                        for i, (date, level) in enumerate(sorted_resistance, 1):
-                                            st.write(f"R{i}: ${level:.2f}")
+                                        resistance_count = 1
+                                        for date, level in all_levels:
+                                            if current_price < level: 
+                                                st.write(f"R{resistance_count}: ${level:.2f}")
+                                                resistance_count += 1
                                     with msr_col2:
                                         ''
                                         ''
                                         st.subheader("Support Levels:")
-                                        for i, (date, level) in enumerate(sorted_support, 1):
-                                            st.write(f"S{i}: ${level:.2f}")
+                                        support_count = 1
+                                        for date, level in all_levels:
+                                            if current_price > level:  
+                                                st.write(f"S{support_count}: ${level:.2f}")
+                                                support_count += 1
                                 with sr_col2:
                                     ''
                                     ''
