@@ -480,12 +480,12 @@ def get_stock_data(ticker, apiKey=None):
             """
                     
             response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="deepseek-r1-distill-llama-70b",
                 messages=[
                     {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=1000,
+                max_tokens=2000,
                 temperature=0.7
             )
                     
