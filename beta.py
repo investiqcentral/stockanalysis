@@ -485,12 +485,15 @@ def get_stock_data(ticker, apiKey=None):
                     {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=2000,
+                max_tokens=100000,
                 temperature=0.7
             )
                     
             raw_response = response.choices[0].message.content
-            cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+            try:
+                cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+            except: 
+                cleaned_response = raw_response
             return cleaned_response
         analysis = analyze_stock()
     except Exception as e:
