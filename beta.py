@@ -485,7 +485,7 @@ def get_stock_data(ticker, apiKey=None):
                     {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=100,000,
+                max_tokens=100000,
                 temperature=0.7
             )
                     
