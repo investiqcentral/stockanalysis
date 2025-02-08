@@ -579,7 +579,7 @@ if st.button("Get Data"):
 ############################################# Tabs #############################################
 #############################################      #############################################
 
-        overview_data, comparison_data, statements_data, guru_checklist, insider_trades, technicalAnalysis_data, news_data = st.tabs (["Overview","Comparisons","Financial Statements","Guru Checklist","Insider Trades","Technical Analysis","Top News"])
+        overview_data, comparison_data, statements_data, guru_checklist, insider_trades, technicalAnalysis_data, news_data, ai_analysis = st.tabs (["Overview","Comparisons","Financial Statements","Guru Checklist","Insider Trades","Technical Analysis","Top News", "AI Analysis"])
 
 #############################################               #############################################
 ############################################# Overview Data #############################################
