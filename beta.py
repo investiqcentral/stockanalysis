@@ -489,7 +489,9 @@ def get_stock_data(ticker, apiKey=None):
                 temperature=0.7
             )
                     
-            return response.choices[0].message.content
+            raw_response = response.choices[0].message.content
+            cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+            return cleaned_response
         analysis = analyze_stock()
     except Exception as e:
         analysis = f"{e}"
