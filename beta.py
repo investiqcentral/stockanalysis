@@ -448,15 +448,87 @@ def get_stock_data(ticker, apiKey=None):
         ta_data_r.columns = ['Close', 'High', 'Low', 'Open', 'Volume']
     except: end_date = extended_data_r = macd_data_r = rsi_data_r = ta_data_r = ""
 
+    ##### Data Processing #####
+    try: change_dollar = price - previous_close
+    except: change_dollar = 'N/A'
+    try: change_percent = (change_dollar / previous_close) * 100
+    except: change_percent = 'N/A'
+    try: yf_mos = ((yf_targetprice - price)/yf_targetprice) * 100
+    except: yf_mos = 'N/A'
+    try: eps_yield = eps/price
+    except: eps_yield = 'N/A'
+    employee_value = 'N/A' if employee == 'N/A' else f'{employee:,}'
+    marketCap_value = 'N/A' if marketCap == 'N/A' else f'${marketCap/1000000:,.2f}'
+    sharesOutstanding_value = 'N/A' if sharesOutstanding == 'N/A' else f'{sharesOutstanding/1000000000:,.2f}B'
+    insiderPct_value = 'N/A' if insiderPct == 'N/A' else f'{insiderPct*100:,.2f}%'
+    institutionsPct_value = 'N/A' if institutionsPct == 'N/A' else f'{institutionsPct*100:,.2f}%'
+    eps_value = 'N/A' if eps == 'N/A' else f'{eps:,.2f}'
+    try: pegRatio_value = 'N/A' if pegRatio == 'N/A' else f'{pegRatio:,.2f}'
+    except: pegRatio_value = 'N/A'
+    beta_value = 'N/A' if beta == 'N/A' else f'{beta:.2f}'
+    roe_value = 'N/A' if roe == 'N/A' else f'{roe*100:.2f}%'
+    pe_value = 'N/A' if peRatio == 'N/A' else f'{peRatio:.2f}'
+    forwardPe_value = 'N/A' if forwardPe == 'N/A' else f'{forwardPe:.2f}'
+    pbRatio_value = 'N/A' if pbRatio == 'N/A' else f'{pbRatio:.2f}'
+    deRatio_value = 'N/A' if deRatio == 'N/A' else f'{deRatio/100:.2f}'
+    revenue_growth_current_value = 'N/A' if revenue_growth_current == 'N/A' else f'{revenue_growth_current*100:.2f}%'
+    if fcf == 'N/A' or revenue == 'N/A': fcf_margin = 'N/A'
+    else: fcf_margin = (fcf/revenue)
+    if grossmargin is None or grossmargin == 'N/A': grossmargin_value = 'N/A'
+    else:
+        try: grossmargin_value = float(grossmargin)
+        except ValueError: grossmargin_value = 'N/A'
+    if operatingmargin is None or operatingmargin == 'N/A': operatingmargin_value = 'N/A'
+    else:
+        try: operatingmargin_value = float(operatingmargin)
+        except ValueError: operatingmargin_value = 'N/A'
+    if profitmargin is None or profitmargin == 'N/A': profitmargin_value = 'N/A'
+    else:
+        try: profitmargin_value = float(profitmargin)
+        except ValueError: profitmargin_value = 'N/A'
+    if fcf_margin is None or fcf_margin == 'N/A': fcfmargin_value = 'N/A'
+    else:
+        try: fcfmargin_value = float(fcf_margin)
+        except ValueError: fcfmargin_value = 'N/A'
+    dividends_value = 'N/A' if dividends == 'N/A' else f'${dividends:,.2f}'
+    dividendYield_value = 'N/A' if dividendYield == 'N/A' else f'{dividendYield*100:.2f}%'
+    payoutRatio_value = 'N/A' if payoutRatio == 'N/A' else f'{payoutRatio:.2f}'
+    if exDividendDate == 'N/A': exDividendDate_value = 'N/A'
+    else: 
+        exDate = datetime.datetime.fromtimestamp(exDividendDate)
+        exDividendDate_value = exDate.strftime('%Y-%m-%d')
+    eps_yield_value = 'N/A' if eps_yield == 'N/A' else f'{eps_yield * 100:.2f}%'
+    sa_piotroski_value = 'N/A' if sa_piotroski == 'N/A' else float(sa_piotroski)
+    sa_altmanz_value = 'N/A' if sa_altmanz == 'N/A' else float(sa_altmanz)
+    totalEsg_value = 0.00 if totalEsg == 'N/A' else totalEsg
+    try: 
+        income_statement = income_statement_tb  
+        quarterly_income_statement = quarterly_income_statement_tb
+        ttm = quarterly_income_statement.iloc[:, :4].sum(axis=1)
+        income_statement.insert(0, 'TTM', ttm)
+        income_statement_flipped = income_statement.iloc[::-1]
+    except: income_statement_flipped =''
     try:
-        eps_yield = eps/price
-    except: eps_yield = "N/A"
-
+        balance_sheet = balance_sheet_tb
+        quarterly_balance_sheet = quarterly_balance_sheet_tb
+        ttm = quarterly_balance_sheet.iloc[:, :4].sum(axis=1)
+        balance_sheet.insert(0, 'TTM', ttm)
+        balance_sheet_flipped = balance_sheet.iloc[::-1]
+    except: balance_sheet_flipped = ''
+    try:
+        cashflow_statement = cashflow_statement_tb
+        quarterly_cashflow_statement = quarterly_cashflow_statement_tb
+        ttm = quarterly_cashflow_statement.iloc[:, :4].sum(axis=1)
+        cashflow_statement.insert(0, 'TTM', ttm)
+        cashflow_statement_flipped = cashflow_statement.iloc[::-1]
+    except: cashflow_statement_flipped = ''
+    ##### Data Processing End #####
+    
+    ##### AI Analysis #####
     try:
         api_key = st.secrets["GROQ_API_KEY"]
         client = Groq(api_key=api_key)
-        def analyze_stock():
-            prompt = f"""
+        summary_prompt = f"""
             Analyze the stock {upper_ticker} for both long-term and short-term investment potential. Use the following financial data:
             - Historical price data: {extended_data_r}
             - Key financial metrics: 
@@ -478,12 +550,22 @@ def get_stock_data(ticker, apiKey=None):
             5. Recommendations for when to buy (e.g., based on technical indicators or valuation).
             6. Separate conclusions for long-term and short-term investment strategies.
             """
-                    
+        income_statement_prompt = f"""
+            Analyze the income statement stored in the {income_statement_flipped}. Identify trends, anomalies, and key financial insights, including revenue growth, profitability trends, operating expenses, and net income fluctuations. Check for any irregularities such as declining revenue, increasing expenses, or margin compression. Provide a summary of key findings and any potential concerns or strengths.
+            """
+        balance_sheet_prompt = f"""
+            Analyze the balance sheet stored in the {balance_sheet_flipped}. Identify key financial insights, including liquidity (current ratio, quick ratio), leverage (debt-to-equity ratio), and asset efficiency. Highlight any significant trends, such as increasing debt, declining cash reserves, or changes in working capital. Summarize the findings and highlight potential strengths or risks.
+            """
+        cashflow_statement_prompt = f"""
+            Analyze the cash flow statement stored in the {cashflow_statement_flipped}. Identify trends and key financial insights, including operating cash flow, investing cash flow, and financing cash flow. Highlight any significant changes, such as declining operating cash flow, high capital expenditures, or unusual financing activities. Summarize the findings and highlight potential strengths or risks.
+            """
+
+        def analyze_stock(prompt_text):
             response = client.chat.completions.create(
                 model="deepseek-r1-distill-llama-70b",
                 messages=[
                     {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": prompt_text}
                 ],
                 max_tokens=100000,
                 temperature=0.7
@@ -495,11 +577,21 @@ def get_stock_data(ticker, apiKey=None):
             except: 
                 cleaned_response = raw_response
             return cleaned_response
-        analysis = analyze_stock()
+        summary_analysis = analyze_stock(summary_prompt)
+        income_statement_analysis = analyze_stock(income_statement_prompt)
+        balance_sheet_analysis = analyze_stock(balance_sheet_prompt)
+        cashflow_statement_analysis = analyze_stock(cashflow_statement_prompt)
+
+        analysis = {
+            'summary': summary_analysis,
+            'income': income_statement_analysis,
+            'balance' : balance_sheet_analysis,
+            'cashflow' : cashflow_statement_analysis
+        }
     except Exception as e:
         analysis = f"{e}"
     
-    return analysis, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey
+    return analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey
 
 ''
 ''
@@ -521,24 +613,14 @@ st.info('Data is sourced from Yahoo Finance, Morningstar, Seeking Alpha, Market 
 
 if st.button("Get Data"):
     try:
-        analysis, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey = get_stock_data(ticker, apiKey if apiKey.strip() else None)
+        analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey = get_stock_data(ticker, apiKey if apiKey.strip() else None)
      
 #############################################         #############################################
 ############################################# Profile #############################################
 #############################################         #############################################
 
         st.header(f'{name}', divider='gray')
-        
-        try: change_dollar = price - previous_close
-        except: change_dollar = 'N/A'
-        try: change_percent = (change_dollar / previous_close) * 100
-        except: change_percent = 'N/A'
-        try: yf_mos = ((yf_targetprice - price)/yf_targetprice) * 100
-        except: yf_mos = 'N/A'
-        ''
-        ''
-        employee_value = 'N/A' if employee == 'N/A' else f'{employee:,}'
-        marketCap_value = 'N/A' if marketCap == 'N/A' else f'${marketCap/1000000:,.2f}'
+    
         col1, col2, col3, col4 = st.columns([2, 1, 1, 3])
         with col1:
             #st.image(picture_url, width= 250)
@@ -550,13 +632,8 @@ if st.button("Get Data"):
                 """,unsafe_allow_html=True)
 
         with col3:
-            sharesOutstanding_value = 'N/A' if sharesOutstanding == 'N/A' else f'{sharesOutstanding/1000000000:,.2f}B'
             st.metric(label='Shares Outstanding', value=sharesOutstanding_value)
-
-            insiderPct_value = 'N/A' if insiderPct == 'N/A' else f'{insiderPct*100:,.2f}%'
             st.metric(label='Owned by Insiders', value=insiderPct_value)
-
-            institutionsPct_value = 'N/A' if institutionsPct == 'N/A' else f'{institutionsPct*100:,.2f}%'
             st.metric(label='Owned by Institutions', value=institutionsPct_value)
 
         st.markdown(f"<div style='text-align: justify;'>{longProfile}</div>", unsafe_allow_html=True)
@@ -591,47 +668,25 @@ if st.button("Get Data"):
 #############################################               #############################################
 
         with overview_data:
-
 #Stock Performance
             st.subheader('Stock Performance', divider='gray')
             cols = st.columns(5)
-            cols[0].metric(label='Current Price',value=f'${price:,.2f}',delta=f'{change_dollar:,.2f} ({change_percent:.2f}%)',delta_color='normal' )
-            
-            eps_value = 'N/A' if eps == 'N/A' else f'{eps:,.2f}'
+            cols[0].metric(label='Current Price',value=f'${price:,.2f}',delta=f'{change_dollar:,.2f} ({change_percent:.2f}%)',delta_color='normal')
             cols[1].metric(label='EPS (ttm)',value=eps_value)
-            
-            try:
-                pegRatio_value = 'N/A' if pegRatio == 'N/A' else f'{pegRatio:,.2f}'
-            except: 
-                pegRatio_value = 'N/A'
             cols[2].metric(label='PEG Ratio',value=pegRatio_value)
-            
-            beta_value = 'N/A' if beta == 'N/A' else f'{beta:.2f}'
             cols[3].metric(label='Beta',value=beta_value)
-
-            roe_value = 'N/A' if roe == 'N/A' else f'{roe*100:.2f}%'
             cols[4].metric(label='ROE',value=roe_value)
 
             cols1 = st.columns(5)
-            pe_value = 'N/A' if peRatio == 'N/A' else f'{peRatio:.2f}'
             cols1[0].metric(label='PE Ratio',value=pe_value)
-            
-            forwardPe_value = 'N/A' if forwardPe == 'N/A' else f'{forwardPe:.2f}'
             cols1[1].metric(label='Forward PE',value=forwardPe_value)
-            
-            pbRatio_value = 'N/A' if pbRatio == 'N/A' else f'{pbRatio:.2f}'
             cols1[2].metric(label='PB Ratio',value=pbRatio_value)
-            
-            deRatio_value = 'N/A' if deRatio == 'N/A' else f'{deRatio/100:.2f}'
             cols1[3].metric(label='DE Ratio',value=deRatio_value)
-
-            revenue_growth_current_value = 'N/A' if revenue_growth_current == 'N/A' else f'{revenue_growth_current*100:.2f}%'
             cols1[4].metric(label='Revenue Growth',value=revenue_growth_current_value)
 
             st.caption("Data source: Yahoo Finance")
             ''
  #Morning Star Research           
-            
             if apiKey is None:
                 #st.markdown("---")
                 st.warning('Certain information will be hidden due to unavailability of API key. Please input your API key to access the full data.')
@@ -683,16 +738,12 @@ if st.button("Get Data"):
                 cols = st.columns(3)
                 quant_rating_value = 'N/A' if quant_rating == 'N/A' else f'{quant_rating:.2f}'
                 cols[0].metric(label='Quant Rating',value=quant_rating_value)
-                
                 cols[1].metric(label='Growth Grade',value=growth_grade)
-                
                 cols[2].metric(label='Momentum Grade',value=momentum_grade)
 
                 cols = st.columns(3)
                 cols[0].metric(label='Profitability Grade',value=profitability_grade)
-                
                 cols[1].metric(label='Value Grade',value=value_grade)
-                
                 cols[2].metric(label='Yield on Cost Grade',value=yield_on_cost_grade)
                 ''
                 st.caption("Quant rating is a score from 1.0 to 5.0, where 1.0 is Strong Sell and 5.0 is Strong Buy.")
@@ -701,19 +752,10 @@ if st.button("Get Data"):
 
 #Margins data
             st.subheader('Margins', divider='gray')
-            if fcf == 'N/A' or revenue == 'N/A':
-                fcf_margin = 'N/A'
-            else: fcf_margin = (fcf/revenue)
+
             mgcol1, mgcol2, mgcol3, mgcol4 = st.columns([2,2,2,2])
             with mgcol1:
                 try:
-                    if grossmargin is None or grossmargin == 'N/A':
-                        grossmargin_value = 'N/A'
-                    else:
-                        try:
-                            grossmargin_value = float(grossmargin)
-                        except ValueError:
-                            grossmargin_value = 'N/A'
                     if grossmargin_value == 'N/A' or grossmargin_value <= 0:
                         rotate = 0
                         pie_values = [0, 1]
@@ -750,13 +792,6 @@ if st.button("Get Data"):
                     st.write("Failed to get data.")
             with mgcol2:
                 try:
-                    if operatingmargin is None or operatingmargin == 'N/A':
-                        operatingmargin_value = 'N/A'
-                    else:
-                        try:
-                            operatingmargin_value = float(operatingmargin)
-                        except ValueError:
-                            operatingmargin_value = 'N/A'
                     if operatingmargin_value == 'N/A' or operatingmargin_value <= 0:
                         rotate = 0
                         pie_values = [0, 1]
@@ -793,13 +828,6 @@ if st.button("Get Data"):
                     st.write("Failed to get data.")
             with mgcol3:
                 try:
-                    if profitmargin is None or profitmargin == 'N/A':
-                        profitmargin_value = 'N/A'
-                    else:
-                        try:
-                            profitmargin_value = float(profitmargin)
-                        except ValueError:
-                            profitmargin_value = 'N/A'
                     if profitmargin_value == 'N/A' or profitmargin_value <= 0:
                         rotate = 0
                         pie_values = [0, 1]
@@ -836,13 +864,6 @@ if st.button("Get Data"):
                     st.write("Failed to get data.")
             with mgcol4:
                 try:
-                    if fcf_margin is None or fcf_margin == 'N/A':
-                        fcfmargin_value = 'N/A'
-                    else:
-                        try:
-                            fcfmargin_value = float(fcf_margin)
-                        except ValueError:
-                            fcfmargin_value = 'N/A'
                     if fcfmargin_value == 'N/A' or fcfmargin_value <= 0:
                         rotate = 0
                         pie_values = [0, 1]
@@ -887,23 +908,10 @@ if st.button("Get Data"):
             else:
                 col1, col2 = st.columns([1, 3])
                 with col1:
-                    dividends_value = 'N/A' if dividends == 'N/A' else f'${dividends:,.2f}'
                     st.metric(label='Dividend per share',value=dividends_value)
-                    
-                    dividendYield_value = 'N/A' if dividendYield == 'N/A' else f'{dividendYield*100:.2f}%'
                     st.metric(label='Dividend Yield',value=dividendYield_value)
-                    
-                    payoutRatio_value = 'N/A' if payoutRatio == 'N/A' else f'{payoutRatio:.2f}'
                     st.metric(label='Payout Ratio',value=payoutRatio_value)
-
-                    if exDividendDate == 'N/A':
-                        exDividendDate_value = 'N/A'
-                    else:
-                        exDate = datetime.datetime.fromtimestamp(exDividendDate)
-                        exDividendDate_value = exDate.strftime('%Y-%m-%d')
                     st.metric(label='Ex-Dividend Date',value=exDividendDate_value)
-
-                    eps_yield_value = 'N/A' if eps_yield == 'N/A' else f'{eps_yield * 100:.2f}%'
                     st.metric(label='Earnings Yield',value=eps_yield_value)
 
                 with col2:
@@ -1187,7 +1195,6 @@ if st.button("Get Data"):
             try:
                 score_col1, score_col2 = st.columns([2,3])
                 with score_col1:
-                    sa_piotroski_value = 'N/A' if sa_piotroski == 'N/A' else float(sa_piotroski)
                     if sa_piotroski_value != 'N/A':
                         fig = go.Figure(go.Indicator(
                             mode="gauge",
@@ -1243,7 +1250,6 @@ if st.button("Get Data"):
             try:
                 score_col3, score_col4 = st.columns([2,3])
                 with score_col3:
-                    sa_altmanz_value = 'N/A' if sa_altmanz == 'N/A' else float(sa_altmanz)
                     if sa_altmanz_value != 'N/A':
                         fig = go.Figure(go.Indicator(
                             mode="gauge",
@@ -1361,7 +1367,6 @@ if st.button("Get Data"):
 #Risk gauge
 #Gauge Plot
             def plot_gauge():
-                totalEsg_value = 0.00 if totalEsg == 'N/A' else totalEsg
                 max_value = 100
                 gauge = go.Figure(go.Indicator(
                     mode="gauge+number",
@@ -1861,11 +1866,6 @@ if st.button("Get Data"):
             st.subheader("Income Statement (P&L)", divider ='gray')
             st.info("Notes: An income statement or profit and loss account shows the company's revenues and expenses during a particular period. It indicates how the revenues (also known as the “top line”) are transformed into the net income or net profit (the result after all revenues and expenses have been accounted for). The purpose of the income statement is to show managers and investors whether the company made money (profit) or lost money (loss) during the period being reported. It provides insight into a company’s operations, efficiency, management, and performance relative to others in the same sector.")
             try:
-                income_statement = income_statement_tb  
-                quarterly_income_statement = quarterly_income_statement_tb
-                ttm = quarterly_income_statement.iloc[:, :4].sum(axis=1)
-                income_statement.insert(0, 'TTM', ttm)
-                income_statement_flipped = income_statement.iloc[::-1]
                 formatted_columns = [col.strftime('%Y-%m-%d') if isinstance(col, pd.Timestamp) else col for col in income_statement_flipped.columns]
                 income_statement_flipped.columns = formatted_columns
                 st.dataframe(income_statement_flipped,use_container_width=True)
@@ -1926,19 +1926,17 @@ if st.button("Get Data"):
                 #         )
                 #     }, use_container_width=True
                 # )
+                st.caption("Data source: Yahoo Finance")
+                ''
+                st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
+                st.markdown(analysis['income'])
+                ''
             except: st.warning("Failed to get Income Statement.")
-            st.caption("Data source: Yahoo Finance")
-            ''
 
 #Balance Sheet
             st.subheader("Balance Sheet (Financial Position)", divider ='gray')
             st.info("Notes: A balance sheet is a financial statement that reports a company's assets, liabilities, and shareholder equity. It provides a snapshot of a company's finances (what it owns and owes) as of the date of publication. The balance sheet adheres to an equation that equates assets with the sum of liabilities and shareholder equity.")
             try:
-                balance_sheet = balance_sheet_tb
-                quarterly_balance_sheet = quarterly_balance_sheet_tb
-                ttm = quarterly_balance_sheet.iloc[:, :4].sum(axis=1)
-                balance_sheet.insert(0, 'TTM', ttm)
-                balance_sheet_flipped = balance_sheet.iloc[::-1]
                 formatted_columns2 = [col.strftime('%Y-%m-%d') if isinstance(col, pd.Timestamp) else col for col in balance_sheet_flipped.columns]
                 balance_sheet_flipped.columns = formatted_columns2
                 st.dataframe(balance_sheet_flipped,use_container_width=True)
@@ -1997,19 +1995,17 @@ if st.button("Get Data"):
                 #         )
                 #     }, use_container_width=True
                 # )
+                st.caption("Data source: Yahoo Finance")
+                ''
+                st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
+                st.markdown(analysis['balance'])
+                ''
             except: st.warning("Failed to get Balance Sheet.")
-            st.caption("Data source: Yahoo Finance")
-            ''
         
 #Cashflow Statement
             st.subheader("Cashflow Statement (CFS)", divider ='gray')
             st.info("Notes: A cash flow statement summarizes the amount of cash and cash equivalents entering and leaving a company. The CFS highlights a company's cash management, including how well it generates cash. This financial statement complements the balance sheet and the income statement. The main components of the CFS are cash from three areas: Operating activities, investing activities, and financing activities.")
-            cashflow_statement = cashflow_statement_tb
-            quarterly_cashflow_statement = quarterly_cashflow_statement_tb
             try:
-                ttm = quarterly_cashflow_statement.iloc[:, :4].sum(axis=1)
-                cashflow_statement.insert(0, 'TTM', ttm)
-                cashflow_statement_flipped = cashflow_statement.iloc[::-1]
                 formatted_columns3 = [col.strftime('%Y-%m-%d') if isinstance(col, pd.Timestamp) else col for col in cashflow_statement_flipped.columns]
                 cashflow_statement_flipped.columns = formatted_columns3
                 st.dataframe(cashflow_statement_flipped,use_container_width=True)
@@ -2069,9 +2065,12 @@ if st.button("Get Data"):
                 #         )
                 #     }, use_container_width=True
                 # )
+                st.caption("Data source: Yahoo Finance")
+                ''
+                st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
+                st.markdown(analysis['cashflow'])
+                ''
             except Exception as e: st.warning(f'Failed to get Cash Flow Statement.')
-            st.caption("Data source: Yahoo Finance")
-            ''
 
 #Financial Ratios
             st.subheader("Statistical Data Visualization", divider ='gray')
@@ -3866,7 +3865,7 @@ if st.button("Get Data"):
                 st.subheader("AI Stock Analysis", divider ='gray')
                 if upper_ticker:
                     with st.spinner('Analyzing stock data...'):
-                        st.markdown(analysis)
+                        st.markdown(analysis['summary'])
                         st.warning("This analysis, generated by AI, should not be the sole basis for investment decisions.")
             
     except Exception as e:
