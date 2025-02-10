@@ -550,24 +550,15 @@ def get_stock_data(ticker, apiKey=None):
             5. Recommendations for when to buy (e.g., based on technical indicators or valuation).
             6. Separate conclusions for long-term and short-term investment strategies.
             """
-        income_statement_prompt = f"""
-            Analyze the income statement stored in the {income_statement_flipped}. Identify trends, anomalies, and key financial insights, including revenue growth, profitability trends, operating expenses, and net income fluctuations. Check for any irregularities such as declining revenue, increasing expenses, or margin compression. Provide a summary of key findings and any potential concerns or strengths.
-            """
-        balance_sheet_prompt = f"""
-            Analyze the balance sheet stored in the {balance_sheet_flipped}. Identify key financial insights, including liquidity (current ratio, quick ratio), leverage (debt-to-equity ratio), and asset efficiency. Highlight any significant trends, such as increasing debt, declining cash reserves, or changes in working capital. Summarize the findings and highlight potential strengths or risks.
-            """
-        cashflow_statement_prompt = f"""
-            Analyze the cash flow statement stored in the {cashflow_statement_flipped}. Identify trends and key financial insights, including operating cash flow, investing cash flow, and financing cash flow. Highlight any significant changes, such as declining operating cash flow, high capital expenditures, or unusual financing activities. Summarize the findings and highlight potential strengths or risks.
-            """
 
-        def analyze_stock(prompt_text):
+        def analyze_stock(prompt_text, tokens):
             response = client.chat.completions.create(
                 model="deepseek-r1-distill-llama-70b",
                 messages=[
                     {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
                     {"role": "user", "content": prompt_text}
                 ],
-                max_tokens=100000,
+                max_tokens= tokens,
                 temperature=0.7
             )
                     
@@ -577,21 +568,57 @@ def get_stock_data(ticker, apiKey=None):
             except: 
                 cleaned_response = raw_response
             return cleaned_response
-        summary_analysis = analyze_stock(summary_prompt)
-        income_statement_analysis = analyze_stock(income_statement_prompt)
-        balance_sheet_analysis = analyze_stock(balance_sheet_prompt)
-        cashflow_statement_analysis = analyze_stock(cashflow_statement_prompt)
-
+        summary_analysis = analyze_stock(summary_prompt,100000)
         analysis = {
             'summary': summary_analysis,
+        }
+    except Exception as e:
+        analysis = ""
+
+    #
+    try:
+        api_key = st.secrets["GROQ_API_KEY2"]
+        client = Groq(api_key=api_key)
+        income_statement_prompt = f"""
+            Analyze the income statement stored in the {income_statement_flipped}. Identify trends, anomalies, and key financial insights, including revenue growth, profitability trends, operating expenses, and net income fluctuations. Check for any irregularities such as declining revenue, increasing expenses, or margin compression. Provide a summary of key findings and any potential concerns or strengths. Describe all of them as a short note.
+            """
+        balance_sheet_prompt = f"""
+            Analyze the balance sheet stored in the {balance_sheet_flipped}. Identify key financial insights, including liquidity (current ratio, quick ratio), leverage (debt-to-equity ratio), and asset efficiency. Highlight any significant trends, such as increasing debt, declining cash reserves, or changes in working capital. Summarize the findings and highlight potential strengths or risks. Describe all of them as a short note.
+            """
+        cashflow_statement_prompt = f"""
+            Analyze the cash flow statement stored in the {cashflow_statement_flipped}. Identify trends and key financial insights, including operating cash flow, investing cash flow, and financing cash flow. Highlight any significant changes, such as declining operating cash flow, high capital expenditures, or unusual financing activities. Summarize the findings and highlight potential strengths or risks. Describe all of them as a short note.
+            """
+
+        def analyze_stock2(prompt_text, tokens):
+            response = client.chat.completions.create(
+                model="deepseek-r1-distill-llama-70b",
+                messages=[
+                    {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
+                    {"role": "user", "content": prompt_text}
+                ],
+                max_tokens= tokens,
+                temperature=0.7
+            )
+                    
+            raw_response = response.choices[0].message.content
+            try:
+                cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+            except: 
+                cleaned_response = raw_response
+            return cleaned_response
+        income_statement_analysis = analyze_stock2(income_statement_prompt,1000)
+        balance_sheet_analysis = analyze_stock2(balance_sheet_prompt,1000)
+        cashflow_statement_analysis = analyze_stock2(cashflow_statement_prompt,1000)
+
+        analysis2 = {
             'income': income_statement_analysis,
             'balance' : balance_sheet_analysis,
             'cashflow' : cashflow_statement_analysis
         }
     except Exception as e:
-        analysis = f"{e}"
+        analysis2 = ""
     
-    return analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey
+    return analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey
 
 ''
 ''
@@ -613,7 +640,7 @@ st.info('Data is sourced from Yahoo Finance, Morningstar, Seeking Alpha, Market 
 
 if st.button("Get Data"):
     try:
-        analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey = get_stock_data(ticker, apiKey if apiKey.strip() else None)
+        analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey = get_stock_data(ticker, apiKey if apiKey.strip() else None)
      
 #############################################         #############################################
 ############################################# Profile #############################################
@@ -952,23 +979,23 @@ if st.button("Get Data"):
                 earnings_data = earnings_data[~earnings_data.index.duplicated(keep='first')]
                 with ecol1:
                     if 'epsEstimate' in earnings_data.columns and 'epsActual' in earnings_data.columns:
-                        df = earnings_data.reset_index().melt(id_vars=['index'], value_vars=['epsEstimate', 'epsActual'], var_name='variable', value_name='value')
-                        df['index'] = df['index'].dt.strftime('%Y-%m-%d')
+                        df = earnings_data.reset_index().melt(id_vars=['quarter'], value_vars=['epsEstimate', 'epsActual'], var_name='variable', value_name='value')
+                        df['quarter'] = pd.to_datetime(df['quarter']).dt.strftime('%Y-%m-%d')
                         actual_data = df[df['variable'] == 'epsActual']
                         estimate_data = df[df['variable'] == 'epsEstimate']
                         bar = go.Bar(
-                            x=actual_data['index'],  
+                            x=actual_data['quarter'],  
                             y=actual_data['value'],
                             name='Actual',
                             marker=dict(color='#FFCE54'),
                         )
                         estimate = go.Scatter(
-                            x=estimate_data['index'],
+                            x=estimate_data['quarter'], 
                             y=estimate_data['value'],
                             mode='markers+lines',
                             name='Estimate',
-                            marker=dict(color='red', size=10), 
-                            line=dict(width=3) 
+                            marker=dict(color='red', size=10),
+                            line=dict(width=3)
                         )
                         fig = go.Figure(data=[bar, estimate])
                         fig.update_layout(
@@ -1094,7 +1121,9 @@ if st.button("Get Data"):
                             )
                             st.plotly_chart(figg, use_container_width=True)
                         except: st.write("Failed to get EPS trend.")
-            except: st.write("Failed to get earnings data.")
+            except Exception as e: 
+                st.write("Failed to get earnings data.")
+                st.write(e)
             st.caption("Data source: Yahoo Finance")
 
 #Estimate Data
@@ -1929,7 +1958,7 @@ if st.button("Get Data"):
                 st.caption("Data source: Yahoo Finance")
                 ''
                 st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
-                st.markdown(analysis['income'])
+                st.markdown(analysis2['income'])
                 ''
             except: st.warning("Failed to get Income Statement.")
 
@@ -1998,7 +2027,7 @@ if st.button("Get Data"):
                 st.caption("Data source: Yahoo Finance")
                 ''
                 st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
-                st.markdown(analysis['balance'])
+                st.markdown(analysis2['balance'])
                 ''
             except: st.warning("Failed to get Balance Sheet.")
         
@@ -2068,7 +2097,7 @@ if st.button("Get Data"):
                 st.caption("Data source: Yahoo Finance")
                 ''
                 st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
-                st.markdown(analysis['cashflow'])
+                st.markdown(analysis2['cashflow'])
                 ''
             except Exception as e: st.warning(f'Failed to get Cash Flow Statement.')
 
@@ -2739,6 +2768,9 @@ if st.button("Get Data"):
                 #st.write(netincome_value)
                 #st.write(f'Longterm Debt: {lt_debt_result}')
                 # EPS
+                eps_select = ['Diluted EPS']
+                eps_values = income_statement_flipped.loc[eps_select].fillna(0).values.flatten()
+                eps_values = [float(eps_value) for eps_value in eps_values]
                 eps_current = float(eps_values[0])
                 no_negative_earnings = all(eps >= 0 for eps in eps_values)
                 generally_increasing = all(eps_values[i] >= eps_values[i+1] for i in range(len(eps_values) - 1))
@@ -3098,7 +3130,7 @@ if st.button("Get Data"):
                     st.image(guru_logo_url2,width=300)
                 with guru_col9:
                     st.dataframe(df_peterlynch.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
-            except:
+            except Exception as e:
                 st.warning("Guru checklist is currently unavailable.")
 
 #############################################                #############################################
