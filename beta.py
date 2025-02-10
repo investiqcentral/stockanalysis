@@ -580,13 +580,13 @@ def get_stock_data(ticker, apiKey=None):
         api_key = st.secrets["GROQ_API_KEY2"]
         client = Groq(api_key=api_key)
         income_statement_prompt = f"""
-            Analyze the income statement stored in the {income_statement_flipped}. Identify trends, anomalies, and key financial insights, including revenue growth, profitability trends, operating expenses, and net income fluctuations. Check for any irregularities such as declining revenue, increasing expenses, or margin compression. Provide a summary of key findings and any potential concerns or strengths. Describe all of them as a short note.
+            Analyze {income_statement_flipped}. Identify revenue growth, profit margins, expense trends, and net income changes. Highlight strengths, risks, or anomalies like declining revenue, rising costs, or margin compression. Provide a brief summary with 100 words-limit.
             """
         balance_sheet_prompt = f"""
-            Analyze the balance sheet stored in the {balance_sheet_flipped}. Identify key financial insights, including liquidity (current ratio, quick ratio), leverage (debt-to-equity ratio), and asset efficiency. Highlight any significant trends, such as increasing debt, declining cash reserves, or changes in working capital. Summarize the findings and highlight potential strengths or risks. Describe all of them as a short note.
+            Analyze {balance_sheet_flipped}. Assess liquidity (current ratio), leverage (debt-to-equity), and asset efficiency. Identify trends like rising debt, declining cash, or working capital issues. Summarize key strengths and risks with 100 words-limit.
             """
         cashflow_statement_prompt = f"""
-            Analyze the cash flow statement stored in the {cashflow_statement_flipped}. Identify trends and key financial insights, including operating cash flow, investing cash flow, and financing cash flow. Highlight any significant changes, such as declining operating cash flow, high capital expenditures, or unusual financing activities. Summarize the findings and highlight potential strengths or risks. Describe all of them as a short note.
+            Analyze {cashflow_statement_flipped}. Examine operating, investing, and financing cash flows. Identify trends in cash generation, CapEx, debt repayments, or reliance on financing. Summarize key strengths and risks briefly with 100 words-limit.
             """
 
         def analyze_stock2(prompt_text, tokens):
