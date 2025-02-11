@@ -653,8 +653,64 @@ def get_stock_data(ticker, apiKey=None):
         }
     except Exception as e:
         analysis2 = ""
+
+    try:
+        api_key = st.secrets["GROQ_API_KEY3"]
+        client = Groq(api_key=api_key)
+        snowflake_prompt = f"""
+            Analyze the stock {upper_ticker} and rate each category on a scale of 1 to 5 (where 1 is worst and 5 is best). Use the following financial data:
+            - Historical price data: {extended_data_r}
+            - Key financial metrics: 
+                - Valuation: P/E Ratio = {peRatio}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}
+                - Profitability: Net profit margin = {profitmargin}, ROE = {roe}, ROA = {roa}, Gross margin = {grossmargin}
+                - Growth: Revenue growth = {revenue_growth}, Earnings growth = {earnings_growth}
+                - Financial health: Debt-to-equity = {deRatio}, Current ratio = {current_ratio}, Quick ratio = {quick_ratio}
+                - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin}
+                - Dividends: Dividend yield = {dividendYield}, Dividend payout ratio = {payoutRatio}
+            - Income Statement data: {income_statement_tb}
+            - Balance Sheet data: {balance_sheet_tb}
+            - Cashflow Statement data: {cashflow_statement_tb}
+                    
+            Provide ONLY these 5 numbers in the exact format below (no other text):
+            stock_current_price_valuation:X
+            future_performance:X
+            past_performance:X
+            company_health:X
+            dividend:X
+
+            Each rating must be an integer between 1 and 5, where:
+            5 = Excellent
+            4 = Good
+            3 = Average
+            2 = Below Average
+            1 = Poor
+            """
+
+        def analyze_stock3(prompt_text, tokens):
+            response = client.chat.completions.create(
+                model="deepseek-r1-distill-llama-70b",
+                messages=[
+                    {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
+                    {"role": "user", "content": prompt_text}
+                ],
+                max_tokens= tokens,
+                temperature=0.7
+            )
+                    
+            raw_response = response.choices[0].message.content
+            try:
+                cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+            except: 
+                cleaned_response = raw_response
+            return cleaned_response
+        snowflake_analysis = analyze_stock3(snowflake_prompt,1000)
+        analysis3 = {
+            'snowflakes': snowflake_analysis,
+        }
+    except Exception as e:
+        analysis3 = ""
     
-    return analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey
+    return analysis3, analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey
 
 ''
 ''
@@ -676,7 +732,7 @@ st.info('Data is sourced from Yahoo Finance, Morningstar, Seeking Alpha, Market 
 
 if st.button("Get Data"):
     try:
-        analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey = get_stock_data(ticker, apiKey if apiKey.strip() else None)
+        analysis3, analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey = get_stock_data(ticker, apiKey if apiKey.strip() else None)
      
 #############################################         #############################################
 ############################################# Profile #############################################
@@ -829,7 +885,7 @@ if st.button("Get Data"):
                         annotation_text = f"{grossmargin_value * 100:.1f}%"
                     fig = go.Figure(go.Pie(
                         values=pie_values,
-                        labels=["Operating Margin", "Remaining"],
+                        labels=["Gross Margin", "Remaining"],
                         hole=0.7,
                         marker=dict(colors=["#4FC1E9", "#d3d3d3"]),
                         textinfo="none",
@@ -901,7 +957,7 @@ if st.button("Get Data"):
                         annotation_text = f"{profitmargin_value * 100:.1f}%"
                     fig = go.Figure(go.Pie(
                         values=pie_values,
-                        labels=["Operating Margin", "Remaining"],
+                        labels=["Profit Margin", "Remaining"],
                         hole=0.7,
                         marker=dict(colors=["#FFCE54", "#d3d3d3"]),
                         textinfo="none",
@@ -937,7 +993,7 @@ if st.button("Get Data"):
                         annotation_text = f"{fcfmargin_value * 100:.1f}%"
                     fig = go.Figure(go.Pie(
                         values=pie_values,
-                        labels=["Operating Margin", "Remaining"],
+                        labels=["FCF Margin", "Remaining"],
                         hole=0.7,
                         marker=dict(colors=["#ED5565", "#d3d3d3"]),
                         textinfo="none",
@@ -1474,7 +1530,7 @@ if st.button("Get Data"):
                 st.caption("Social Risk: This measures the company’s relationships with employees, suppliers, customers, and the community. e.g. human rights, labor practices, diversity, and community engagement.")
                 st.caption("Governance Risk: this focuses on the company’s leadership, audit practices, internal controls, and shareholder rights. e.g. transparent financial reporting and strong board oversight.")
             st.caption("Data source: Yahoo Finance")
-
+            
 #############################################            #############################################
 ############################################# Comparison #############################################
 #############################################            #############################################
@@ -3946,14 +4002,73 @@ if st.button("Get Data"):
 
         with ai_analysis:
                 st.subheader("AI Stock Analysis", divider ='gray')
-                if upper_ticker:
-                    with st.spinner('Analyzing stock data...'):
-                        cleaned_text = analysis['summary'].replace('\\n', '\n').replace('\\', '')
-                        special_chars = ['$', '>', '<', '`', '|', '[', ']', '(', ')', '+', '{', '}', '!', '&']
-                        for char in special_chars:
-                            cleaned_text = cleaned_text.replace(char, f"\\{char}")
-                        st.markdown(cleaned_text, unsafe_allow_html=True)
-                        st.warning("This analysis, generated by AI, should not be the sole basis for investment decisions.")
+                aicol1, aicol2 = st.columns([3,2])
+                with aicol2:
+                    try:
+                        response_text = analysis3['snowflakes']
+                        ratings_dict = {}
+                        for line in response_text.strip().split('\n'):
+                            if ':' in line:
+                                category, value = line.split(':')
+                                ratings_dict[category.strip()] = int(value.strip())
+                        stock_current_value = ratings_dict.get('stock_current_value', 0)
+                        future_performance = ratings_dict.get('future_performance', 0)
+                        past_performance = ratings_dict.get('past_performance', 0)
+                        company_health = ratings_dict.get('company_health', 0)
+                        dividend = ratings_dict.get('dividend', 0)
+                        radfig = go.Figure()
+                        radfig.add_trace(go.Scatterpolar(
+                            r=[stock_current_value, future_performance, past_performance, company_health, dividend],
+                            theta=['Stock Current Value', 'Future Performance', 'Past Performance', 'Company Health', 'Dividend'],
+                            fill='toself',
+                            name='Stock Analysis'
+                        ))
+                        radfig.update_layout(
+                            polar=dict(
+                                radialaxis=dict(
+                                    visible=True,
+                                    range=[0, 5],
+                                    showticklabels=False,
+                                ),
+                                bgcolor='rgba(0,0,0,0)'
+                            ),
+                            showlegend=False,
+                            #title='Stock Analysis Ratings'
+                            #paper_bgcolor='rgba(0,0,0,0)'
+                        )
+                        st.plotly_chart(radfig)
+                    except Exception as e:
+                        st.write("")
+                    ''
+                    ai_subcol = st.columns(2)
+                    ai_subcol[0].metric(label='Current Price',value=f'${price:,.2f}')
+                    ai_subcol[1].metric(label='PE Ratio',value=pe_value)
+                    
+                    ai_subcol2 = st.columns(2)
+                    ai_subcol2[0].metric(label='EPS (ttm)',value=eps_value)
+                    ai_subcol2[1].metric(label='DE Ratio',value=deRatio_value)
+        
+                    ai_subcol3 = st.columns(2)
+                    ai_subcol3[0].metric(label='ROE',value=roe_value)
+                    ai_subcol3[1].metric(label='Revenue Growth',value=revenue_growth_current_value)
+
+                    ai_subcol4 = st.columns(2)
+                    ai_subcol4[0].metric(label='Gross Margin',value=f"{grossmargin_value * 100:.1f}%")
+                    ai_subcol4[1].metric(label='Profit Margin',value=f"{profitmargin_value * 100:.1f}%")
+                    
+                with aicol1:
+                    try:
+                        if upper_ticker:
+                            with st.spinner('Analyzing stock data...'):
+                                cleaned_text = analysis['summary'].replace('\\n', '\n').replace('\\', '')
+                                special_chars = ['$', '>', '<', '`', '|', '[', ']', '(', ')', '+', '{', '}', '!', '&']
+                                for char in special_chars:
+                                    cleaned_text = cleaned_text.replace(char, f"\\{char}")
+                                st.markdown(cleaned_text, unsafe_allow_html=True)
+                    except Exception as e:
+                        st.warning("AI analysis is currently unavailable.")
+                            
+                st.warning("This analysis, generated by AI, should not be the sole basis for investment decisions.")
             
     except Exception as e:
         st.error(f"Failed to fetch data. Please check your ticker again.")
