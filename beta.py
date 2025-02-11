@@ -580,13 +580,49 @@ def get_stock_data(ticker, apiKey=None):
         api_key = st.secrets["GROQ_API_KEY2"]
         client = Groq(api_key=api_key)
         income_statement_prompt = f"""
-            Analyze {income_statement_flipped}. Identify revenue growth, profit margins, expense trends, and net income changes. Highlight strengths, risks, or anomalies like declining revenue, rising costs, or margin compression. Provide a brief summary with 100 words-limit.
+            You are a financial analyst. Analyze the provided Income Statement Data using {income_statement_flipped} and evaluate the following criteria:
+            1. Revenue Growth: the revenue should consistently grow year over year.
+            2. Gross Margin: the gross margin should not be declining and should be stable, or increasing.
+            3. Operating Expenses: The expenses should not be rising faster than revenue.
+            4. Operating Margin: the operating costs should not be rising.
+            5. Non-Operating Expenses: non-operating expenses should not be rising.
+            6. Net Profit Margin: net profit margin should consistently grow year over year.
+            7. EPS Growth: EPS should be positive and growing.
+            
+            Final Evaluation:
+            Based on the analysis, determine whether the company's financial position is strong, stable, or weak for investment. Highlight key risks, strengths, or potential red flags that investors should consider.
             """
+            
         balance_sheet_prompt = f"""
-            Analyze {balance_sheet_flipped}. Assess liquidity (current ratio), leverage (debt-to-equity), and asset efficiency. Identify trends like rising debt, declining cash, or working capital issues. Summarize key strengths and risks with 100 words-limit.
+            You are a financial analyst. Analyze the provided Balance Sheet Data using {balance_sheet_flipped} and evaluate the following criteria:
+            1. Cash & Debt: company should have more cash than total debt.
+            2. Accounts Receivable: there should not be accounts receivable.
+            3. Inventory: there should not be inventory.
+            4. Current Liabilities: current liabilities should be less than cash. 
+            5. Short-term or Long-term Debt: there should not be not much short-term or long-term debt.
+            6. Goodwill: should be less than 10% of total assets.
+            7. Preferred Stocks: there should not be preferred stock.
+            8. Retained Earnings: should be positive & growing.
+            9. Treasury Stock: should exist.
+            
+            Final Evaluation:
+            Based on this analysis, evaluate the company's financial health, highlighting key strengths, risks, and whether the balance sheet reflects a strong position for investment.
             """
+        
         cashflow_statement_prompt = f"""
-            Analyze {cashflow_statement_flipped}. Examine operating, investing, and financing cash flows. Identify trends in cash generation, CapEx, debt repayments, or reliance on financing. Summarize key strengths and risks briefly with 100 words-limit.
+            You are a financial analyst. Analyze the provided Cash Flow Statement Data using {cashflow_statement_flipped} and evaluate the following criteria:
+            1. Net Income: Should be positive and growing.
+            2. Stock-Based Compensation: Should be less than 10% of Net Income.
+            3. Operating Cash Flow: Should be higher than Net Income.
+            4. Free Cash Flow: Should be higher than Net Income.
+            5. Capital Expenditures: Should be less than 25% of Net Income.
+            6. Debt Management: The company should show a reduction in debt.
+            7. Stock Buybacks: There should be stock repurchases.
+            8. Dividends: The company should be paying dividends.
+            9. Cash Balance: Should be increasing.
+            
+            Final Evaluation:
+            Based on this analysis, provide an evaluation of the company’s cash flow strength, financial flexibility, and overall sustainability for investment. Highlight any risks or positive indicators.
             """
 
         def analyze_stock2(prompt_text, tokens):
@@ -606,9 +642,9 @@ def get_stock_data(ticker, apiKey=None):
             except: 
                 cleaned_response = raw_response
             return cleaned_response
-        income_statement_analysis = analyze_stock2(income_statement_prompt,1000)
-        balance_sheet_analysis = analyze_stock2(balance_sheet_prompt,1000)
-        cashflow_statement_analysis = analyze_stock2(cashflow_statement_prompt,1000)
+        income_statement_analysis = analyze_stock2(income_statement_prompt,2000)
+        balance_sheet_analysis = analyze_stock2(balance_sheet_prompt,2000)
+        cashflow_statement_analysis = analyze_stock2(cashflow_statement_prompt,2000)
 
         analysis2 = {
             'income': income_statement_analysis,
@@ -2342,9 +2378,9 @@ if st.button("Get Data"):
                     color ='#AAB2BD'
                 return f'background-color: {color}; color: white'
 
-            st.subheader("Financial Statements Checklist", divider ='gray')
-            st.caption("These checklists are derived from the concepts outlined by Brian Feroldi for analyzing financial statements.")
-            st.info("Many companies may have valid reasons to violate these rules. Every negative result should be re-examined to understand the underlying reasons for its occurrence.")
+            #st.subheader("Financial Statements Checklist", divider ='gray')
+            #st.caption("These checklists are derived from the concepts outlined by Brian Feroldi for analyzing financial statements.")
+            #st.info("Many companies may have valid reasons to violate these rules. Every negative result should be re-examined to understand the underlying reasons for its occurrence.")
             fscol1, fscol2, fscol3 =st.columns([3,3,3])
             with fscol1:
                 # growth rate drop check
@@ -2449,7 +2485,7 @@ if st.button("Get Data"):
                 {"Income Statment Checklist": "Sudden decline of tax rate should not exist", "Result": tax_rate_result}
                 ]
                 df_income = pd.DataFrame(income_checklist_data)
-                st.dataframe(df_income.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
+                #st.dataframe(df_income.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
             
             with fscol2:
                 #cash and debt ####### #Total Debt and Current Assets
@@ -2629,7 +2665,7 @@ if st.button("Get Data"):
                 {"Balance Sheet Checklist": "Deferred revenue should exist", "Result": deferredRevenue_result}
                 ]
                 df_balance = pd.DataFrame(balance_checklist_data)
-                st.dataframe(df_balance.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
+                #st.dataframe(df_balance.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
 
             with fscol3:
                 # net income
@@ -2751,7 +2787,7 @@ if st.button("Get Data"):
                 {"Cash Flow Statement Checklist": "Change in cash should be increasing", "Result": 'GOOD' if cic_result else 'BAD'}
                 ]
                 df_cash_flow = pd.DataFrame(cash_flow_checklist_data)
-                st.dataframe(df_cash_flow.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
+                #st.dataframe(df_cash_flow.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
 
 
 #############################################                    #############################################
