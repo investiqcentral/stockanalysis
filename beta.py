@@ -17,7 +17,7 @@ from groq import Groq
 st.set_page_config(page_title='US Stock Analysis Tool', layout='wide', page_icon="./Image/logo.png")
 
 @st.cache_data(ttl=3600)
-def get_stock_data(ticker, apiKey=None):
+def get_stock_data(ticker, apiKey=None, use_ai=True):
 
     stock = yf.Ticker(ticker)
     lowercase_ticker = ticker.lower()
@@ -529,190 +529,195 @@ def get_stock_data(ticker, apiKey=None):
     ##### Data Processing End #####
     
     ##### AI Analysis #####
-    try:
-        api_key = st.secrets["GROQ_API_KEY"]
-        client = Groq(api_key=api_key)
-        summary_prompt = f"""
-            Analyze the stock {upper_ticker} for both long-term and short-term investment potential. Use the following financial data:
-            - Historical price data: {extended_data_r}
-            - Key financial metrics: 
-                - Valuation: P/E Ratio = {peRatio}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}
-                - Profitability: Net profit margin = {profitmargin}, ROE = {roe}, ROA = {roa}, Gross margin = {grossmargin}
-                - Growth: Revenue growth = {revenue_growth}, Earnings growth = {earnings_growth}
-                - Financial health: Debt-to-equity = {deRatio}, Current ratio = {current_ratio}, Quick ratio = {quick_ratio}
-                - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin}
-                - Dividends: Dividend yield = {dividendYield}, Dividend payout ratio = {payoutRatio}
-            - Income Statement data: {income_statement_tb}
-            - Balance Sheet data: {balance_sheet_tb}
-            - Cashflow Statement data: {cashflow_statement_tb}
-                    
-            Provide:
-            1. A summary of whether the stock is good to invest in or not.
-            2. Key fundamental analysis metrics (e.g., P/E ratio, revenue growth, debt-to-equity).
-            3. Key technical analysis insights (e.g., moving averages, RSI, support/resistance levels).
-            4. Sentiment analysis based on news and social media.
-            5. Recommendations for when to buy (e.g., based on technical indicators or valuation).
-            6. Separate conclusions for long-term and short-term investment strategies.
-            """
-
-        def analyze_stock(prompt_text, tokens):
-            response = client.chat.completions.create(
-                model="deepseek-r1-distill-llama-70b",
-                messages=[
-                    {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
-                    {"role": "user", "content": prompt_text}
-                ],
-                max_tokens= tokens,
-                temperature=0.7
-            )
-                    
-            raw_response = response.choices[0].message.content
-            try:
-                cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
-            except: 
-                cleaned_response = raw_response
-            return cleaned_response
-        summary_analysis = analyze_stock(summary_prompt,100000)
-        analysis = {
-            'summary': summary_analysis,
-        }
-    except Exception as e:
-        analysis = ""
-
-    #
-    try:
-        api_key = st.secrets["GROQ_API_KEY2"]
-        client = Groq(api_key=api_key)
-        income_statement_prompt = f"""
-            You are a financial analyst. Analyze the provided Income Statement Data using {income_statement_flipped} and evaluate the following criteria:
-            1. Revenue Growth: the revenue should consistently grow year over year.
-            2. Gross Margin: the gross margin should not be declining and should be stable, or increasing.
-            3. Operating Expenses: The expenses should not be rising faster than revenue.
-            4. Operating Margin: the operating costs should not be rising.
-            5. Non-Operating Expenses: non-operating expenses should not be rising.
-            6. Net Profit Margin: net profit margin should consistently grow year over year.
-            7. EPS Growth: EPS should be positive and growing.
+    analysis = ""
+    analysis2 = ""
+    analysis3 = ""
+    if use_ai:
+        try:
+            api_key = st.secrets["GROQ_API_KEY"]
+            client = Groq(api_key=api_key)
+            summary_prompt = f"""
+                Analyze the stock {upper_ticker} for both long-term and short-term investment potential. Use the following financial data:
+                - Historical price data: {extended_data_r}
+                - Key financial metrics: 
+                    - Valuation: P/E Ratio = {peRatio}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}
+                    - Profitability: Net profit margin = {profitmargin}, ROE = {roe}, ROA = {roa}, Gross margin = {grossmargin}
+                    - Growth: Revenue growth = {revenue_growth}, Earnings growth = {earnings_growth}
+                    - Financial health: Debt-to-equity = {deRatio}, Current ratio = {current_ratio}, Quick ratio = {quick_ratio}
+                    - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin}
+                    - Dividends: Dividend yield = {dividendYield}, Dividend payout ratio = {payoutRatio}
+                - Income Statement data: {income_statement_tb}
+                - Balance Sheet data: {balance_sheet_tb}
+                - Cashflow Statement data: {cashflow_statement_tb}
+                        
+                Provide:
+                1. A summary of whether the stock is good to invest in or not.
+                2. Key fundamental analysis metrics (e.g., P/E ratio, revenue growth, debt-to-equity).
+                3. Key technical analysis insights (e.g., moving averages, RSI, support/resistance levels).
+                4. Sentiment analysis based on news and social media.
+                5. Recommendations for when to buy (e.g., based on technical indicators or valuation).
+                6. Separate conclusions for long-term and short-term investment strategies.
+                """
+    
+            def analyze_stock(prompt_text, tokens):
+                response = client.chat.completions.create(
+                    model="deepseek-r1-distill-llama-70b",
+                    messages=[
+                        {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
+                        {"role": "user", "content": prompt_text}
+                    ],
+                    max_tokens= tokens,
+                    temperature=0.7
+                )
+                        
+                raw_response = response.choices[0].message.content
+                try:
+                    cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+                except: 
+                    cleaned_response = raw_response
+                return cleaned_response
+            summary_analysis = analyze_stock(summary_prompt,100000)
+            analysis = {
+                'summary': summary_analysis,
+            }
+        except Exception as e:
+            analysis = ""
+    
+        #
+        try:
+            api_key = st.secrets["GROQ_API_KEY2"]
+            client = Groq(api_key=api_key)
+            income_statement_prompt = f"""
+                You are a financial analyst. Analyze the provided Income Statement Data using {income_statement_flipped} and evaluate the following criteria:
+                1. Revenue Growth: the revenue should consistently grow year over year.
+                2. Gross Margin: the gross margin should not be declining and should be stable, or increasing.
+                3. Operating Expenses: The expenses should not be rising faster than revenue.
+                4. Operating Margin: the operating costs should not be rising.
+                5. Non-Operating Expenses: non-operating expenses should not be rising.
+                6. Net Profit Margin: net profit margin should consistently grow year over year.
+                7. EPS Growth: EPS should be positive and growing.
+                
+                Final Evaluation:
+                Based on the analysis, determine whether the company's financial position is strong, stable, or weak for investment. Highlight key risks, strengths, or potential red flags that investors should consider.
+                """
+                
+            balance_sheet_prompt = f"""
+                You are a financial analyst. Analyze the provided Balance Sheet Data using {balance_sheet_flipped} and evaluate the following criteria:
+                1. Cash & Debt: company should have more cash than total debt.
+                2. Accounts Receivable: there should not be accounts receivable.
+                3. Inventory: there should not be inventory.
+                4. Current Liabilities: current liabilities should be less than cash. 
+                5. Short-term or Long-term Debt: there should not be not much short-term or long-term debt.
+                6. Goodwill: should be less than 10% of total assets.
+                7. Preferred Stocks: there should not be preferred stock.
+                8. Retained Earnings: should be positive & growing.
+                9. Treasury Stock: should exist.
+                
+                Final Evaluation:
+                Based on this analysis, evaluate the company's financial health, highlighting key strengths, risks, and whether the balance sheet reflects a strong position for investment.
+                """
             
-            Final Evaluation:
-            Based on the analysis, determine whether the company's financial position is strong, stable, or weak for investment. Highlight key risks, strengths, or potential red flags that investors should consider.
-            """
-            
-        balance_sheet_prompt = f"""
-            You are a financial analyst. Analyze the provided Balance Sheet Data using {balance_sheet_flipped} and evaluate the following criteria:
-            1. Cash & Debt: company should have more cash than total debt.
-            2. Accounts Receivable: there should not be accounts receivable.
-            3. Inventory: there should not be inventory.
-            4. Current Liabilities: current liabilities should be less than cash. 
-            5. Short-term or Long-term Debt: there should not be not much short-term or long-term debt.
-            6. Goodwill: should be less than 10% of total assets.
-            7. Preferred Stocks: there should not be preferred stock.
-            8. Retained Earnings: should be positive & growing.
-            9. Treasury Stock: should exist.
-            
-            Final Evaluation:
-            Based on this analysis, evaluate the company's financial health, highlighting key strengths, risks, and whether the balance sheet reflects a strong position for investment.
-            """
-        
-        cashflow_statement_prompt = f"""
-            You are a financial analyst. Analyze the provided Cash Flow Statement Data using {cashflow_statement_flipped} and evaluate the following criteria:
-            1. Net Income: Should be positive and growing.
-            2. Stock-Based Compensation: Should be less than 10% of Net Income.
-            3. Operating Cash Flow: Should be higher than Net Income.
-            4. Free Cash Flow: Should be higher than Net Income.
-            5. Capital Expenditures: Should be less than 25% of Net Income.
-            6. Debt Management: The company should show a reduction in debt.
-            7. Stock Buybacks: There should be stock repurchases.
-            8. Dividends: The company should be paying dividends.
-            9. Cash Balance: Should be increasing.
-            
-            Final Evaluation:
-            Based on this analysis, provide an evaluation of the company’s cash flow strength, financial flexibility, and overall sustainability for investment. Highlight any risks or positive indicators.
-            """
-
-        def analyze_stock2(prompt_text, tokens):
-            response = client.chat.completions.create(
-                model="deepseek-r1-distill-llama-70b",
-                messages=[
-                    {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
-                    {"role": "user", "content": prompt_text}
-                ],
-                max_tokens= tokens,
-                temperature=0.7
-            )
-                    
-            raw_response = response.choices[0].message.content
-            try:
-                cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
-            except: 
-                cleaned_response = raw_response
-            return cleaned_response
-        income_statement_analysis = analyze_stock2(income_statement_prompt,2000)
-        balance_sheet_analysis = analyze_stock2(balance_sheet_prompt,2000)
-        cashflow_statement_analysis = analyze_stock2(cashflow_statement_prompt,2000)
-
-        analysis2 = {
-            'income': income_statement_analysis,
-            'balance' : balance_sheet_analysis,
-            'cashflow' : cashflow_statement_analysis
-        }
-    except Exception as e:
-        analysis2 = ""
-
-    try:
-        api_key = st.secrets["GROQ_API_KEY3"]
-        client = Groq(api_key=api_key)
-        snowflake_prompt = f"""
-            Analyze the stock {upper_ticker} and rate each category on a scale of 1 to 5 (where 1 is worst and 5 is best). Use the following financial data:
-            - Historical price data: {extended_data_r}
-            - Key financial metrics: 
-                - Valuation: P/E Ratio = {peRatio}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}
-                - Profitability: Net profit margin = {profitmargin}, ROE = {roe}, ROA = {roa}, Gross margin = {grossmargin}
-                - Growth: Revenue growth = {revenue_growth}, Earnings growth = {earnings_growth}
-                - Financial health: Debt-to-equity = {deRatio}, Current ratio = {current_ratio}, Quick ratio = {quick_ratio}
-                - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin}
-                - Dividends: Dividend yield = {dividendYield}, Dividend payout ratio = {payoutRatio}
-            - Income Statement data: {income_statement_tb}
-            - Balance Sheet data: {balance_sheet_tb}
-            - Cashflow Statement data: {cashflow_statement_tb}
-                    
-            Provide ONLY these 5 numbers in the exact format below (no other text):
-            stock_current_price_valuation:X
-            future_performance:X
-            past_performance:X
-            company_health:X
-            dividend:X
-
-            Each rating must be an integer between 1 and 5, where:
-            5 = Excellent
-            4 = Good
-            3 = Average
-            2 = Below Average
-            1 = Poor
-            """
-
-        def analyze_stock3(prompt_text, tokens):
-            response = client.chat.completions.create(
-                model="deepseek-r1-distill-llama-70b",
-                messages=[
-                    {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
-                    {"role": "user", "content": prompt_text}
-                ],
-                max_tokens= tokens,
-                temperature=0.7
-            )
-                    
-            raw_response = response.choices[0].message.content
-            try:
-                cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
-            except: 
-                cleaned_response = raw_response
-            return cleaned_response
-        snowflake_analysis = analyze_stock3(snowflake_prompt,1000)
-        analysis3 = {
-            'snowflakes': snowflake_analysis,
-        }
-    except Exception as e:
-        analysis3 = ""
+            cashflow_statement_prompt = f"""
+                You are a financial analyst. Analyze the provided Cash Flow Statement Data using {cashflow_statement_flipped} and evaluate the following criteria:
+                1. Net Income: Should be positive and growing.
+                2. Stock-Based Compensation: Should be less than 10% of Net Income.
+                3. Operating Cash Flow: Should be higher than Net Income.
+                4. Free Cash Flow: Should be higher than Net Income.
+                5. Capital Expenditures: Should be less than 25% of Net Income.
+                6. Debt Management: The company should show a reduction in debt.
+                7. Stock Buybacks: There should be stock repurchases.
+                8. Dividends: The company should be paying dividends.
+                9. Cash Balance: Should be increasing.
+                
+                Final Evaluation:
+                Based on this analysis, provide an evaluation of the company’s cash flow strength, financial flexibility, and overall sustainability for investment. Highlight any risks or positive indicators.
+                """
+    
+            def analyze_stock2(prompt_text, tokens):
+                response = client.chat.completions.create(
+                    model="deepseek-r1-distill-llama-70b",
+                    messages=[
+                        {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
+                        {"role": "user", "content": prompt_text}
+                    ],
+                    max_tokens= tokens,
+                    temperature=0.7
+                )
+                        
+                raw_response = response.choices[0].message.content
+                try:
+                    cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+                except: 
+                    cleaned_response = raw_response
+                return cleaned_response
+            income_statement_analysis = analyze_stock2(income_statement_prompt,2000)
+            balance_sheet_analysis = analyze_stock2(balance_sheet_prompt,2000)
+            cashflow_statement_analysis = analyze_stock2(cashflow_statement_prompt,2000)
+    
+            analysis2 = {
+                'income': income_statement_analysis,
+                'balance' : balance_sheet_analysis,
+                'cashflow' : cashflow_statement_analysis
+            }
+        except Exception as e:
+            analysis2 = ""
+    
+        #
+        try:
+            api_key = st.secrets["GROQ_API_KEY3"]
+            client = Groq(api_key=api_key)
+            snowflake_prompt = f"""
+                Analyze the stock {upper_ticker} and rate each category on a scale of 1 to 5 (where 1 is worst and 5 is best). Use the following financial data:
+                - Historical price data: {extended_data_r}
+                - Key financial metrics: 
+                    - Valuation: P/E Ratio = {peRatio}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}
+                    - Profitability: Net profit margin = {profitmargin}, ROE = {roe}, ROA = {roa}, Gross margin = {grossmargin}
+                    - Growth: Revenue growth = {revenue_growth}, Earnings growth = {earnings_growth}
+                    - Financial health: Debt-to-equity = {deRatio}, Current ratio = {current_ratio}, Quick ratio = {quick_ratio}
+                    - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin}
+                    - Dividends: Dividend yield = {dividendYield}, Dividend payout ratio = {payoutRatio}
+                - Income Statement data: {income_statement_tb}
+                - Balance Sheet data: {balance_sheet_tb}
+                - Cashflow Statement data: {cashflow_statement_tb}
+                        
+                Provide ONLY these 5 numbers in the exact format below (no other text):
+                stock_current_price_valuation:X
+                future_performance:X
+                past_performance:X
+                company_health:X
+                dividend:X
+    
+                Each rating must be an integer between 1 and 5, where:
+                5 = Excellent
+                4 = Good
+                3 = Average
+                2 = Below Average
+                1 = Poor
+                """
+    
+            def analyze_stock3(prompt_text, tokens):
+                response = client.chat.completions.create(
+                    model="deepseek-r1-distill-llama-70b",
+                    messages=[
+                        {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
+                        {"role": "user", "content": prompt_text}
+                    ],
+                    max_tokens= tokens,
+                    temperature=0.7
+                )
+                        
+                raw_response = response.choices[0].message.content
+                try:
+                    cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+                except: 
+                    cleaned_response = raw_response
+                return cleaned_response
+            snowflake_analysis = analyze_stock3(snowflake_prompt,1000)
+            analysis3 = {
+                'snowflakes': snowflake_analysis,
+            }
+        except Exception as e:
+            analysis3 = ""
     
     return analysis3, analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey
 
@@ -732,11 +737,12 @@ with main_col1:
         apiKey = st.text_input("Enter your RapidAPI Key (optional):", "")
 
 st.write("This analysis dashboard is designed to enable beginner investors to analyze stocks effectively and with ease. Please note that the information in this page is intended for educational purposes only and it does not constitute investment advice or a recommendation to buy or sell any security. We are not responsible for any losses resulting from trading decisions based on this information.")
-st.info('Data is sourced from Yahoo Finance, Morningstar, Seeking Alpha, Market Beat, Stockanalysis.com and Alpha Spread. Certain sections require API keys to operate. Users are advised to subscribe to the Morningstar and Seeking Alpha APIs provided by Api Dojo through rapidapi.com.')
+st.info("Data is sourced from Yahoo Finance, Morningstar, Seeking Alpha, Market Beat, Stockanalysis.com and Alpha Spread. Certain sections require API keys to operate. Users are advised to subscribe to the Morningstar and Seeking Alpha APIs provided by Api Dojo through rapidapi.com.")
 
+use_ai = st.checkbox("Analyze using AI (The system will use the deepseek-r1-distill-llama-70b model to analyze the stock. It will take some time for the process to complete. For a faster process, please uncheck this box.)", value=True)
 if st.button("Get Data"):
     try:
-        analysis3, analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey = get_stock_data(ticker, apiKey if apiKey.strip() else None)
+        analysis3, analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey = get_stock_data(ticker, apiKey if apiKey.strip() else None, use_ai)
      
 #############################################         #############################################
 ############################################# Profile #############################################
@@ -2053,13 +2059,14 @@ if st.button("Get Data"):
                 # )
                 st.caption("Data source: Yahoo Finance")
                 ''
-                st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
-                income_cleaned_text = analysis2['income'].replace('\\n', '\n').replace('\\', '')
-                special_chars = ['$', '#', '>', '<', '`', '|', '[', ']', '(', ')', '+', '-', '{', '}', '.', '!', '&']
-                for char in special_chars:
-                    income_cleaned_text = income_cleaned_text.replace(char, f"\\{char}")
-                income_cleaned_text = re.sub(r'\*\*|\*|`|_', '', income_cleaned_text)
-                st.markdown(income_cleaned_text, unsafe_allow_html=True)
+                if use_ai:
+                    st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
+                    income_cleaned_text = analysis2['income'].replace('\\n', '\n').replace('\\', '')
+                    special_chars = ['$', '#', '>', '<', '`', '|', '[', ']', '(', ')', '+', '-', '{', '}', '.', '!', '&']
+                    for char in special_chars:
+                        income_cleaned_text = income_cleaned_text.replace(char, f"\\{char}")
+                    income_cleaned_text = re.sub(r'\*\*|\*|`|_', '', income_cleaned_text)
+                    st.markdown(income_cleaned_text, unsafe_allow_html=True)
                 ''
             except: st.warning("Failed to get Income Statement.")
 
@@ -2127,13 +2134,14 @@ if st.button("Get Data"):
                 # )
                 st.caption("Data source: Yahoo Finance")
                 ''
-                st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
-                balance_cleaned_text = analysis2['balance'].replace('\\n', '\n').replace('\\', '')
-                special_chars = ['$', '#', '>', '<', '`', '|', '[', ']', '(', ')', '+', '-', '{', '}', '.', '!', '&']
-                for char in special_chars:
-                    balance_cleaned_text = balance_cleaned_text.replace(char, f"\\{char}")
-                balance_cleaned_text = re.sub(r'\*\*|\*|`|_', '', balance_cleaned_text)
-                st.markdown(balance_cleaned_text, unsafe_allow_html=True)
+                if use_ai:
+                    st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
+                    balance_cleaned_text = analysis2['balance'].replace('\\n', '\n').replace('\\', '')
+                    special_chars = ['$', '#', '>', '<', '`', '|', '[', ']', '(', ')', '+', '-', '{', '}', '.', '!', '&']
+                    for char in special_chars:
+                        balance_cleaned_text = balance_cleaned_text.replace(char, f"\\{char}")
+                    balance_cleaned_text = re.sub(r'\*\*|\*|`|_', '', balance_cleaned_text)
+                    st.markdown(balance_cleaned_text, unsafe_allow_html=True)
                 ''
             except: st.warning("Failed to get Balance Sheet.")
         
@@ -2202,13 +2210,14 @@ if st.button("Get Data"):
                 # )
                 st.caption("Data source: Yahoo Finance")
                 ''
-                st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
-                cashflow_cleaned_text = analysis2['cashflow'].replace('\\n', '\n').replace('\\', '')
-                special_chars = ['$', '#', '>', '<', '`', '|', '[', ']', '(', ')', '+', '-', '{', '}', '.', '!', '&']
-                for char in special_chars:
-                    cashflow_cleaned_text = cashflow_cleaned_text.replace(char, f"\\{char}")
-                cashflow_cleaned_text = re.sub(r'\*\*|\*|`|_', '', cashflow_cleaned_text)
-                st.markdown(cashflow_cleaned_text, unsafe_allow_html=True)
+                if use_ai:
+                    st.warning("The following section is generated by AI and should not be the sole basis for investment decisions.")
+                    cashflow_cleaned_text = analysis2['cashflow'].replace('\\n', '\n').replace('\\', '')
+                    special_chars = ['$', '#', '>', '<', '`', '|', '[', ']', '(', ')', '+', '-', '{', '}', '.', '!', '&']
+                    for char in special_chars:
+                        cashflow_cleaned_text = cashflow_cleaned_text.replace(char, f"\\{char}")
+                    cashflow_cleaned_text = re.sub(r'\*\*|\*|`|_', '', cashflow_cleaned_text)
+                    st.markdown(cashflow_cleaned_text, unsafe_allow_html=True)
                 ''
             except Exception as e: st.warning(f'Failed to get Cash Flow Statement.')
 
@@ -4005,6 +4014,7 @@ if st.button("Get Data"):
 #############################################             #############################################
 
         with ai_analysis:
+            if use_ai:
                 st.subheader("AI Stock Analysis", divider ='gray')
                 aicol1, aicol2 = st.columns([3,2])
                 with aicol2:
@@ -4072,6 +4082,8 @@ if st.button("Get Data"):
                         st.warning("AI analysis is currently unavailable.")
                             
                 st.warning("This analysis, generated by AI, should not be the sole basis for investment decisions.")
+            else:
+                st.write("To access this section, please ensure the 'Analyze using AI' box is checked.")
             
     except Exception as e:
         st.error(f"Failed to fetch data. Please check your ticker again.")
