@@ -366,16 +366,27 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     earnings_growth = stock.info.get('earningsGrowth', 'N/A')
     ev_to_ebitda = stock.info.get('enterpriseToEbitda', 'N/A')
     news = stock.news
-    try:
-        totalEsg = stock.sustainability.loc['totalEsg', 'esgScores']
-        enviScore = stock.sustainability.loc['environmentScore', 'esgScores']
-        socialScore = stock.sustainability.loc['socialScore', 'esgScores']
-        governScore = stock.sustainability.loc['governanceScore', 'esgScores']
-        percentile = stock.sustainability.loc['percentile', 'esgScores']
-        insiderPct = stock.major_holders.loc['insidersPercentHeld', 'Value']
-        institutionsPct = stock.major_holders.loc['institutionsPercentHeld', 'Value']
+    try: 
+        sustainability = stock.sustainability
+        if sustainability is not None:   
+            totalEsg = sustainability.loc['totalEsg']['esgScores']
+            enviScore = sustainability.loc['environmentScore']['esgScores']
+            socialScore = sustainability.loc['socialScore']['esgScores']
+            governScore = sustainability.loc['governanceScore']['esgScores']
+            percentile = sustainability.loc['percentile']['esgScores']
+        else:
+            totalEsg = enviScore = socialScore = governScore = percentile = "N/A"
     except:
-        totalEsg = enviScore = socialScore = governScore = percentile = insiderPct = institutionsPct = "N/A"
+        totalEsg = enviScore = socialScore = governScore = percentile = "N/A"
+    try:
+        major_holders = stock.major_holders    
+        if major_holders is not None:
+            insiderPct = stock.major_holders.loc['insidersPercentHeld']['Value']
+            institutionsPct = stock.major_holders.loc['institutionsPercentHeld']['Value']
+        else: 
+            insiderPct = institutionsPct = "N/A"
+    except Exception as e:
+        insiderPct = institutionsPct = "N/A"
     try:
         hdata = stock.history(period='max')
         previous_close = hdata['Close'].iloc[-2]
