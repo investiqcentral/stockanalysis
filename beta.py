@@ -707,18 +707,25 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
                 - Cashflow Statement data: {cashflow_statement_tb}
                         
                 Provide ONLY these 5 numbers in the exact format below (no other text):
-                stock_current_price_valuation:X
+                stock_current_value:X
                 future_performance:X
                 past_performance:X
                 company_health:X
                 dividend:X
     
-                Each rating must be an integer between 1 and 5, where:
+                Each rating for future_performance, past_performance, company_health and dividend must be an integer between 1 and 5, where:
                 5 = Excellent
                 4 = Good
                 3 = Average
                 2 = Below Average
                 1 = Poor
+
+                For stock_current_price_valuation, use these ratings, where:
+                5 = Very Cheap
+                4 = Cheap
+                3 = Average
+                2 = Expensive
+                1 = Very Expensive
                 """
     
             def analyze_stock3(prompt_text, tokens):
