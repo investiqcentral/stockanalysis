@@ -3335,7 +3335,6 @@ if st.button("Get Data"):
                 st.caption("Data source: Market Beat")
             except Exception as e:
                 st.warning("Insider information is not available.")
-                st.write(e)
 
 #############################################                         #############################################
 ############################################# Technical Analysis Data #############################################
