@@ -136,8 +136,8 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     try:
         url = f'https://stockanalysis.com/stocks/{ticker}/forecast/'
         r = requests.get(url)
-        soup = BeautifulSoup(r.text,"lxml")
-        table = soup.find("table",class_ = "w-full whitespace-nowrap border border-gray-200 text-right text-sm dark:border-dark-700 sm:text-base")
+        soup = BeautifulSoup(r.text,"html.parser")
+        table = soup.find("table",class_ = "sticky-column-table w-full border-separate border-spacing-0 whitespace-nowrap text-right text-sm sm:text-base")
         rows = table.find_all("tr")
         headers = []
         data = []
@@ -150,7 +150,8 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
                 data.append(cols_text)
         sa_growth_df = pd.DataFrame(data, columns=headers)
         sa_growth_df = sa_growth_df.iloc[1:, :-1].reset_index(drop=True)
-    except: sa_growth_df = ""
+    except Exception as e: 
+        sa_growth_df = ""
     
     ##### SA scores #####
     try:
@@ -280,7 +281,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     try:
         url = f'https://stockanalysis.com/stocks/{ticker}/financials/ratios/'
         r = requests.get(url)
-        soup = BeautifulSoup(r.text,"lxml")
+        soup = BeautifulSoup(r.text,"html.parser")
         table = soup.find("table",class_ = "w-full border-separate border-spacing-0 text-sm sm:text-base [&_tbody]:sm:whitespace-nowrap [&_thead]:whitespace-nowrap")
         rows = table.find_all("tr")
         headers = []
@@ -300,7 +301,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     try:
         url2 = f'https://stockanalysis.com/stocks/{ticker}/financials/'
         r2 = requests.get(url2)
-        soup2 = BeautifulSoup(r2.text,"lxml")
+        soup2 = BeautifulSoup(r2.text,"html.parser")
         table2 = soup2.find("table",class_ = "w-full border-separate border-spacing-0 text-sm sm:text-base [&_tbody]:sm:whitespace-nowrap [&_thead]:whitespace-nowrap")
         rows2 = table2.find_all("tr")
         headers2 = []
@@ -322,11 +323,25 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         response = requests.get(insider_mb_url)
         soup = BeautifulSoup(response.text, 'html.parser')
         tables = soup.find_all('table')
-        if len(tables) >= 0:
-            insider_mb = pd.read_html(str(tables[0]))[0]
+        if tables and len(tables) > 0:
+            table = tables[0]
+            headers = []
+            rows = []
+            for th in table.find_all('th'):
+                headers.append(th.text.strip())
+            for tr in table.find_all('tr')[1:]:
+                row = []
+                for td in tr.find_all('td'):
+                    row.append(td.text.strip())
+                if row: 
+                    rows.append(row)
+            insider_mb = pd.DataFrame(rows, columns=headers)
+            if insider_mb.empty:
+                insider_mb = pd.DataFrame()
         else:    
-            insider_mb = ""
-    except: insider_mb = ""
+            insider_mb = pd.DataFrame()
+    except Exception as e:
+        insider_mb = pd.DataFrame()
     
     name = stock.info.get('longName', 'N/A')
     sector = stock.info.get('sector', 'N/A')
@@ -1244,6 +1259,7 @@ if st.button("Get Data"):
             gcol1, gcol2= st.columns([3, 2])
             with gcol1:
                 try:
+                    if not isinstance(sa_growth_df, str) and not sa_growth_df.empty:
                         growth_metrics = ['Revenue Growth', 'EPS Growth']
                         sa_growth_df_filtered = sa_growth_df[sa_growth_df['Fiscal Year'].isin(growth_metrics)]
                         sa_growth_metrics_df_melted = sa_growth_df_filtered.melt(id_vars=['Fiscal Year'], var_name='Year', value_name='Value')
@@ -1273,8 +1289,10 @@ if st.button("Get Data"):
                             height=400
                         )
                         st.plotly_chart(fig_growth, use_container_width=True)
+                    else:
+                        st.warning(f'{ticker} has no growth estimates data.')
                 except Exception as e:
-                        st.warning(f'{name} has no growth estimates data.')
+                        st.warning(f'{ticker} has no growth estimates data. {e}')
             
             with gcol2:
                 try:
@@ -2007,10 +2025,20 @@ if st.button("Get Data"):
 #Income Statement
             st.subheader("Income Statement (P&L)", divider ='gray')
             st.info("Notes: An income statement or profit and loss account shows the company's revenues and expenses during a particular period. It indicates how the revenues (also known as the “top line”) are transformed into the net income or net profit (the result after all revenues and expenses have been accounted for). The purpose of the income statement is to show managers and investors whether the company made money (profit) or lost money (loss) during the period being reported. It provides insight into a company’s operations, efficiency, management, and performance relative to others in the same sector.")
+            
+            def format_numbers(val):
+                if pd.isna(val):
+                    return "N/A"
+                if isinstance(val, (int, float)):
+                    return '{:,.2f}'.format(val)
+                return val
+            
             try:
                 formatted_columns = [col.strftime('%Y-%m-%d') if isinstance(col, pd.Timestamp) else col for col in income_statement_flipped.columns]
                 income_statement_flipped.columns = formatted_columns
-                st.dataframe(income_statement_flipped,use_container_width=True)
+                #st.dataframe(income_statement_flipped,use_container_width=True)
+                income_statement_formatted_df = income_statement_flipped.applymap(format_numbers)
+                st.dataframe(income_statement_formatted_df,use_container_width=True)
                 #chart_setup
                 income_items = ['Total Revenue', 'Gross Profit', 'Operating Income', 'Net Income', 'EBITDA']
                 income_bar_data = income_statement_flipped.loc[income_items].transpose()
@@ -2087,7 +2115,9 @@ if st.button("Get Data"):
             try:
                 formatted_columns2 = [col.strftime('%Y-%m-%d') if isinstance(col, pd.Timestamp) else col for col in balance_sheet_flipped.columns]
                 balance_sheet_flipped.columns = formatted_columns2
-                st.dataframe(balance_sheet_flipped,use_container_width=True)
+                #st.dataframe(balance_sheet_flipped,use_container_width=True)
+                balance_sheet_formatted_df = balance_sheet_flipped.applymap(format_numbers)
+                st.dataframe(balance_sheet_formatted_df,use_container_width=True)
                 #chart_setup
                 balance_items = ['Cash And Cash Equivalents','Total Assets', 'Total Liabilities Net Minority Interest', 'Stockholders Equity']
                 balance_bar_data = balance_sheet_flipped.loc[balance_items].transpose()
@@ -2162,7 +2192,9 @@ if st.button("Get Data"):
             try:
                 formatted_columns3 = [col.strftime('%Y-%m-%d') if isinstance(col, pd.Timestamp) else col for col in cashflow_statement_flipped.columns]
                 cashflow_statement_flipped.columns = formatted_columns3
-                st.dataframe(cashflow_statement_flipped,use_container_width=True)
+                #st.dataframe(cashflow_statement_flipped,use_container_width=True)
+                cashflow_statement_formatted_df = cashflow_statement_flipped.applymap(format_numbers)
+                st.dataframe(cashflow_statement_formatted_df,use_container_width=True)
                 #chart_setup
                 cashflow_items = ['Operating Cash Flow', 'Investing Cash Flow', 'Financing Cash Flow', 'Free Cash Flow']
                 cashflow_bar_data = cashflow_statement_flipped.loc[cashflow_items].transpose()
@@ -3276,6 +3308,7 @@ if st.button("Get Data"):
                 else:
                     bscolor ='#AAB2BD'
                 return f'background-color: {bscolor}; color: white'
+            
             try:
                 insider_mb = pd.DataFrame(insider_mb).iloc[:, :-2]
                 def is_valid_date(value):
@@ -3290,7 +3323,9 @@ if st.button("Get Data"):
                 ]
                 st.dataframe(filtered_insider_mb.style.applymap(highlight_insider_trades, subset=['Buy/Sell']), use_container_width=True, hide_index=True, height = 600)
                 st.caption("Data source: Market Beat")
-            except: st.warning("Insider information is not available.")
+            except Exception as e:
+                st.warning("Insider information is not available.")
+                st.write(e)
 
 #############################################                         #############################################
 ############################################# Technical Analysis Data #############################################
