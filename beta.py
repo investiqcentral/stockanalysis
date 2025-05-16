@@ -763,7 +763,7 @@ with main_col1:
         apiKey = st.text_input("Enter your RapidAPI Key (optional):", "")
 
 st.write("This analysis dashboard is designed to enable beginner investors to analyze stocks effectively and with ease. Please note that the information in this page is intended for educational purposes only and it does not constitute investment advice or a recommendation to buy or sell any security. We are not responsible for any losses resulting from trading decisions based on this information.")
-st.info("Data is sourced from Yahoo Finance, Morningstar, Seeking Alpha, Market Beat, Stockanalysis.com and Alpha Spread. Certain sections require API keys to operate. Users are advised to subscribe to the Morningstar and Seeking Alpha APIs provided by Api Dojo through rapidapi.com.")
+st.info("Certain sections require API keys to operate. Users are advised to subscribe to the Morningstar and Seeking Alpha APIs provided by Api Dojo through rapidapi.com.")
 
 use_ai = st.checkbox("Analyze using AI (The system will use the deepseek-r1-distill-llama-70b model to analyze the stock. It will take some time for the process to complete. For a faster process, please uncheck this box.)", value=True)
 if st.button("Get Data"):
@@ -1251,7 +1251,7 @@ if st.button("Get Data"):
                         except: st.write("Failed to get EPS trend.")
             except Exception as e: 
                 st.write("Failed to get earnings data.")
-                st.write(e)
+                #st.write(e)
             st.caption("Data source: Yahoo Finance")
 
 #Estimate Data
@@ -1292,7 +1292,8 @@ if st.button("Get Data"):
                     else:
                         st.warning(f'{ticker} has no growth estimates data.')
                 except Exception as e:
-                        st.warning(f'{ticker} has no growth estimates data. {e}')
+                        st.warning(f'{ticker} has no growth estimates data.')
+                st.caption("Data source: Stockanalysis.com")
             
             with gcol2:
                 try:
