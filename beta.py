@@ -493,10 +493,13 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     except: pegRatio_value = 'N/A'
     beta_value = 'N/A' if beta == 'N/A' else f'{beta:.2f}'
     roe_value = 'N/A' if roe == 'N/A' else f'{roe*100:.2f}%'
+    roa_value = 'N/A' if roa == 'N/A' else f'{roa*100:.2f}%'
     pe_value = 'N/A' if peRatio == 'N/A' else f'{peRatio:.2f}'
     forwardPe_value = 'N/A' if forwardPe == 'N/A' else f'{forwardPe:.2f}'
     pbRatio_value = 'N/A' if pbRatio == 'N/A' else f'{pbRatio:.2f}'
     deRatio_value = 'N/A' if deRatio == 'N/A' else f'{deRatio/100:.2f}'
+    earnings_growth_value = 'N/A' if earnings_growth == 'N/A' else f'{earnings_growth*100:.2f}%'
+    revenue_growth_value = 'N/A' if revenue_growth == 'N/A' else f'{revenue_growth*100:.2f}%'
     revenue_growth_current_value = 'N/A' if revenue_growth_current == 'N/A' else f'{revenue_growth_current*100:.2f}%'
     if fcf == 'N/A' or revenue == 'N/A': fcf_margin = 'N/A'
     else: fcf_margin = (fcf/revenue)
@@ -516,6 +519,9 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     else:
         try: fcfmargin_value = float(fcf_margin)
         except ValueError: fcfmargin_value = 'N/A'
+    grossmargin_pct = 'N/A' if grossmargin_value == 'N/A' else f'{grossmargin_value*100:.2f}%'
+    operatingmargin_pct = 'N/A' if operatingmargin_value == 'N/A' else f'{operatingmargin_value*100:.2f}%'
+    profitmargin_pct = 'N/A' if profitmargin_value == 'N/A' else f'{profitmargin_value*100:.2f}%'
     dividends_value = 'N/A' if dividends == 'N/A' else f'${dividends:,.2f}'
     dividendYield_value = 'N/A' if dividendYield == 'N/A' else f'{dividendYield*100:.2f}%'
     payoutRatio_value = 'N/A' if payoutRatio == 'N/A' else f'{payoutRatio:.2f}'
@@ -567,11 +573,11 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
                 - Historical price data: {extended_data_r}
                 - Key financial metrics: 
                     - Valuation: P/E Ratio = {peRatio}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}
-                    - Profitability: Net profit margin = {profitmargin}, ROE = {roe}, ROA = {roa}, Gross margin = {grossmargin}
-                    - Growth: Revenue growth = {revenue_growth}, Earnings growth = {earnings_growth}
-                    - Financial health: Debt-to-equity = {deRatio}, Current ratio = {current_ratio}, Quick ratio = {quick_ratio}
-                    - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin}
-                    - Dividends: Dividend yield = {dividendYield}, Dividend payout ratio = {payoutRatio}
+                    - Profitability: Net profit margin = {profitmargin_pct}, ROE = {roe_value}, ROA = {roa_value}, Gross margin = {grossmargin_pct}
+                    - Growth: Revenue growth = {revenue_growth_value}, Earnings growth = {earnings_growth_value}
+                    - Financial health: Debt-to-equity = {deRatio_value}, Current ratio = {current_ratio}, Quick ratio = {quick_ratio}
+                    - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin_pct}
+                    - Dividends: Dividend yield = {dividendYield_value}, Dividend payout ratio = {payoutRatio}
                 - Income Statement data: {income_statement_tb}
                 - Balance Sheet data: {balance_sheet_tb}
                 - Cashflow Statement data: {cashflow_statement_tb}
@@ -697,11 +703,11 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
                 - Historical price data: {extended_data_r}
                 - Key financial metrics: 
                     - Valuation: P/E Ratio = {peRatio}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}
-                    - Profitability: Net profit margin = {profitmargin}, ROE = {roe}, ROA = {roa}, Gross margin = {grossmargin}
-                    - Growth: Revenue growth = {revenue_growth}, Earnings growth = {earnings_growth}
+                    - Profitability: Net profit margin = {profitmargin_pct}, ROE = {roe_value}, ROA = {roa_value}, Gross margin = {grossmargin_pct}
+                    - Growth: Revenue growth = {revenue_growth_value}, Earnings growth = {earnings_growth_value}
                     - Financial health: Debt-to-equity = {deRatio_value}, Current ratio = {current_ratio}, Quick ratio = {quick_ratio}
-                    - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin}
-                    - Dividends: Dividend yield = {dividendYield}, Dividend payout ratio = {payoutRatio}
+                    - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin_pct}
+                    - Dividends: Dividend yield = {dividendYield_value}, Dividend payout ratio = {payoutRatio}
                 - Income Statement data: {income_statement_tb}
                 - Balance Sheet data: {balance_sheet_tb}
                 - Cashflow Statement data: {cashflow_statement_tb}
@@ -751,6 +757,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
             }
         except Exception as e:
             analysis3 = ""
+        
     
     return analysis3, analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey
 
