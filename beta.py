@@ -523,7 +523,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     operatingmargin_pct = 'N/A' if operatingmargin_value == 'N/A' else f'{operatingmargin_value*100:.2f}%'
     profitmargin_pct = 'N/A' if profitmargin_value == 'N/A' else f'{profitmargin_value*100:.2f}%'
     dividends_value = 'N/A' if dividends == 'N/A' else f'${dividends:,.2f}'
-    dividendYield_value = 'N/A' if dividendYield == 'N/A' else f'{dividendYield*100:.2f}%'
+    dividendYield_value = 'N/A' if dividendYield == 'N/A' else f'{dividendYield:.2f}%'
     payoutRatio_value = 'N/A' if payoutRatio == 'N/A' else f'{payoutRatio:.2f}'
     if exDividendDate == 'N/A': exDividendDate_value = 'N/A'
     else: 
