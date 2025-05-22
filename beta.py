@@ -644,6 +644,13 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         cashflow_statement_flipped = cashflow_statement.iloc[::-1]
     except: cashflow_statement_flipped = ''
     ##### Data Processing End #####
+
+    ##### Historical Data Processing #####
+    try:
+        end_date_hp = datetime.datetime.today()
+        start_date_hp = end_date_hp - relativedelta(years=5)
+        hist_price = yf.download(ticker, start_date_hp.strftime('%Y-%m-%d'), end_date_hp.strftime('%Y-%m-%d'))['Close']
+    except: hist_price = ""
     
     ##### AI Analysis #####
     analysis = ""
@@ -866,6 +873,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, \
     insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, \
     end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
+    hist_price, \
     analysis3, analysis2, analysis
 
 ''
@@ -911,6 +919,7 @@ if st.button("Get Data"):
         sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, \
         insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, \
         end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
+        hist_price, \
         analysis3, analysis2, analysis = get_stock_data(ticker, apiKey if apiKey.strip() else None, use_ai)
 
 #############################################         #############################################
@@ -934,11 +943,6 @@ if st.button("Get Data"):
             st.metric(label='Owned by Insiders', value=insiderPct_value)
             st.metric(label='Owned by Institutions', value=institutionsPct_value)
 
-        st.markdown(f"<div style='text-align: justify;'>{longProfile}</div>", unsafe_allow_html=True)
-        ''
-        st.caption("Data source: Yahoo Finance")
-        st.caption("Company logo source: Stockanalysis.com")
-
         with col4:
              st.markdown(f"""
              <div style='float: left; width: 100%;'>
@@ -953,6 +957,45 @@ if st.button("Get Data"):
                  </table>
              </div>
              """, unsafe_allow_html=True)
+        ""     
+        col5, col6 = st.columns([2,3])     
+        with col6:
+            st.markdown(f"<div style='text-align: justify;'>{longProfile}</div>", unsafe_allow_html=True)
+
+        with col5:
+            try:
+                hist_price_melted = hist_price.reset_index().melt(id_vars='Date', value_name='Price')
+                hover_text = [f"Date: {date.strftime('%Y-%m-%d')}<br>Price: ${price:.2f}" 
+                              for date, price in zip(hist_price_melted['Date'], hist_price_melted['Price'])]
+                hist_fig = go.Figure()
+                hist_fig.add_trace(
+                    go.Scatter(
+                        x=hist_price_melted['Date'],
+                        y=hist_price_melted['Price'],
+                        mode='lines',
+                        name=ticker,
+                        line=dict(color='#DA4453', shape='spline', smoothing=1.3),
+                        showlegend=False,
+                        hoverinfo="text",
+                        text=hover_text,
+                    )
+                )
+                hist_fig.update_layout(
+                    title={"text":f'', "font": {"size": 22}},
+                    title_y=1,  
+                    title_x=0,
+                    margin=dict(t=30, b=40, l=40, r=30),
+                    xaxis=dict(title=None, showticklabels=True, showgrid=True), 
+                    yaxis=dict(title="Price (USD)", showticklabels=True, showgrid=True),
+                    height=350,
+                )
+                st.plotly_chart(hist_fig, use_container_width=True)
+            except Exception as e:
+                st.write("")
+        
+        ''
+        st.caption("Data source: Yahoo Finance")
+        st.caption("Company logo source: Stockanalysis.com")
         ''
         ''
 #############################################      #############################################
@@ -967,29 +1010,43 @@ if st.button("Get Data"):
 
         with overview_data:
 #Stock Performance
-            st.subheader('Stock Performance', divider='gray')
-            cols = st.columns(5)
-            cols[0].metric(label='Current Price',value=f'${price:,.2f}',delta=f'{change_dollar:,.2f} ({change_percent:.2f}%)',delta_color='normal')
-            cols[1].metric(label='EPS (ttm)',value=eps_value)
-            cols[2].metric(label='PEG Ratio',value=pegRatio_value)
-            cols[3].metric(label='Beta',value=beta_value)
-            cols[4].metric(label='ROE',value=roe_value)
-
-            cols1 = st.columns(5)
-            cols1[0].metric(label='PE Ratio',value=pe_value)
-            cols1[1].metric(label='Forward PE',value=forwardPe_value)
-            cols1[2].metric(label='PB Ratio',value=pbRatio_value)
-            cols1[3].metric(label='DE Ratio',value=deRatio_value)
-            cols1[4].metric(label='Revenue Growth',value=revenue_growth_current_value)
-
-            st.caption("Data source: Yahoo Finance")
-            ''
- #Morning Star Research           
             if apiKey is None:
-                #st.markdown("---")
-                st.warning('Certain information will be hidden due to unavailability of API key. Please input your API key to access the full data.')
-                #st.markdown("---")
+                st.subheader('Stock Performance', divider='gray')
+                cols = st.columns(5)
+                cols[0].metric(label='Current Price',value=f'${price:,.2f}',delta=f'{change_dollar:,.2f} ({change_percent:.2f}%)',delta_color='normal')
+                cols[1].metric(label='EPS (ttm)',value=eps_value)
+                cols[2].metric(label='PEG Ratio',value=pegRatio_value)
+                cols[3].metric(label='Beta',value=beta_value)
+                cols[4].metric(label='ROE',value=roe_value)
+    
+                cols1 = st.columns(5)
+                cols1[0].metric(label='PE Ratio',value=pe_value)
+                cols1[1].metric(label='Forward PE',value=forwardPe_value)
+                cols1[2].metric(label='PB Ratio',value=pbRatio_value)
+                cols1[3].metric(label='DE Ratio',value=deRatio_value)
+                cols1[4].metric(label='Revenue Growth',value=revenue_growth_current_value)
+    
+                st.caption("Data source: Yahoo Finance")
+                ''
+ #Morning Star Research           
             else:
+                st.subheader('Stock Performance', divider='gray')
+                cols = st.columns(5)
+                cols[0].metric(label='Current Price',value=f'${price:,.2f}',delta=f'{change_dollar:,.2f} ({change_percent:.2f}%)',delta_color='normal')
+                cols[1].metric(label='EPS (ttm)',value=eps_value)
+                cols[2].metric(label='PEG Ratio',value=pegRatio_value)
+                cols[3].metric(label='Beta',value=beta_value)
+                cols[4].metric(label='ROE',value=roe_value)
+    
+                cols1 = st.columns(5)
+                cols1[0].metric(label='PE Ratio',value=pe_value)
+                cols1[1].metric(label='Forward PE',value=forwardPe_value)
+                cols1[2].metric(label='PB Ratio',value=pbRatio_value)
+                cols1[3].metric(label='DE Ratio',value=deRatio_value)
+                cols1[4].metric(label='Revenue Growth',value=revenue_growth_current_value)
+    
+                st.caption("Data source: Yahoo Finance")
+                ######
                 st.subheader('Morningstar Research', divider='gray')
                 st.caption("This section only works with RapidAPI key.")
                 
@@ -2626,9 +2683,9 @@ if st.button("Get Data"):
 
             def highlight_result(val):
                 if val == 'GOOD':
-                    color = 'green'
+                    color = '#37BC9B'
                 elif val == 'BAD':
-                    color = 'red'
+                    color = '#DA4453'
                 else:
                     color ='#AAB2BD'
                 return f'background-color: {color}; color: white'
@@ -3445,9 +3502,9 @@ if st.button("Get Data"):
         with insider_trades:
             def highlight_insider_trades(val):
                 if val == 'Buy':
-                    bscolor = 'green'
+                    bscolor = '#37BC9B'
                 elif val == 'Sell':
-                    bscolor = 'red'
+                    bscolor = '#DA4453'
                 else:
                     bscolor ='#AAB2BD'
                 return f'background-color: {bscolor}; color: white'
@@ -3464,6 +3521,7 @@ if st.button("Get Data"):
                 filtered_insider_mb = insider_mb[
                     insider_mb["Transaction Date"].apply(lambda x: is_valid_date(x) and x != unwanted_string)
                 ]
+                filtered_insider_mb['Transaction Date'] = pd.to_datetime(filtered_insider_mb['Transaction Date']).dt.strftime('%Y-%m-%d')
                 st.dataframe(filtered_insider_mb.style.applymap(highlight_insider_trades, subset=['Buy/Sell']), use_container_width=True, hide_index=True, height = 600)
                 st.caption("Data source: Market Beat")
             except Exception as e:
