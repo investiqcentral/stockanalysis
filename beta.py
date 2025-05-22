@@ -24,6 +24,8 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     upper_ticker = ticker.upper()
     price = stock.info.get('currentPrice', 'N/A')
     picture_url = f'https://logos.stockanalysis.com/{lowercase_ticker}.svg'
+
+    #### Exchange Value ####
     exchange = stock.info.get('exchange', 'N/A')
     if exchange == 'NYQ':
         exchange_value = "NYSE"
@@ -32,105 +34,108 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     else:
         exchange_value = "N/A"
     lower_exchange = exchange_value.lower()
+    ########################
 
     ##### Morning Star #####
     fair_value = fvDate = moat = moatDate = starRating = assessment = 'N/A'
     performance_id = None
     if apiKey:
-                    try:
-                        conn = http.client.HTTPSConnection("morning-star.p.rapidapi.com")
-                        headers = {
-                            'x-rapidapi-key': apiKey,
-                            'x-rapidapi-host': "morning-star.p.rapidapi.com"
-                        }
-                        conn.request("GET", "/market/v2/auto-complete?q=" + ticker, headers=headers)
-                        res = conn.getresponse()
-                        data = res.read()
-                        json_data = json.loads(data.decode("utf-8"))
-                        for item in json_data.get('results', []):
-                            if item.get('ticker', '').upper() == ticker.upper():
-                                performance_id = item.get('performanceId')
-                                break
-                    except Exception as e:
-                        print(f"APIkey: Morningstar API request failed.")
+        try:
+            conn = http.client.HTTPSConnection("morning-star.p.rapidapi.com")
+            headers = {
+                'x-rapidapi-key': apiKey,
+                'x-rapidapi-host': "morning-star.p.rapidapi.com"
+            }
+            conn.request("GET", "/market/v2/auto-complete?q=" + ticker, headers=headers)
+            res = conn.getresponse()
+            data = res.read()
+            json_data = json.loads(data.decode("utf-8"))
+            for item in json_data.get('results', []):
+                if item.get('ticker', '').upper() == ticker.upper():
+                    performance_id = item.get('performanceId')
+                    break
+        except Exception as e:
+            print(f"APIkey: Morningstar API request failed.")
 
     if performance_id:
-                    try:
-                        conn = http.client.HTTPSConnection("morning-star.p.rapidapi.com")
-                        headers = {
-                            'x-rapidapi-key': apiKey,
-                            'x-rapidapi-host': "morning-star.p.rapidapi.com"
-                        }
-                        conn.request("GET", "/stock/v2/get-analysis-data?performanceId="+ performance_id, headers=headers)
-                        res = conn.getresponse()
-                        data = res.read()
-                        json_data = json.loads(data.decode("utf-8"))
-                        fair_value = json_data['valuation']['fairValue']
-                        fvDate = json_data['valuation']['fairValueDate']
-                        moat = json_data['valuation']['moat']
-                        moatDate = json_data['valuation']['moatDate']
-                        starRating = json_data['valuation']['startRating']
-                        assessment = json_data['valuation']['assessment']
-                    except Exception as e:
-                        print("Performance ID: Morningstar API request failed.")
+        try:
+            conn = http.client.HTTPSConnection("morning-star.p.rapidapi.com")
+            headers = {
+                'x-rapidapi-key': apiKey,
+                'x-rapidapi-host': "morning-star.p.rapidapi.com"
+            }
+            conn.request("GET", "/stock/v2/get-analysis-data?performanceId="+ performance_id, headers=headers)
+            res = conn.getresponse()
+            data = res.read()
+            json_data = json.loads(data.decode("utf-8"))
+            fair_value = json_data['valuation']['fairValue']
+            fvDate = json_data['valuation']['fairValueDate']
+            moat = json_data['valuation']['moat']
+            moatDate = json_data['valuation']['moatDate']
+            starRating = json_data['valuation']['startRating']
+            assessment = json_data['valuation']['assessment']
+        except Exception as e:
+            print("Performance ID: Morningstar API request failed.")
+    ########################
 
     #### Seeking Alpha ####
     authors_strongsell_count = authors_strongbuy_count = authors_sell_count = authors_hold_count = authors_buy_count = authors_rating = authors_count = epsRevisionsGrade = dpsRevisionsGrade = dividendYieldGrade = divSafetyCategoryGrade = divGrowthCategoryGrade = divConsistencyCategoryGrade = sellSideRating = ticker_id = quant_rating = growth_grade = momentum_grade = profitability_grade = value_grade = yield_on_cost_grade = 'N/A'
     sk_targetprice = 'N/A'
     if apiKey:
-                    try:
-                        conn = http.client.HTTPSConnection("seeking-alpha.p.rapidapi.com")
-                        headers = {
-                            'x-rapidapi-key': apiKey,
-                            'x-rapidapi-host': "seeking-alpha.p.rapidapi.com"
-                        }
-                        conn.request("GET", "/symbols/get-ratings?symbol=" + ticker, headers=headers)
-                        res = conn.getresponse()
-                        data = res.read()
-                        json_data = json.loads(data.decode("utf-8"))
-                        first_data = json_data['data'][0]['attributes']['ratings']
-                        ticker_id = json_data['data'][0]['attributes']['tickerId']
-                        #
-                        quant_rating = first_data['quantRating']
-                        growth_grade = first_data['growthGrade']
-                        momentum_grade = first_data['momentumGrade']
-                        profitability_grade = first_data['profitabilityGrade']
-                        value_grade = first_data['valueGrade']
-                        yield_on_cost_grade = first_data['yieldOnCostGrade']
-                        epsRevisionsGrade = first_data['epsRevisionsGrade']
-                        dpsRevisionsGrade = first_data['dpsRevisionsGrade']
-                        dividendYieldGrade = first_data['dividendYieldGrade']
-                        divSafetyCategoryGrade = first_data['divSafetyCategoryGrade']
-                        divGrowthCategoryGrade = first_data['divGrowthCategoryGrade']
-                        divConsistencyCategoryGrade = first_data['divConsistencyCategoryGrade']
-                        sellSideRating = first_data['sellSideRating']
-                        #
-                        authors_count = first_data['authorsCount']
-                        authors_rating = first_data['authorsRating']
-                        authors_buy_count = first_data['authorsRatingBuyCount']
-                        authors_hold_count = first_data['authorsRatingHoldCount']
-                        authors_sell_count = first_data['authorsRatingSellCount']
-                        authors_strongbuy_count = first_data['authorsRatingStrongBuyCount']
-                        authors_strongsell_count = first_data['authorsRatingStrongSellCount']
-                    except Exception as e:
-                        print("Analysts Data: Seeking Alpha API request failed.")
+        try:
+            conn = http.client.HTTPSConnection("seeking-alpha.p.rapidapi.com")
+            headers = {
+                'x-rapidapi-key': apiKey,
+                'x-rapidapi-host': "seeking-alpha.p.rapidapi.com"
+            }
+            conn.request("GET", "/symbols/get-ratings?symbol=" + ticker, headers=headers)
+            res = conn.getresponse()
+            data = res.read()
+            json_data = json.loads(data.decode("utf-8"))
+            first_data = json_data['data'][0]['attributes']['ratings']
+            ticker_id = json_data['data'][0]['attributes']['tickerId']
+            #
+            quant_rating = first_data['quantRating']
+            growth_grade = first_data['growthGrade']
+            momentum_grade = first_data['momentumGrade']
+            profitability_grade = first_data['profitabilityGrade']
+            value_grade = first_data['valueGrade']
+            yield_on_cost_grade = first_data['yieldOnCostGrade']
+            epsRevisionsGrade = first_data['epsRevisionsGrade']
+            dpsRevisionsGrade = first_data['dpsRevisionsGrade']
+            dividendYieldGrade = first_data['dividendYieldGrade']
+            divSafetyCategoryGrade = first_data['divSafetyCategoryGrade']
+            divGrowthCategoryGrade = first_data['divGrowthCategoryGrade']
+            divConsistencyCategoryGrade = first_data['divConsistencyCategoryGrade']
+            sellSideRating = first_data['sellSideRating']
+            #
+            authors_count = first_data['authorsCount']
+            authors_rating = first_data['authorsRating']
+            authors_buy_count = first_data['authorsRatingBuyCount']
+            authors_hold_count = first_data['authorsRatingHoldCount']
+            authors_sell_count = first_data['authorsRatingSellCount']
+            authors_strongbuy_count = first_data['authorsRatingStrongBuyCount']
+            authors_strongsell_count = first_data['authorsRatingStrongSellCount']
+        except Exception as e:
+            print("Analysts Data: Seeking Alpha API request failed.")
 
     if apiKey and ticker_id and ticker_id != 'N/A':
-                    ticker_id_str = str(ticker_id)
-                    try:
-                        conn = http.client.HTTPSConnection("seeking-alpha.p.rapidapi.com")
-                        headers = {
-                            'x-rapidapi-key': apiKey,
-                            'x-rapidapi-host': "seeking-alpha.p.rapidapi.com"
-                        }
-                        conn.request("GET", "/symbols/get-analyst-price-target?ticker_ids=" + ticker_id_str + "&return_window=1&group_by_month=false", headers=headers)
-                        res = conn.getresponse()
-                        data = res.read()
-                        json_data = json.loads(data.decode("utf-8"))
-                        get_sk_data = json_data['estimates'][f'{ticker_id}']['target_price']['0'][0]
-                        sk_targetprice = get_sk_data['dataitemvalue']
-                    except Exception as e:
-                        print("Price Data: Seeking Alpha API request failed.")
+        ticker_id_str = str(ticker_id)
+        try:
+            conn = http.client.HTTPSConnection("seeking-alpha.p.rapidapi.com")
+            headers = {
+                'x-rapidapi-key': apiKey,
+                'x-rapidapi-host': "seeking-alpha.p.rapidapi.com"
+            }
+            conn.request("GET", "/symbols/get-analyst-price-target?ticker_ids=" + ticker_id_str + "&return_window=1&group_by_month=false", headers=headers)
+            res = conn.getresponse()
+            data = res.read()
+            json_data = json.loads(data.decode("utf-8"))
+            get_sk_data = json_data['estimates'][f'{ticker_id}']['target_price']['0'][0]
+            sk_targetprice = get_sk_data['dataitemvalue']
+        except Exception as e:
+            print("Price Data: Seeking Alpha API request failed.")
+    ########################
     
     ##### SA forecasts #####
     try:
@@ -152,83 +157,87 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         sa_growth_df = sa_growth_df.iloc[1:, :-1].reset_index(drop=True)
     except Exception as e: 
         sa_growth_df = ""
+    ########################
     
     ##### SA scores #####
     try:
-                sa_score_url = f'https://stockanalysis.com/stocks/{ticker}/statistics/'
-                sa_score_response = requests.get(sa_score_url)
-                sa_score_soup = BeautifulSoup(sa_score_response.content, "html.parser")
-                sa_score_table = sa_score_soup.find_all('table')[17]
-                sa_score_data = {}
-                #sa_altmanz = "N/A"
-                #sa_piotroski = "N/A"
-                if sa_score_table:
-                    rows = sa_score_table.find_all('tr')
-                    for row in rows:
-                        cols = row.find_all('td')
-                        if len(cols) == 2:  
-                            key = cols[0].text.strip()
-                            value = cols[1].text.strip()
-                            sa_score_data[key] = value
-                    sa_altmanz = sa_score_data.get("Altman Z-Score", "N/A")
-                    sa_piotroski = sa_score_data.get("Piotroski F-Score", "N/A")
+        sa_score_url = f'https://stockanalysis.com/stocks/{ticker}/statistics/'
+        sa_score_response = requests.get(sa_score_url)
+        sa_score_soup = BeautifulSoup(sa_score_response.content, "html.parser")
+        sa_score_table = sa_score_soup.find_all('table')[17]
+        sa_score_data = {}
+        #sa_altmanz = "N/A"
+        #sa_piotroski = "N/A"
+        if sa_score_table:
+            rows = sa_score_table.find_all('tr')
+            for row in rows:
+                cols = row.find_all('td')
+                if len(cols) == 2:  
+                    key = cols[0].text.strip()
+                    value = cols[1].text.strip()
+                    sa_score_data[key] = value
+            sa_altmanz = sa_score_data.get("Altman Z-Score", "N/A")
+            sa_piotroski = sa_score_data.get("Piotroski F-Score", "N/A")
     except Exception as e:
-                print(f"SA scores fetching failed")
+        print(f"SA scores fetching failed")
+    ########################
 
     ##### SA analysts rating #####
     try:
-                sa_statistics_url = f'https://stockanalysis.com/stocks/{ticker}/statistics/'
-                sa_statistics_response = requests.get(sa_statistics_url)
-                sa_statistics_soup = BeautifulSoup(sa_statistics_response.content, "html.parser")
-                sa_analyst_table = sa_statistics_soup.find_all('table')[15]
-                sa_analysts_data = {}
-                sa_analysts_consensus = "N/A"
-                sa_analysts_targetprice = "N/A"
-                sa_analysts_count = "N/A"
-                if sa_analyst_table:
-                    rows = sa_analyst_table.find_all('tr')
-                    for row in rows:
-                        cols = row.find_all('td')
-                        if len(cols) == 2:  
-                            key = cols[0].text.strip()
-                            value = cols[1].text.strip()
-                            sa_analysts_data[key] = value
+        sa_statistics_url = f'https://stockanalysis.com/stocks/{ticker}/statistics/'
+        sa_statistics_response = requests.get(sa_statistics_url)
+        sa_statistics_soup = BeautifulSoup(sa_statistics_response.content, "html.parser")
+        sa_analyst_table = sa_statistics_soup.find_all('table')[15]
+        sa_analysts_data = {}
+        sa_analysts_consensus = "N/A"
+        sa_analysts_targetprice = "N/A"
+        sa_analysts_count = "N/A"
+        if sa_analyst_table:
+            rows = sa_analyst_table.find_all('tr')
+            for row in rows:
+                cols = row.find_all('td')
+                if len(cols) == 2:  
+                    key = cols[0].text.strip()
+                    value = cols[1].text.strip()
+                    sa_analysts_data[key] = value
 
-                    sa_analysts_consensus = sa_analysts_data.get("Analyst Consensus", "N/A")
-                    sa_analysts_targetprice = sa_analysts_data.get("Price Target", "N/A")
-                    sa_analysts_count = sa_analysts_data.get("Analyst Count", "N/A")
+            sa_analysts_consensus = sa_analysts_data.get("Analyst Consensus", "N/A")
+            sa_analysts_targetprice = sa_analysts_data.get("Price Target", "N/A")
+            sa_analysts_count = sa_analysts_data.get("Analyst Count", "N/A")
     except Exception as e:
-                print("SA analysts data fetching failed.")
+        print("SA analysts data fetching failed.")
+    ########################
     
     ##### Market Beat forecast #####
     try:
-                mb_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/forecast/'
-                mb_response = requests.get(mb_url)
-                mb_soup = BeautifulSoup(mb_response.content, "html.parser")
-                mb_table = mb_soup.find_all('table')[1]
-                mb_data = {}
-                mb_consensus_rating = "N/A"
-                mb_predicted_upside = "N/A"
-                mb_rating_score = "N/A"
-                if mb_table:
-                    rows = mb_table.find_all('tr')
-                    for row in rows:
-                        cols = row.find_all('td')
-                        if len(cols) >= 2:  
-                            key = cols[0].text.strip()
-                            value = cols[1].text.strip()
-                            mb_data[key] = value
-                    mb_consensus_rating = mb_data.get("Consensus Rating", "N/A")
-                    mb_predicted_upside = mb_data.get("Predicted Upside", "N/A")
-                    mb_rating_score = mb_data.get("Consensus Rating Score", "N/A")
-                    if mb_predicted_upside != "N/A":
-                        match = re.search(r"([-+]?\d*\.?\d+)", mb_predicted_upside)
-                    if match:
-                        mb_predicted_upside = float(match.group(0))
-                        mb_targetprice = 'N/A' if mb_predicted_upside == 'N/A' else (price * (mb_predicted_upside + 100)) / 100
-                        mb_targetprice_value = 'N/A' if mb_targetprice == 'N/A' else f'${mb_targetprice:.2f}'
+        mb_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/forecast/'
+        mb_response = requests.get(mb_url)
+        mb_soup = BeautifulSoup(mb_response.content, "html.parser")
+        mb_table = mb_soup.find_all('table')[1]
+        mb_data = {}
+        mb_consensus_rating = "N/A"
+        mb_predicted_upside = "N/A"
+        mb_rating_score = "N/A"
+        if mb_table:
+            rows = mb_table.find_all('tr')
+            for row in rows:
+                cols = row.find_all('td')
+                if len(cols) >= 2:  
+                    key = cols[0].text.strip()
+                    value = cols[1].text.strip()
+                    mb_data[key] = value
+            mb_consensus_rating = mb_data.get("Consensus Rating", "N/A")
+            mb_predicted_upside = mb_data.get("Predicted Upside", "N/A")
+            mb_rating_score = mb_data.get("Consensus Rating Score", "N/A")
+            if mb_predicted_upside != "N/A":
+                match = re.search(r"([-+]?\d*\.?\d+)", mb_predicted_upside)
+            if match:
+                mb_predicted_upside = float(match.group(0))
+                mb_targetprice = 'N/A' if mb_predicted_upside == 'N/A' else (price * (mb_predicted_upside + 100)) / 100
+                mb_targetprice_value = 'N/A' if mb_targetprice == 'N/A' else f'${mb_targetprice:.2f}'
     except Exception as e:
-                mb_targetprice_value = mb_predicted_upside = mb_consensus_rating = mb_rating_score = 'N/A'
+        mb_targetprice_value = mb_predicted_upside = mb_consensus_rating = mb_rating_score = 'N/A'
+    ########################
     
     ##### Market Beat sector competitors #####
     try:
@@ -244,6 +253,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
             rows.append(row_data)
         mb_com_df = pd.DataFrame(rows, columns=headers)
     except: mb_com_df = ""
+    ########################
 
     ##### Market Beat dividend comparison #####
     try:
@@ -262,6 +272,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         else:
             mb_div_df = ""
     except: mb_div_df = ""
+    ########################
 
     ##### Market Beat competitors #####
     try:
@@ -276,6 +287,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
             rows.append(row_data)
         mb_alt_df = pd.DataFrame(rows, columns=mb_alt_headers)
     except: mb_alt_df = mb_alt_headers = ""
+    ########################
     
     ##### SA metric table #####
     try:
@@ -296,6 +308,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         sa_metrics_df = pd.DataFrame(data, columns=headers)
         sa_metrics_df = sa_metrics_df.iloc[1:, :-1].reset_index(drop=True)
     except: sa_metrics_df = ""
+    ########################
 
     ##### SA metric table2 #####
     try:
@@ -316,6 +329,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         sa_metrics_df2 = pd.DataFrame(data2, columns=headers2)
         sa_metrics_df2 = sa_metrics_df2.iloc[1:, :-1].reset_index(drop=True)
     except: sa_metrics_df2 = ""
+    ########################
 
     ##### Market Beat insider trades #####
     try:
@@ -342,7 +356,10 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
             insider_mb = pd.DataFrame()
     except Exception as e:
         insider_mb = pd.DataFrame()
-    
+    ########################
+
+    ##### Yahoo Finance #####
+    ##### Profile #####
     name = stock.info.get('longName', 'N/A')
     sector = stock.info.get('sector', 'N/A')
     industry = stock.info.get('industry', 'N/A')
@@ -350,37 +367,49 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     marketCap = stock.info.get('marketCap', 'N/A')
     beta = stock.info.get('beta', 'N/A')
     longProfile = stock.info.get('longBusinessSummary', 'N/A')
+    country = stock.info.get('country', 'N/A')
+    website = stock.info.get('website', 'N/A')
+    sharesOutstanding = stock.info.get('sharesOutstanding', 'N/A')
+    ##### Earnings #####
     eps = stock.info.get('trailingEps', 'N/A')
     pegRatio = stock.info.get('pegRatio', stock.info.get('trailingPegRatio', 'N/A'))
-    country = stock.info.get('country', 'N/A')
+    revenue = stock.info.get('totalRevenue', 'N/A')
+    ##### Price Target #####
     yf_targetprice = stock.info.get('targetMeanPrice', 'N/A')
     yf_consensus = stock.info.get('recommendationKey', 'N/A')
     yf_analysts_count = stock.info.get('numberOfAnalystOpinions', 'N/A')
-    website = stock.info.get('website', 'N/A')
+    ##### Valuation #####
     peRatio = stock.info.get('trailingPE', 'N/A')
     forwardPe = stock.info.get('forwardPE', 'N/A')
+    pbRatio = stock.info.get('priceToBook','N/A')
+    ev_to_ebitda = stock.info.get('enterpriseToEbitda', 'N/A')
+    ##### Dividends #####
     dividendYield = stock.info.get('dividendYield', 'N/A')
     payoutRatio = stock.info.get('payoutRatio', 'N/A')
-    sharesOutstanding = stock.info.get('sharesOutstanding', 'N/A')
-    pbRatio = stock.info.get('priceToBook','N/A')
-    deRatio = stock.info.get('debtToEquity','N/A')
     dividends = stock.info.get('dividendRate','N/A')
     exDividendDate = stock.info.get('exDividendDate','N/A')
+    ##### Financials Health #####
+    deRatio = stock.info.get('debtToEquity','N/A')
+    current_ratio = stock.info.get('currentRatio','N/A')
+    quick_ratio = stock.info.get('quickRatio','N/A')
+    ##### Profitability #####
     roe = stock.info.get('returnOnEquity','N/A')
-    revenue_growth_current = stock.info.get('revenueGrowth','N/A')
+    roa = stock.info.get('returnOnAssets','N/A')
+    ##### Margin #####
     profitmargin = stock.info.get('profitMargins','N/A')
     grossmargin = stock.info.get('grossMargins','N/A')
     operatingmargin = stock.info.get('operatingMargins','N/A')
     ebitdamargin = stock.info.get('ebitdaMargins','N/A')
+    ##### Cash Flow #####
     fcf = stock.info.get('freeCashflow','N/A')
-    revenue = stock.info.get('totalRevenue', 'N/A')
-    roa = stock.info.get('returnOnAssets','N/A')
-    current_ratio = stock.info.get('currentRatio','N/A')
-    quick_ratio = stock.info.get('quickRatio','N/A')
+    ##### Growth #####
     revenue_growth = stock.info.get('revenueGrowth', 'N/A')
+    revenue_growth_current = stock.info.get('revenueGrowth','N/A')
     earnings_growth = stock.info.get('earningsGrowth', 'N/A')
-    ev_to_ebitda = stock.info.get('enterpriseToEbitda', 'N/A')
+    ##### News #####
     news = stock.news
+    
+    ##### Sustainability #####
     try: 
         sustainability = stock.sustainability
         if sustainability is not None:   
@@ -393,6 +422,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
             totalEsg = enviScore = socialScore = governScore = percentile = "N/A"
     except:
         totalEsg = enviScore = socialScore = governScore = percentile = "N/A"
+    ##### Holders #####
     try:
         major_holders = stock.major_holders    
         if major_holders is not None:
@@ -402,10 +432,12 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
             insiderPct = institutionsPct = "N/A"
     except Exception as e:
         insiderPct = institutionsPct = "N/A"
+    ##### Historical Price Data #####
     try:
         hdata = stock.history(period='max')
         previous_close = hdata['Close'].iloc[-2]
     except: previous_close = 'N/A'
+    ##### Earnings Date #####
     try:
         get_earningsDate = stock.calendar['Earnings Date']
         if get_earningsDate:
@@ -413,24 +445,33 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         else:
             earningsDate = 'N/A'
     except: earningsDate = 'N/A'
+    ##### Historical Dividends Data #####
     try: dividend_history = stock.dividends
     except: dividend_history = ""
+    ##### Historical Earnings Data #####
     try: earnings_history = stock.earnings_history
     except: earnings_history = ""
+    ##### EPS Trend #####
     try: eps_trend = stock.eps_trend
     except: eps_trend = ""
+    ##### Income Statement #####
     try:
         income_statement_tb = stock.income_stmt
         quarterly_income_statement_tb = stock.quarterly_income_stmt
     except: income_statement_tb = quarterly_income_statement_tb = ""
+    ##### Balance Sheet #####
     try:
         balance_sheet_tb = stock.balance_sheet
         quarterly_balance_sheet_tb = stock.quarterly_balance_sheet
     except: balance_sheet_tb = quarterly_balance_sheet_tb = ""
+    ##### Cashflow Statement #####
     try:
         cashflow_statement_tb = stock.cashflow
         quarterly_cashflow_statement_tb = stock.quarterly_cashflow
     except: cashflow_statement_tb = quarterly_cashflow_statement_tb = ""
+    ########################
+
+    ##### Comparison Data Processing #####
     try:
         sector_etf_mapping = {
                     "Consumer Cyclical": "XLY",
@@ -456,6 +497,9 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
             return cumret
         yf_com = relativereturn(yf.download(compare_tickers, start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'))['Close'])
     except: yf_com = matching_etf = ""
+    ########################
+
+    ##### Technical Data Processing #####
     try:
         end_date = datetime.datetime.today()
         start_date = (end_date - datetime.timedelta(days=int(2 * 365)))
@@ -473,70 +517,109 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         ta_data_r.columns = ta_data_r.columns.map('_'.join)
         ta_data_r.columns = ['Close', 'High', 'Low', 'Open', 'Volume']
     except: end_date = extended_data_r = macd_data_r = rsi_data_r = ta_data_r = ""
+    ########################
 
-    ##### Data Processing #####
+    ##### Basic Data Processing #####
+    # Change Dollar
     try: change_dollar = price - previous_close
     except: change_dollar = 'N/A'
+    # Change Percent
     try: change_percent = (change_dollar / previous_close) * 100
     except: change_percent = 'N/A'
+    # YF Mos
     try: yf_mos = ((yf_targetprice - price)/yf_targetprice) * 100
     except: yf_mos = 'N/A'
+    # EPS Yield
     try: eps_yield = eps/price
     except: eps_yield = 'N/A'
+    # Employee Value
     employee_value = 'N/A' if employee == 'N/A' else f'{employee:,}'
+    # Market Value
     marketCap_value = 'N/A' if marketCap == 'N/A' else f'${marketCap/1000000:,.2f}'
+    # Share Outstanding Value
     sharesOutstanding_value = 'N/A' if sharesOutstanding == 'N/A' else f'{sharesOutstanding/1000000000:,.2f}B'
+    # Insider Pct Value
     insiderPct_value = 'N/A' if insiderPct == 'N/A' else f'{insiderPct*100:,.2f}%'
+    # Institutions Pct Value
     institutionsPct_value = 'N/A' if institutionsPct == 'N/A' else f'{institutionsPct*100:,.2f}%'
+    # EPS Value
     eps_value = 'N/A' if eps == 'N/A' else f'{eps:,.2f}'
+    # PEG Ratio Value
     try: pegRatio_value = 'N/A' if pegRatio == 'N/A' else f'{pegRatio:,.2f}'
     except: pegRatio_value = 'N/A'
+    # Beta Value
     beta_value = 'N/A' if beta == 'N/A' else f'{beta:.2f}'
+    # ROE Value
     roe_value = 'N/A' if roe == 'N/A' else f'{roe*100:.2f}%'
+    # ROA Value
     roa_value = 'N/A' if roa == 'N/A' else f'{roa*100:.2f}%'
+    # PE Value
     pe_value = 'N/A' if peRatio == 'N/A' else f'{peRatio:.2f}'
+    # Forward PE Value
     forwardPe_value = 'N/A' if forwardPe == 'N/A' else f'{forwardPe:.2f}'
+    # PB Value
     pbRatio_value = 'N/A' if pbRatio == 'N/A' else f'{pbRatio:.2f}'
+    # DE Value
     deRatio_value = 'N/A' if deRatio == 'N/A' else f'{deRatio/100:.2f}'
+    # Earnings Growth Value
     earnings_growth_value = 'N/A' if earnings_growth == 'N/A' else f'{earnings_growth*100:.2f}%'
+    # Revenue Growth Value
     revenue_growth_value = 'N/A' if revenue_growth == 'N/A' else f'{revenue_growth*100:.2f}%'
+    # Revenue Grwoth Current Value
     revenue_growth_current_value = 'N/A' if revenue_growth_current == 'N/A' else f'{revenue_growth_current*100:.2f}%'
+    # FCF Margin
     if fcf == 'N/A' or revenue == 'N/A': fcf_margin = 'N/A'
     else: fcf_margin = (fcf/revenue)
+    # Gross Margin Value
     if grossmargin is None or grossmargin == 'N/A': grossmargin_value = 'N/A'
     else:
         try: grossmargin_value = float(grossmargin)
         except ValueError: grossmargin_value = 'N/A'
+    # Operating Margin Value
     if operatingmargin is None or operatingmargin == 'N/A': operatingmargin_value = 'N/A'
     else:
         try: operatingmargin_value = float(operatingmargin)
         except ValueError: operatingmargin_value = 'N/A'
+    # Profit Margin Value
     if profitmargin is None or profitmargin == 'N/A': profitmargin_value = 'N/A'
     else:
         try: profitmargin_value = float(profitmargin)
         except ValueError: profitmargin_value = 'N/A'
+    # FCF Margin Value
     if fcf_margin is None or fcf_margin == 'N/A': fcfmargin_value = 'N/A'
     else:
         try: fcfmargin_value = float(fcf_margin)
         except ValueError: fcfmargin_value = 'N/A'
+    # Gross Margin Pct
     grossmargin_pct = 'N/A' if grossmargin_value == 'N/A' else f'{grossmargin_value*100:.2f}%'
+    # Operating Margin Pct
     operatingmargin_pct = 'N/A' if operatingmargin_value == 'N/A' else f'{operatingmargin_value*100:.2f}%'
+    # Profit Margin Pct
     profitmargin_pct = 'N/A' if profitmargin_value == 'N/A' else f'{profitmargin_value*100:.2f}%'
+    # Dividend Value
     dividends_value = 'N/A' if dividends == 'N/A' else f'${dividends:,.2f}'
+    # Dividend Yield Value
     dividendYield_value = 'N/A' if dividendYield == 'N/A' else f'{dividendYield:.2f}%'
+    # Payout Ratio Value
     payoutRatio_value = 'N/A' if payoutRatio == 'N/A' else f'{payoutRatio:.2f}'
+    # Ex Dividend Date
     if exDividendDate == 'N/A': exDividendDate_value = 'N/A'
     else: 
         exDate = datetime.datetime.fromtimestamp(exDividendDate)
         exDividendDate_value = exDate.strftime('%Y-%m-%d')
+    # EPS Yield Value
     eps_yield_value = 'N/A' if eps_yield == 'N/A' else f'{eps_yield * 100:.2f}%'
+    # F score Value
     try:
         sa_piotroski_value = 'N/A' if sa_piotroski == 'N/A' else float(sa_piotroski)
     except: sa_piotroski_value = 'N/A'
+    # Z score Value
     try:
         sa_altmanz_value = 'N/A' if sa_altmanz == 'N/A' else float(sa_altmanz)
     except: sa_altmanz_value = 'N/A'
+    # Total ESG Value
     totalEsg_value = 0.00 if totalEsg == 'N/A' else totalEsg
+    # Income Statement
     try: 
         income_statement = income_statement_tb  
         quarterly_income_statement = quarterly_income_statement_tb
@@ -544,6 +627,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         income_statement.insert(0, 'TTM', ttm)
         income_statement_flipped = income_statement.iloc[::-1]
     except: income_statement_flipped =''
+    # Balance Sheet Statement
     try:
         balance_sheet = balance_sheet_tb
         quarterly_balance_sheet = quarterly_balance_sheet_tb
@@ -551,6 +635,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         balance_sheet.insert(0, 'TTM', ttm)
         balance_sheet_flipped = balance_sheet.iloc[::-1]
     except: balance_sheet_flipped = ''
+    # Cash Flow Statement
     try:
         cashflow_statement = cashflow_statement_tb
         quarterly_cashflow_statement = quarterly_cashflow_statement_tb
@@ -565,6 +650,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     analysis2 = ""
     analysis3 = ""
     if use_ai:
+        ##### Analysis Summary #####
         try:
             api_key = st.secrets["GROQ_API_KEY"]
             client = Groq(api_key=api_key)
@@ -614,8 +700,9 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
             }
         except Exception as e:
             analysis = ""
-    
-        #
+        ########################
+        
+        ##### Financial Statement Analysis #####
         try:
             api_key = st.secrets["GROQ_API_KEY2"]
             client = Groq(api_key=api_key)
@@ -693,8 +780,9 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
             }
         except Exception as e:
             analysis2 = ""
-    
-        #
+        ########################
+        
+        ##### 5-Point Ratings Analysis #####
         try:
             api_key = st.secrets["GROQ_API_KEY3"]
             client = Groq(api_key=api_key)
@@ -757,9 +845,28 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
             }
         except Exception as e:
             analysis3 = ""
-        
-    
-    return analysis3, analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey
+
+    return price, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, apiKey, \
+    eps, pegRatio, revenue, eps_yield_value, eps_value, pegRatio_value, eps_yield, eps_trend, earnings_history, earningsDate, \
+    yf_targetprice, yf_consensus, yf_analysts_count, yf_mos, \
+    peRatio, forwardPe, pbRatio, pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda, \
+    dividendYield, payoutRatio, dividends, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, dividend_history, exDividendDate, \
+    deRatio, sa_piotroski_value, sa_altmanz_value, deRatio_value, quick_ratio, current_ratio, \
+    roe, roa, roe_value, \
+    ebitdamargin, operatingmargin, grossmargin, profitmargin, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, \
+    fcf, \
+    revenue_growth_current, revenue_growth_current_value, earnings_growth, revenue_growth, \
+    institutionsPct, insiderPct, insiderPct_value, institutionsPct_value, \
+    totalEsg, enviScore, socialScore, governScore, percentile, totalEsg_value, \
+    income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, \
+    news, \
+    matching_etf, yf_com, \
+    performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, \
+    quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, ticker_id, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, \
+    sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, \
+    insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, \
+    end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
+    analysis3, analysis2, analysis
 
 ''
 ''
@@ -784,12 +891,32 @@ use_ai = st.checkbox("Analyze using AI (The system will use the deepseek-r1-dist
 st.caption("This tool is developed by Invest IQ Central.")
 if st.button("Get Data"):
     try:
-        analysis3, analysis2, analysis, income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, totalEsg_value, sa_piotroski_value, sa_altmanz_value, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, eps_yield_value, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, eps_value, pegRatio_value, beta_value, roe_value, pe_value, forwardPe_value, pbRatio_value, deRatio_value, revenue_growth_current_value, sharesOutstanding_value, insiderPct_value, institutionsPct_value, employee_value, marketCap_value, yf_mos, change_percent, change_dollar, ev_to_ebitda, earnings_growth, revenue_growth, quick_ratio, news, insider_mb, sa_growth_df, eps_yield, end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, matching_etf, yf_com, mb_alt_headers, sa_metrics_df2, sa_metrics_df, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, ticker_id, quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, eps_trend, earnings_history, dividend_history, earningsDate, previous_close, current_ratio, fcf, revenue, exchange_value, upper_ticker, roa, ebitdamargin, operatingmargin, grossmargin, profitmargin, roe, revenue_growth_current, exDividendDate, pbRatio, deRatio, dividends, ticker, sharesOutstanding, institutionsPct, insiderPct, totalEsg, enviScore, socialScore, governScore, percentile, price, beta, name, sector, industry, employee, marketCap, longProfile, eps, pegRatio, picture_url, country, yf_targetprice, yf_consensus, yf_analysts_count, website, peRatio, forwardPe, dividendYield, payoutRatio, apiKey = get_stock_data(ticker, apiKey if apiKey.strip() else None, use_ai)
+        price, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, apiKey, \
+        eps, pegRatio, revenue, eps_yield_value, eps_value, pegRatio_value, eps_yield, eps_trend, earnings_history, earningsDate, \
+        yf_targetprice, yf_consensus, yf_analysts_count, yf_mos, \
+        peRatio, forwardPe, pbRatio, pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda, \
+        dividendYield, payoutRatio, dividends, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, dividend_history, exDividendDate, \
+        deRatio, sa_piotroski_value, sa_altmanz_value, deRatio_value, quick_ratio, current_ratio, \
+        roe, roa, roe_value, \
+        ebitdamargin, operatingmargin, grossmargin, profitmargin, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, \
+        fcf, \
+        revenue_growth_current, revenue_growth_current_value, earnings_growth, revenue_growth, \
+        institutionsPct, insiderPct, insiderPct_value, institutionsPct_value, \
+        totalEsg, enviScore, socialScore, governScore, percentile, totalEsg_value, \
+        income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, \
+        news, \
+        matching_etf, yf_com, \
+        performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, \
+        quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, ticker_id, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, \
+        sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, \
+        insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, \
+        end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
+        analysis3, analysis2, analysis = get_stock_data(ticker, apiKey if apiKey.strip() else None, use_ai)
 
 #############################################         #############################################
 ############################################# Profile #############################################
 #############################################         #############################################
-
+        
         st.header(f'{name}', divider='gray')
     
         col1, col2, col3, col4 = st.columns([2, 1, 1, 3])
@@ -1362,7 +1489,6 @@ if st.button("Get Data"):
                     except: three_yr_earnings_value = 'N/A'
                     sub_gcol3[1].metric(label='+3Y EPS Growth',value=three_yr_earnings_value)
 
-                    st.caption("The growth estimation data is sourced from Stockanalysis.com.")
                     st.caption("Please note that estimated data may not always be accurate and should not be solely relied upon for making investment decisions.")
                 except Exception as e: 
                     st.write(f'{name} has no other estimates data. {e}')
@@ -1619,7 +1745,7 @@ if st.button("Get Data"):
                                     line=dict(color=custom_colors.get(ticker, '#1f77b4'), shape='spline', smoothing=1.3),
                                     showlegend=True,
                                     hoverinfo="text",
-                                    text=[f"{date}: {ret:.2f}%" for date, ret in zip(df_ticker['Date'], df_ticker['Relative Return'])]
+                                    text=[f"{date}: {ret*100:.2f}%" for date, ret in zip(df_ticker['Date'], df_ticker['Relative Return'])]
                                 )
                             )
                         fig.update_layout(
@@ -1643,15 +1769,15 @@ if st.button("Get Data"):
                     last_values = yf_com_df_melted.groupby('Ticker').last()
                     st.metric(
                         label=upper_ticker,
-                        value=f"{last_values.loc[upper_ticker, 'Relative Return']:.2f}%"
+                        value=f"{last_values.loc[upper_ticker, 'Relative Return']*100:.2f}%"
                     )
                     st.metric(
                         label="Sector",
-                        value=f"{last_values.loc['Sector', 'Relative Return']:.2f}%"
+                        value=f"{last_values.loc['Sector', 'Relative Return']*100:.2f}%"
                     )
                     st.metric(
                         label="S&P500",
-                        value=f"{last_values.loc['S&P500', 'Relative Return']:.2f}%"
+                        value=f"{last_values.loc['S&P500', 'Relative Return']*100:.2f}%"
                     )
                     stock_return = last_values.loc[upper_ticker, 'Relative Return']
                     sector_return = last_values.loc['Sector', 'Relative Return']
@@ -1659,11 +1785,11 @@ if st.button("Get Data"):
                     
                     performance_text = f"{upper_ticker} has "
                     if stock_return > sector_return and stock_return > sp500_return:
-                        performance_text += f"outperformed both its sector ({sector_return:.2f}%) and S&P500 ({sp500_return:.2f}%) with a return of {stock_return:.2f}%"
+                        performance_text += f"outperformed both its sector ({sector_return*100:.2f}%) and S&P500 ({sp500_return*100:.2f}%) with a return of {stock_return*100:.2f}%"
                     elif stock_return < sector_return and stock_return < sp500_return:
-                        performance_text += f"underperformed both its sector ({sector_return:.2f}%) and S&P500 ({sp500_return:.2f}%) with a return of {stock_return:.2f}%"
+                        performance_text += f"underperformed both its sector ({sector_return*100:.2f}%) and S&P500 ({sp500_return*100:.2f}%) with a return of {stock_return*100:.2f}%"
                     else:
-                        performance_text += f"shown mixed performance with a return of {stock_return:.2f}% compared to its sector ({sector_return:.2f}%) and S&P500 ({sp500_return:.2f}%)"
+                        performance_text += f"shown mixed performance with a return of {stock_return*100:.2f}% compared to its sector ({sector_return*100:.2f}%) and S&P500 ({sp500_return*100:.2f}%)"
                     
                     st.write("")
                     st.caption(performance_text)
@@ -1987,7 +2113,7 @@ if st.button("Get Data"):
                                             line=dict(color=custom_colors.get(ticker, '#1f77b4'), shape='spline', smoothing=1.3),
                                             showlegend=True,
                                             hoverinfo="text",
-                                            text=[f"{date}: {ret:.2f}%" for date, ret in zip(df_ticker['Date'], df_ticker['Relative Return'])]
+                                            text=[f"{date}: {ret*100:.2f}%" for date, ret in zip(df_ticker['Date'], df_ticker['Relative Return'])]
                                         )
                                     )
                                 fig.update_layout(
@@ -2019,7 +2145,7 @@ if st.button("Get Data"):
                             if ticker in last_values.index:
                                 st.metric(
                                     label=ticker,
-                                    value=f"{last_values.loc[ticker, 'Relative Return']:.2f}%"
+                                    value=f"{last_values.loc[ticker, 'Relative Return']*100:.2f}%"
                                 )
                         st.write("")  # Add some spacing
                         best_performer = last_values['Relative Return'].idxmax()
@@ -2027,7 +2153,7 @@ if st.button("Get Data"):
                         best_return = last_values.loc[best_performer, 'Relative Return']
                         worst_return = last_values.loc[worst_performer, 'Relative Return']
                         
-                        summary = f"Among the competitors, {best_performer} showed the strongest performance with {best_return:.2f}% return, while {worst_performer} had the lowest return at {worst_return:.2f}%."
+                        summary = f"Among the competitors, {best_performer} showed the strongest performance with {best_return*100:.2f}% return, while {worst_performer} had the lowest return at {worst_return*100:.2f}%."
                         st.caption(summary)       
                     except Exception as e:
                         st.write("")
