@@ -331,6 +331,31 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     except: sa_metrics_df2 = ""
     ########################
 
+    ##### SA Revenue by Segment #####
+    try:
+        url = f'https://stockanalysis.com/stocks/{ticker}/metrics/revenue-by-segment/'
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text,"html.parser")
+        table = soup.find("table",class_ = "svelte-7muvl3")
+        rows = table.find_all("tr")
+        headers = []
+        data = []
+        for row in rows:
+                    cols = row.find_all(["th", "td"])
+                    cols_text = [col.text.strip() for col in cols]
+                    if not headers:
+                        headers = cols_text
+                    else:
+                        data.append(cols_text)
+        sa_metrics_rs_df = pd.DataFrame(data, columns=headers)
+        sa_metrics_rs_df['Date'] = pd.to_datetime(sa_metrics_rs_df['Date']).dt.strftime('%Y-%m-%d')
+        sa_metrics_rs_df = sa_metrics_rs_df.reset_index(drop=True)
+        rs_first_row = sa_metrics_rs_df.iloc[0]
+        rs_first_date = rs_first_row['Date']
+        rs_pie_data = rs_first_row.drop('Date')
+    except: sa_metrics_rs_df = rs_first_date = rs_pie_data = ""
+    ########################
+
     ##### Market Beat insider trades #####
     try:
         insider_mb_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/insider-trades/'
@@ -596,6 +621,8 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     operatingmargin_pct = 'N/A' if operatingmargin_value == 'N/A' else f'{operatingmargin_value*100:.2f}%'
     # Profit Margin Pct
     profitmargin_pct = 'N/A' if profitmargin_value == 'N/A' else f'{profitmargin_value*100:.2f}%'
+    # FCF Margin Pct
+    fcfmargin_pct = 'N/A' if fcfmargin_value == 'N/A' else f'{fcfmargin_value*100:.2f}%'
     # Dividend Value
     dividends_value = 'N/A' if dividends == 'N/A' else f'${dividends:,.2f}'
     # Dividend Yield Value
@@ -859,10 +886,10 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     peRatio, forwardPe, pbRatio, pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda, \
     dividendYield, payoutRatio, dividends, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, dividend_history, exDividendDate, \
     deRatio, sa_piotroski_value, sa_altmanz_value, deRatio_value, quick_ratio, current_ratio, \
-    roe, roa, roe_value, \
-    ebitdamargin, operatingmargin, grossmargin, profitmargin, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, \
+    roe, roa, roe_value, roa_value, \
+    ebitdamargin, operatingmargin, grossmargin, profitmargin, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, grossmargin_pct, operatingmargin_pct, profitmargin_pct, fcfmargin_pct,  \
     fcf, \
-    revenue_growth_current, revenue_growth_current_value, earnings_growth, revenue_growth, \
+    revenue_growth_current, revenue_growth_current_value, earnings_growth, revenue_growth, earnings_growth_value, \
     institutionsPct, insiderPct, insiderPct_value, institutionsPct_value, \
     totalEsg, enviScore, socialScore, governScore, percentile, totalEsg_value, \
     income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, \
@@ -870,7 +897,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     matching_etf, yf_com, \
     performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, \
     quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, ticker_id, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, \
-    sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, \
+    sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sa_metrics_rs_df, rs_first_date, rs_pie_data, \
     insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, \
     end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
     hist_price, \
@@ -890,13 +917,10 @@ with main_col1:
         ticker = st.text_input("US Stock Ticker:", "AAPL")
     with input_col2:
         apiKey = st.text_input("Enter your RapidAPI Key (optional):", "")
-
-st.write("This analysis dashboard is designed to enable beginner investors to analyze stocks effectively and with ease. Please note that the information in this page is intended for educational purposes only and it does not constitute investment advice or a recommendation to buy or sell any security. We are not responsible for any losses resulting from trading decisions based on this information.")
 st.info("Certain sections require API keys to operate. Users are advised to subscribe to the Morningstar and Seeking Alpha APIs provided by Api Dojo through rapidapi.com.")
 
 use_ai = st.checkbox("Analyze using AI (The system will use the deepseek-r1-distill-llama-70b model to analyze the stock. It will take some time for the process to complete. For a faster process, please uncheck this box.)", value=True)
 ""
-st.caption("This tool is developed by Invest IQ Central.")
 if st.button("Get Data"):
     try:
         price, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, apiKey, \
@@ -905,10 +929,10 @@ if st.button("Get Data"):
         peRatio, forwardPe, pbRatio, pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda, \
         dividendYield, payoutRatio, dividends, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, dividend_history, exDividendDate, \
         deRatio, sa_piotroski_value, sa_altmanz_value, deRatio_value, quick_ratio, current_ratio, \
-        roe, roa, roe_value, \
-        ebitdamargin, operatingmargin, grossmargin, profitmargin, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, \
+        roe, roa, roe_value, roa_value, \
+        ebitdamargin, operatingmargin, grossmargin, profitmargin, fcf_margin, grossmargin_value, operatingmargin_value, profitmargin_value, fcfmargin_value, grossmargin_pct, operatingmargin_pct, profitmargin_pct, fcfmargin_pct, \
         fcf, \
-        revenue_growth_current, revenue_growth_current_value, earnings_growth, revenue_growth, \
+        revenue_growth_current, revenue_growth_current_value, earnings_growth, revenue_growth, earnings_growth_value, \
         institutionsPct, insiderPct, insiderPct_value, institutionsPct_value, \
         totalEsg, enviScore, socialScore, governScore, percentile, totalEsg_value, \
         income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, \
@@ -916,7 +940,7 @@ if st.button("Get Data"):
         matching_etf, yf_com, \
         performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, \
         quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, ticker_id, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, \
-        sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, \
+        sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sa_metrics_rs_df, rs_first_date, rs_pie_data, \
         insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, \
         end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
         hist_price, \
@@ -975,6 +999,8 @@ if st.button("Get Data"):
                         mode='lines',
                         name=ticker,
                         line=dict(color='#DA4453', shape='spline', smoothing=1.3),
+                        fill='tonexty',
+                        fillcolor='rgba(218, 68, 83, 0.2)', 
                         showlegend=False,
                         hoverinfo="text",
                         text=hover_text,
@@ -1002,7 +1028,7 @@ if st.button("Get Data"):
 ############################################# Tabs #############################################
 #############################################      #############################################
 
-        overview_data, comparison_data, statements_data, guru_checklist, insider_trades, technicalAnalysis_data, news_data, ai_analysis = st.tabs (["Overview","Comparisons","Financial Statements","Guru Checklist","Insider Trades","Technical Analysis","Top News", "AI Analysis"])
+        overview_data, comparison_data, statements_data, ratios_and_metrics_data, guru_checklist, insider_trades, technicalAnalysis_data, news_data, ai_analysis = st.tabs (["Overview","Comparisons","Financial Statements", "Ratios & Metrics", "Guru Checklist","Insider Trades","Technical Analysis","Top News", "AI Analysis"])
 
 #############################################               #############################################
 ############################################# Overview Data #############################################
@@ -2096,7 +2122,7 @@ if st.button("Get Data"):
 
             try:
                 SPECIAL_TICKERS = {'NVDA', 'ARM', 'NXPI', 'LHX', 'AVGO', 'QCOM', 'TXN', 'INTC', 'STM',
-                                    'THO', 'EME', 'KBR', 'ACM', 'PCAR', 'HPQ', 'SAP'
+                                    'THO', 'EME', 'KBR', 'ACM', 'PCAR', 'HPQ', 'SAP', 'PAR', 'USNA'
                                     }
                 def clean_ticker_name(text):
                     for ticker in SPECIAL_TICKERS:
@@ -2681,21 +2707,318 @@ if st.button("Get Data"):
             st.caption("Data source: Stockanalysis.com")
             ''
 
-            def highlight_result(val):
-                if val == 'GOOD':
-                    color = '#37BC9B'
-                elif val == 'BAD':
-                    color = '#DA4453'
-                else:
-                    color ='#AAB2BD'
-                return f'background-color: {color}; color: white'
+            try:
+                if len(sa_metrics_rs_df) > 0: 
+                    st.subheader('Revenue Data', divider='gray')
+                    rev_col1,rev_col2 = st.columns([3,2])
+                    with rev_col1:
+                        for col in sa_metrics_rs_df.columns:
+                            if col != 'Date':
+                                original_values = sa_metrics_rs_df[col].copy()
+                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].str.replace('B', '').str.replace('M', '')
+                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].astype(float)
+                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].where(~original_values.str.contains('M', na=False), sa_metrics_rs_df[col]/1000)
+            
+                        fig_rs = go.Figure()
+                        for column in sa_metrics_rs_df.columns:
+                            if column != 'Date':
+                                fig_rs.add_trace(
+                                    go.Bar(
+                                        name=column,
+                                        x=sa_metrics_rs_df['Date'],
+                                        y=sa_metrics_rs_df[column],
+                                        text=sa_metrics_rs_df[column].round(2),
+                                        textposition='auto',
+                                        hovertemplate="%{x}<br>" +
+                                                    f"{column}: %{{y:.2f}}B<br>" +
+                                                    "<extra></extra>"
+                                    )
+                                )
+                        fig_rs.update_layout(
+                            title={"text":f'{upper_ticker} Revenue by Segment', "font": {"size": 20}},
+                            xaxis=dict(title=None, showticklabels=True, showgrid=False),
+                            yaxis=dict(title="Revenue (Billions)", showticklabels=True, showgrid=True, zeroline=True, zerolinewidth=2, zerolinecolor='gray'),
+                            barmode = 'relative',
+                            height=600,
+                            showlegend=True,
+                            legend=dict(
+                                orientation="h",
+                                yanchor="bottom",
+                                y=-0.3,
+                                xanchor="center",
+                                x=0.5,
+                            ),
+                            
+                        )
+                        st.plotly_chart(fig_rs, use_container_width=True)
+                        st.caption("Data Source: Stockanalysis.com")
+            
+                    with rev_col2:
+                        for idx in rs_pie_data.index:
+                            value = rs_pie_data[idx]
+                            if isinstance(value, str):
+                                if 'M' in value:
+                                    rs_pie_data[idx] = float(value.replace('M', '')) / 1000
+                                else:
+                                    rs_pie_data[idx] = float(value.replace('B', ''))
+                        positive_data = rs_pie_data[rs_pie_data > 0]
+                                
+                        pie_fig = go.Figure(data=[go.Pie(
+                            labels=positive_data.index,
+                            values=positive_data.values,
+                            hole=0.5,
+                            hovertemplate="%{label}<br>" +
+                                        "%{value:.2f}B<br>" +
+                                        "<extra></extra>"
+                        )])
+                        pie_fig.update_layout(
+                            title={"text":f'{upper_ticker} Revenue by Segment ({rs_first_date})', "font": {"size": 20}},
+                            height=600,
+                            showlegend=True,
+                            legend=dict(
+                                orientation="h",
+                                yanchor="bottom",
+                                y=-0.4,
+                                xanchor="center",
+                                x=0.5
+                            )
+                        )
+                        st.plotly_chart(pie_fig, use_container_width=True)
+            except: ""
+            ########################################################
 
-            #st.subheader("Financial Statements Checklist", divider ='gray')
-            #st.caption("These checklists are derived from the concepts outlined by Brian Feroldi for analyzing financial statements.")
-            #st.info("Many companies may have valid reasons to violate these rules. Every negative result should be re-examined to understand the underlying reasons for its occurrence.")
-            fscol1, fscol2, fscol3 =st.columns([3,3,3])
-            with fscol1:
-                # growth rate drop check
+#############################################                      #############################################
+############################################# Ratio & Metrics Data #############################################
+#############################################                      ############################################# 
+
+        with ratios_and_metrics_data:
+            st.subheader("Ratios & Metrics", divider ='gray')
+            try:
+                rm_col1,rm_col2, rm_col3 = st.columns([3,1,3])
+                with rm_col1:
+                    earnings_data = {
+                        'Earnings': ['EPS', 'EPS Yield', 'PEG Ratio'],
+                        '': [eps_value, eps_yield_value, pegRatio_value]
+                    }
+                    df = pd.DataFrame(earnings_data)
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        use_container_width=True,
+                        column_config={
+                            "Earnings": st.column_config.Column(
+                                "Earnings",
+                                width="large"
+                            ),
+                            "": st.column_config.Column(
+                                "",
+                                width="small"
+                            )
+                        }
+                    )
+                    st.write(" ")
+                    
+                    valuation_ratios_data = {
+                        'Valuation Ratios': ['PE', 'Forward PE', 'PB', 'EV/EBITDA'],
+                        '': [pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda]
+                    }
+                    df = pd.DataFrame(valuation_ratios_data)
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        use_container_width=True,
+                        column_config={
+                            "Valuation Ratios": st.column_config.Column(
+                                "Valuation Ratios",
+                                width="large"
+                            ),
+                            "": st.column_config.Column(
+                                "",
+                                width="small"
+                            )
+                        }
+                    )
+                    st.write(" ")
+
+                    dividends_data = {
+                        'Dividends': ['Dividend Per Share', 'Dividend Yield', 'Payout Ratio', 'Ex-Dividend Date'],
+                        '': [dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value]
+                    }
+                    df = pd.DataFrame(dividends_data)
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        use_container_width=True,
+                        column_config={
+                            "Dividends": st.column_config.Column(
+                                "Dividends",
+                                width="large"
+                            ),
+                            "": st.column_config.Column(
+                                "",
+                                width="small"
+                            )
+                        }
+                    )
+                    st.write(" ")
+
+                    growth_data = {
+                        'Growth': ['Revenue Growth', 'Earnings Growth'],
+                        '': [revenue_growth_current_value, earnings_growth_value]
+                    }
+                    df = pd.DataFrame(growth_data)
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        use_container_width=True,
+                        column_config={
+                            "Growth": st.column_config.Column(
+                                "Growth",
+                                width="large"
+                            ),
+                            "": st.column_config.Column(
+                                "",
+                                width="small"
+                            )
+                        }
+                    )
+                    st.write(" ")
+
+                with rm_col3:
+
+                    financial_health_data = {
+                        'Financial Health': ['DE', 'Current Ratio', 'Quick Ratio'],
+                        '': [deRatio_value, current_ratio, quick_ratio]
+                    }
+                    df = pd.DataFrame(financial_health_data)
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        use_container_width=True,
+                        column_config={
+                            "Financial Health": st.column_config.Column(
+                                "Financial Health",
+                                width="large"
+                            ),
+                            "": st.column_config.Column(
+                                "",
+                                width="small"
+                            )
+                        }
+                    )
+                    st.write(" ")
+
+                    efficiency_data = {
+                        'Efficiency': ['Return on Assets', 'Return on Equity'],
+                        '': [roa_value, roe_value]
+                    }
+                    df = pd.DataFrame(efficiency_data)
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        use_container_width=True,
+                        column_config={
+                            "Efficiency": st.column_config.Column(
+                                "Efficiency",
+                                width="large"
+                            ),
+                            "": st.column_config.Column(
+                                "",
+                                width="small"
+                            )
+                        }
+                    )
+                    st.write(" ")
+
+                    margin_data = {
+                        'Margin': ['Profit Margin', 'Gross Margin', 'Operating Margin', 'FCF Margin'],
+                        '': [profitmargin_pct, grossmargin_pct, operatingmargin_pct, fcfmargin_pct]
+                    }
+                    df = pd.DataFrame(margin_data)
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        use_container_width=True,
+                        column_config={
+                            "Margin": st.column_config.Column(
+                                "Margin",
+                                width="large"
+                            ),
+                            "": st.column_config.Column(
+                                "",
+                                width="small"
+                            )
+                        }
+                    )
+                    st.write(" ")
+
+                    holdings_data = {
+                        'Holdings': ['Owned by Insiders', 'Owned by Institutions'],
+                        '': [insiderPct_value, institutionsPct_value]
+                    }
+                    df = pd.DataFrame(holdings_data)
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        use_container_width=True,
+                        column_config={
+                            "Holdings": st.column_config.Column(
+                                "Holdings",
+                                width="large"
+                            ),
+                            "": st.column_config.Column(
+                                "",
+                                width="small"
+                            )
+                        }
+                    )
+                    st.write(" ")
+
+                    scores_data = {
+                        'Scores': ['Piotroski F-Score', 'Altman Z-Score'],
+                        '': [sa_piotroski_value, sa_altmanz_value]
+                    }
+                    df = pd.DataFrame(scores_data)
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        use_container_width=True,
+                        column_config={
+                            "Scores": st.column_config.Column(
+                                "Scores",
+                                width="large"
+                            ),
+                            "": st.column_config.Column(
+                                "",
+                                width="small"
+                            )
+                        }
+                    )
+                    st.write(" ")
+            except: 
+                st.warning("Ratios & Metrics section is not available currently.")
+
+
+#############################################                    #############################################
+############################################# Guru Analysis Data #############################################
+#############################################                    ############################################# 
+
+        with guru_checklist:
+            try:
+                st.info("Please be advised that no company is flawless, and it is unlikely for any company to achieve good results in all aspects outlined in the following checklists. Every negative result should be re-examined to understand the underlying reasons for its occurrence. These checklists are provided solely for reference purposes and should not be considered as financial advice.")
+                st.caption("This page is derived from the financial statements data provided by Yahoo Finance.")
+                
+                def highlight_result(val):
+                    if val == 'GOOD':
+                        color = '#37BC9B'
+                    elif val == 'BAD':
+                        color = '#DA4453'
+                    else:
+                        color ='#AAB2BD'
+                    return f'background-color: {color}; color: white'
+
+                # Track record of no negative earnings
+                # Generally increasing EPS
                 try:
                     eps_select = ['Diluted EPS']
                     eps_values = income_statement.loc[eps_select].fillna(0).values.flatten()
@@ -2714,423 +3037,12 @@ if st.button("Get Data"):
                             if is_drop: drop_result = "BAD"
                             else: drop_result = "GOOD"
                         except: drop_result = 'N/A'
-                except: drop_result = 'N/A'   
-                # revenue check
-                try:
-                    revenue_select = ['Total Revenue']
-                    revenue_values = income_statement.loc[revenue_select].fillna(0).values.flatten()
-                    revenue_values = [float(revenue_value) for revenue_value in revenue_values]
-                    is_revenue_growing = all(revenue_values[i] >= revenue_values[i + 1] for i in range(len(revenue_values) - 1))
-                    if is_revenue_growing: revenue_result = "GOOD"
-                    else: revenue_result = "BAD"
-                except: revenue_result = 'N/A'
-                # gross margin check
-                try: 
-                    gross_margin_values = sa_metrics_df2[sa_metrics_df2['Fiscal Year'].isin(['Gross Margin'])].iloc[:, 2:].fillna(0).values.flatten()
-                    gross_margin_values = [value.rstrip('%') if isinstance(value, str) else value for value in gross_margin_values]
-                    gross_margin_values = pd.to_numeric(gross_margin_values, errors='coerce')
-                    gross_margin_values = pd.Series(gross_margin_values).fillna(0)
-                    gross_margin_values = [float(value) for value in gross_margin_values]
-                    is_gross_growing = all(gross_margin_values[i] >= gross_margin_values[i + 1] for i in range(len(gross_margin_values) - 1))
-                    if is_gross_growing: gross_growing_result = "GOOD"
-                    else: gross_growing_result = "BAD"
-                except: gross_growing_result = 'N/A'
-                # operating expense vs revenue
-                try:
-                    op_expense_select = ['Operating Expense']
-                    op_expense_values = income_statement.loc[op_expense_select].fillna(0).values.flatten()
-                    op_expense_values = [float(op_expense_value) for op_expense_value in op_expense_values]
-                    def calculate_growth_rates(values):
-                        growth_rates = []
-                        for i in range(len(values) - 1):
-                            if values[i + 1] != 0:  
-                                growth_rate = (values[i] - values[i + 1]) / values[i + 1] * 100
-                                growth_rates.append(growth_rate)
-                            else:
-                                growth_rates.append(None)  
-                        return growth_rates
-                    revenue_growth_rates = calculate_growth_rates(revenue_values)
-                    op_expense_growth_rates = calculate_growth_rates(op_expense_values)
-                    revenue_growth_avg_rate = pd.Series(revenue_growth_rates).replace(0, np.nan).mean()
-                    op_expense_avg_rate = pd.Series(op_expense_growth_rates).replace(0, np.nan).mean()
-                    op_expenses_grow_faster = op_expense_avg_rate > revenue_growth_avg_rate
-                    if op_expenses_grow_faster: op_expense_result = "BAD"
-                    else: op_expense_result = "GOOD"
-                except: op_expense_result = 'N/A'
-                # operating expenses check
-                try:
-                    op_expense_values_filtered = [value for value in op_expense_values if value > 0]
-                    percentile_90 = np.percentile(op_expense_values_filtered, 90)
-                    large_charges = [value for value in op_expense_values if value >= percentile_90]
-                    large_charges_frequency = len(large_charges)
-                    frequent_occurrence_threshold = 2
-                    extraordinary_charges = large_charges_frequency >= frequent_occurrence_threshold
-                    if extraordinary_charges: hop_exp_result= "BAD"
-                    else: hop_exp_result = "GOOD"
-                except: hop_exp_result = 'N/A'
-                # dilution check
-                try:
-                    share_change_values = sa_metrics_df2[sa_metrics_df2['Fiscal Year'].isin(['Shares Change (YoY)'])].iloc[:, 2:].fillna(0).values.flatten()
-                    share_change_values = [value.rstrip('%') if isinstance(value, str) else value for value in share_change_values]
-                    share_change_values = pd.to_numeric(share_change_values, errors='coerce')
-                    share_change_values = pd.Series(share_change_values).fillna(0)
-                    share_change_values = [float(value) for value in share_change_values]
-                    if share_change_values[0] > 0: share_dilution_result = "BAD"
-                    else: share_dilution_result = "GOOD"
-                except: share_dilution_result = 'N/A'
-                # tax rate check
-                try: 
-                    tax_select = ['Tax Rate For Calcs']
-                    tax_rate_values = income_statement.loc[tax_select].fillna(0).values.flatten()
-                    tax_rate_values = [float(tax_rate_value) for tax_rate_value in tax_rate_values]
-                    decline_value = tax_rate_values[0]-tax_rate_values[1]
-                    if decline_value<0: tax_rate_result= "BAD"
-                    else: tax_rate_result = "GOOD"
-                except: tax_rate_result = 'N/A'
-                income_checklist_data = [
-                {"Income Statment Checklist": "Growth rate should be consistently increasing", "Result": drop_result},
-                {"Income Statment Checklist": "Revenue should be consistently growing", "Result": revenue_result},
-                {"Income Statment Checklist": "Gross margin should be consistently growing", "Result": gross_growing_result},
-                {"Income Statment Checklist": "Opex growth rate < Revenue growth rate", "Result": op_expense_result},
-                {"Income Statment Checklist": "Large operating expenses should not exist", "Result": hop_exp_result},
-                {"Income Statment Checklist": "High share dilution should not exist", "Result": share_dilution_result},
-                {"Income Statment Checklist": "Sudden decline of tax rate should not exist", "Result": tax_rate_result}
-                ]
-                df_income = pd.DataFrame(income_checklist_data)
-                #st.dataframe(df_income.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
-            
-            with fscol2:
-                #cash and debt ####### #Total Debt and Current Assets
-                try:
-                    totaldebt_value = balance_sheet.loc['Total Debt'].iloc[0]
-                    if pd.isna(totaldebt_value):
-                        totaldebt_value = 0
-                except:
-                    totaldebt_value = 0
-                try:
-                    currentasset_value = balance_sheet.loc['Current Assets'].iloc[0]
-                    if pd.isna(currentasset_value):
-                        currentasset_value = 0
-                except:
-                    currentasset_value = 0
-                try:
-                    if totaldebt_value / currentasset_value < 1.1:
-                        debt_to_asset_result = 'GOOD'
-                    else: 
-                        debt_to_asset_result = 'BAD'
-                except:
-                    debt_to_asset_result = 'N/A'
+                except: drop_result = 'N/A'  
+                ################################################################
 
-                try:
-                    cash_value = balance_sheet.loc['Cash And Cash Equivalents'].iloc[0]
-                    if pd.isna(cash_value):
-                        cash_value = 0
-                except:
-                    cash_value = 0
-                try:
-                    if cash_value > totaldebt_value:
-                        cash_and_debt_result = 'GOOD'
-                    else: 
-                        cash_and_debt_result = 'BAD'
-                except:
-                    cash_and_debt_result = 'N/A'
-                # Accounts receivable
-                try:
-                    accountReceivable_value = balance_sheet.loc['Accounts Receivable'].iloc[0]
-                    if pd.isna(accountReceivable_value):
-                        accountReceivable_value = 0
-                except:
-                    accountReceivable_value = 0
-                try:
-                    if accountReceivable_value > 0:
-                        accountReceivable_result = "BAD"
-                    else: accountReceivable_result = "GOOD"
-                except:
-                    accountReceivable_result = "N/A"
-                # Inventory
-                try:
-                    inventory_value = balance_sheet.loc['Inventory'].iloc[0]
-                    if pd.isna(inventory_value):
-                        inventory_value = 0
-                except:
-                    inventory_value = 0
-                try:
-                    if inventory_value > 0:
-                        inventory_result = "BAD"
-                    else: inventory_result = "GOOD"
-                except:
-                    inventory_result = "N/A"
-                # Current liabilities and cash
-                try:
-                    currentLiabilities_value = balance_sheet.loc['Current Liabilities'].iloc[0]
-                    if pd.isna(currentLiabilities_value):
-                        currentLiabilities_value = 0
-                except:
-                    currentLiabilities_value = 0
-                try:
-                    if currentLiabilities_value > cash_value:
-                        currentLiabilities_result = "BAD"
-                    else: currentLiabilities_result = "GOOD"
-                except:
-                    currentLiabilities_result = "N/A"
-                # short term & long term debt
-                try:
-                    sdebt_value = balance_sheet.loc['Short Term Debt'].iloc[0]
-                    if pd.isna(sdebt_value):
-                        sdebt_value = 0
-                except:
-                    sdebt_value = 0
-                try:
-                    ldebt_value = balance_sheet.loc['Long Term Debt'].iloc[0]
-                    if pd.isna(ldebt_value):
-                        ldebt_value = 0
-                except:
-                    ldebt_value = 0
-                try:
-                    if sdebt_value > 0 or ldebt_value > 0:
-                        snldebt_result = "BAD"
-                    else: snldebt_result = "GOOD"
-                except:
-                    snldebt_result = "N/A"
-                # goodwill and total asset
-                try:
-                    goodwill_value = balance_sheet.loc['Goodwill'].iloc[0]
-                    if pd.isna(goodwill_value):
-                        goodwill_value = 0
-                except:
-                    goodwill_value = 0
-                try:
-                    totalassets_value = balance_sheet.loc['Total Assets'].iloc[0]
-                    if pd.isna(totalassets_value):
-                        totalassets_value = 0
-                except:
-                    totalassets_value = 0
-                try:
-                    if goodwill_value > 0.1 * totalassets_value:
-                        goodwillandTotalassets_result = "BAD"
-                    else: goodwillandTotalassets_result = "GOOD"
-                except:
-                    goodwillandTotalassets_result = "N/A"
-                # preferred stocks
-                try:
-                    preferred_value = balance_sheet.loc['Preferred Stock'].iloc[0]
-                    if pd.isna(preferred_value):
-                        preferred_value = 0
-                except:
-                    preferred_value = 0
-                try:
-                    if preferred_value > 0: 
-                        preferred_result = 'BAD'
-                    else:
-                        preferred_result = 'GOOD'
-                except:
-                    preferred_result = 'N/A'
-                # retained earnings 
-                try:
-                    retained_earnings_select = ['Retained Earnings']
-                    retained_earnings_values = balance_sheet.loc[retained_earnings_select].fillna(0).values.flatten()
-                    retained_earnings_values = [float(retained_earnings_values) for retained_earnings_values in retained_earnings_values]
-                    no_negative_retained_earnings = all(retained_earnings >= 0 for retained_earnings in retained_earnings_values)
-                    retained_earnings_result = all(retained_earnings_values[i] >= retained_earnings_values[i+1] for i in range(len(retained_earnings_values) - 1))
-                except:
-                    no_negative_retained_earnings = retained_earnings_result = "N/A"
-                # treasury stock
-                try:
-                    treasury_value = balance_sheet.loc['Treasury Shares Number'].iloc[0]
-                    if pd.isna(treasury_value):
-                        treasury_value = 0
-                except:
-                    treasury_value = 0
-                try:
-                    if treasury_value > 0:
-                        treasury_result = 'GOOD'
-                    else: 
-                        treasury_result = 'BAD'
-                except:
-                    treasury_result = 'N/A'
-                # deferred revenue
-                try:
-                    deferredRevenue_value = balance_sheet.loc['Non Current Deferred Revenue'].iloc[0]
-                    if pd.isna(deferredRevenue_value):
-                        deferredRevenue_value = 0
-                except:
-                    deferredRevenue_value = 0
-                try:
-                    if deferredRevenue_value > 0:
-                        deferredRevenue_result = 'GOOD'
-                    else: 
-                        deferredRevenue_result = 'BAD'
-                except:
-                    deferredRevenue_result = 'N/A'
-                  
-                balance_checklist_data = [
-                {"Balance Sheet Checklist": "Cash should be more than debt", "Result": debt_to_asset_result},
-                {"Balance Sheet Checklist": "Accounts receivables should not exist", "Result": accountReceivable_result},
-                {"Balance Sheet Checklist": "Inventory should not exist", "Result": inventory_result},
-                {"Balance Sheet Checklist": "Current liabilities < Cash", "Result": currentLiabilities_result},
-                {"Balance Sheet Checklist": "No short-term and long-term debts", "Result": snldebt_result},
-                {"Balance Sheet Checklist": "Goodwill should be less than 10% of total assets", "Result": goodwillandTotalassets_result},
-                {"Balance Sheet Checklist": "Preferred stocks should not exist", "Result": preferred_result},
-                {"Balance Sheet Checklist": "Retained earnings should be positive", "Result": 'GOOD' if no_negative_retained_earnings else 'BAD'},
-                {"Balance Sheet Checklist": "Retained earnings should be growing", "Result": 'GOOD' if retained_earnings_result else 'BAD'},
-                {"Balance Sheet Checklist": "Treasury stocks should exist", "Result": treasury_result},
-                {"Balance Sheet Checklist": "Deferred revenue should exist", "Result": deferredRevenue_result}
-                ]
-                df_balance = pd.DataFrame(balance_checklist_data)
-                #st.dataframe(df_balance.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
-
-            with fscol3:
-                # net income
-                try:
-                    netIncome_select = ['Net Income From Continuing Operations']
-                    netIncome_values = cashflow_statement.loc[netIncome_select].fillna(0).values.flatten()
-                    netIncome_values = [float(netIncome_values) for netIncome_values in netIncome_values]
-                    no_negative_netIncome = all(netIncome >= 0 for netIncome in netIncome_values)
-                    netIncome_result = all(netIncome_values[i] >= netIncome_values[i+1] for i in range(len(netIncome_values) - 1))
-                except: no_negative_netIncome = netIncome_result = "N/A"
-                # share based compensation and net income
-                try:
-                    shareBasedCompensation_value = cashflow_statement.loc['Stock Based Compensation'].iloc[0]
-                    if pd.isna(shareBasedCompensation_value):
-                        shareBasedCompensation_value = 0
-                except:
-                    shareBasedCompensation_value = 0
-                try:
-                    netIncome_value = cashflow_statement.loc['Net Income From Continuing Operations'].iloc[0]
-                    if pd.isna(netIncome_value):
-                        netIncome_value = 0
-                except:
-                    netIncome_value = 0
-                try:
-                    if shareBasedCompensation_value < 0.1 * netIncome_value:
-                        shareBased_and_netIncome_result = 'GOOD'
-                    else: 
-                        shareBased_and_netIncome_result = 'BAD'
-                except:
-                    shareBased_and_netIncome_result = 'N/A'
-                # operating cash flow
-                try:
-                    operatingCash_value = cashflow_statement.loc['Operating Cash Flow'].iloc[0]
-                    if pd.isna(operatingCash_value):
-                        operatingCash_value = 0
-                except:
-                    operatingCash_value = 0
-                try:
-                    if operatingCash_value > netIncome_value:
-                        operating_result = 'GOOD'
-                    else: 
-                        operating_result = 'BAD'
-                except: 
-                    operating_result = 'N/A'
-                # free cash flow
-                try:
-                    fcf_value = cashflow_statement.loc['Free Cash Flow'].iloc[0]
-                    if pd.isna(fcf_value):
-                        fcf_value = 0
-                except:
-                    fcf_value = 0
-                try:
-                    if fcf_value > netIncome_value:
-                        fcf_result = 'GOOD'
-                    else: 
-                        fcf_result = 'BAD'
-                except: 
-                    fcf_result = 'N/A'
-                # CAPEX
-                try:
-                    capex_value = cashflow_statement.loc['Capital Expenditure'].iloc[0]
-                    netincome_number = income_statement.loc['Net Income'].iloc[0]
-                    if pd.isna(capex_value):
-                        capex_value = 0
-                except:
-                    capex_value = 0
-                try:
-                    if capex_value / netincome_number < 0.25:
-                        capex_result = 'GOOD'
-                    else:
-                        capex_result = 'BAD'
-                except:
-                    capex_result = 'N/A'
-                # debt reduction
-                try:
-                    debtIssuance_select = ['Issuance Of Debt']
-                    debtIssuance_values = cashflow_statement.loc[debtIssuance_select].fillna(0).values.flatten()
-                    debtIssuance_values = [float(debtIssuance_values) for debtIssuance_values in debtIssuance_values]
-                    negative_debtIssuance = all(debtIssuance <= 0 for debtIssuance in debtIssuance_values)
-                except: negative_debtIssuance = "N/A"
-                # stock repurchase
-                try:
-                    stock_repurchase_value = cashflow_statement.loc['Repurchase Of Capital Stock'].iloc[0]
-                    if pd.isna(stock_repurchase_value):
-                        stock_repurchase_value = 0
-                except:
-                    stock_repurchase_value = 0
-                try:
-                    if stock_repurchase_value <= 0:
-                        stock_repurchase_result = 'GOOD'
-                    else:
-                        stock_repurchase_result = 'BAD'
-                except:
-                    stock_repurchase_result = 'N/A'
-                # dividend paid
-                try:
-                    dividendPaid_select = ['Cash Dividends Paid']
-                    dividendPaid_values = cashflow_statement.loc[dividendPaid_select].fillna(0).values.flatten()
-                    dividendPaid_values = [float(dividendPaid_values) for dividendPaid_values in dividendPaid_values]
-                    negative_dividendPaid = all(dividendPaid <= 0 for dividendPaid in dividendPaid_values)
-                except: negative_dividendPaid = "N/A"
-                # changes in cash balance
-                try:
-                    cic_select = ['Changes In Cash']
-                    cic_values = cashflow_statement.loc[cic_select].fillna(0).values.flatten()
-                    cic_values = [float(cid_values) for cid_values in cid_values]
-                    cic_result = all(cic_values[i] >= cic_values[i+1] for i in range(len(cic_values) - 1))
-                except: cic_result = "N/A"
-                cash_flow_checklist_data = [
-                {"Cash Flow Statement Checklist": "Net incomes should be positive", "Result": 'GOOD' if no_negative_netIncome else 'BAD'},
-                {"Cash Flow Statement Checklist": "Net incomes should be growing", "Result": 'GOOD' if netIncome_result else 'BAD'},
-                {"Cash Flow Statement Checklist": "Stock based compensation < 10% of net income", "Result": shareBased_and_netIncome_result},
-                {"Cash Flow Statement Checklist": "OCF should be higher than net income", "Result": operating_result},
-                {"Cash Flow Statement Checklist": "FCF should be higher than net income", "Result": fcf_result},
-                {"Cash Flow Statement Checklist": "CAPEX margin should be less than 25%", "Result": capex_result},
-                {"Cash Flow Statement Checklist": "Debt issuance should be negative", "Result": 'GOOD' if negative_debtIssuance else 'BAD'},
-                {"Cash Flow Statement Checklist": "Stock repurchase should be negative", "Result": stock_repurchase_result},
-                {"Cash Flow Statement Checklist": "Dividend paid should be negative", "Result": 'GOOD' if negative_dividendPaid else 'BAD'},
-                {"Cash Flow Statement Checklist": "Change in cash should be increasing", "Result": 'GOOD' if cic_result else 'BAD'}
-                ]
-                df_cash_flow = pd.DataFrame(cash_flow_checklist_data)
-                #st.dataframe(df_cash_flow.style.applymap(highlight_result, subset=['Result']),use_container_width=True, hide_index=True)
-
-
-#############################################                    #############################################
-############################################# Guru Analysis Data #############################################
-#############################################                    ############################################# 
-
-        with guru_checklist:
-            try:
-                st.info("Please be advised that no company is flawless, and it is unlikely for any company to achieve good results in all aspects outlined in the following checklists. Every negative result should be re-examined to understand the underlying reasons for its occurrence. These checklists are provided solely for reference purposes and should not be considered as financial advice.")
-                st.caption("This page is derived from the financial statements data provided by Yahoo Finance.")
-                # Long Term Debt and Net Income
-                try:
-                    longterm_debt_value = balance_sheet.loc['Long Term Debt'].iloc[0]
-                    if pd.isna(longterm_debt_value):
-                        longterm_debt_value = 0
-                except:
-                    longterm_debt_value = 0
-                try:
-                    netincome_value = income_statement.loc['Net Income'].iloc[0]
-                    if pd.isna(netincome_value):
-                        netincome_value = 0
-                except:
-                    netincome_value = 0
-                if longterm_debt_value <= 5 * netincome_value:
-                    lt_debt_result = 'GOOD'
-                else:
-                    lt_debt_result = 'BAD'
-                #st.write(longterm_debt_value)
-                #st.write(netincome_value)
-                #st.write(f'Longterm Debt: {lt_debt_result}')
-                # EPS
+                # Track record of no negative earnings
+                # Generally increasing EPS
+                # EPS from current year should be higher than EPS from last 5 years
                 eps_select = ['Diluted EPS']
                 eps_values = income_statement_flipped.loc[eps_select].fillna(0).values.flatten()
                 eps_values = [float(eps_value) for eps_value in eps_values]
@@ -3142,18 +3054,37 @@ if st.button("Get Data"):
                     eps_result = 'GOOD'
                 else:
                     eps_result = 'BAD'
-                #st.write(eps_current)
-                #st.write(eps_5y)
-                #st.write(f'EPS: {eps_result}')
-                # Earning Yield
+                ################################################################
+
+                # Long-term debt should not be more than 5 times annual earnings
+                try:
+                    longterm_debt_value = balance_sheet_flipped.loc['Long Term Debt'].iloc[0]
+                    if pd.isna(longterm_debt_value):
+                        longterm_debt_value = 0
+                except:
+                    longterm_debt_value = 0
+                try:
+                    netincome_value = income_statement_flipped.loc['Net Income'].iloc[0]
+                    # if pd.isna(netincome_value):
+                    #     netincome_value = 0
+                except:
+                    netincome_value = 0
+                if longterm_debt_value <= 5 * netincome_value:
+                    lt_debt_result = 'GOOD'
+                else:
+                    lt_debt_result = 'BAD'
+                ################################################################
+
+                # Earnings yield should be higher than the long-term Treasury yield
                 earning_yield_value = eps/price
                 if earning_yield_value > 0.03:
                     earningyield_result = 'GOOD'
                 else:
                     earningyield_result = 'BAD'
-                #st.write(earning_yield_value)
-                #st.write(f'Earning yield: {earningyield_result}')
-                # ROE
+                
+                ################################################################
+
+                # 5 years average ROE should be at least 15%
                 roe_values = sa_metrics_df[sa_metrics_df['Fiscal Year'].isin(['Return on Equity (ROE)'])].iloc[:, 2:].fillna(0).values.flatten()
                 roe_values = [value.rstrip('%') if isinstance(value, str) else value for value in roe_values]
                 roe_values = pd.to_numeric(roe_values, errors='coerce')
@@ -3163,8 +3094,9 @@ if st.button("Get Data"):
                     roe_avg_result = 'GOOD'
                 else:
                     roe_avg_result = 'BAD'
-                #st.write(f'ROE: {roe_avg_result}')
-                # ROIC
+                ################################################################
+
+                # 5 years average ROIC should be at least 12%
                 roic_values = sa_metrics_df[sa_metrics_df['Fiscal Year'].isin(['Return on Capital (ROIC)'])].iloc[:, 2:].fillna(0).values.flatten()
                 roic_values = [value.rstrip('%') if isinstance(value, str) else value for value in roic_values]
                 roic_values = pd.to_numeric(roic_values, errors='coerce')
@@ -3174,43 +3106,9 @@ if st.button("Get Data"):
                     roic_avg_result = 'GOOD'
                 else:
                     roic_avg_result = 'BAD'
-                #st.write(f'ROIC: {roic_avg_result}')
-                # Dividend yield
-                divyield = 'N/A' if dividendYield == 'N/A' else dividendYield*100
-                if divyield != 'N/A':
-                    if divyield > 0:
-                        divyield_result = 'GOOD'
-                    else: 
-                        divyield_result = 'BAD'
-                else:
-                    divyield_result = 'No Dividend'
-                # Current Ratio
-                current_ratio_value = 0 if current_ratio =='N/A' else current_ratio
-                if current_ratio_value >= 1.5:
-                    current_ratio_result = 'GOOD'
-                else:
-                    current_ratio_result = 'BAD'
-                # Total Debt and Current Assets
-                
-                # PE Ratio
-                pe = 'N/A' if peRatio == 'N/A' else peRatio
-                if pe != 'N/A':
-                    if pe <= 15:
-                        pe_result = 'GOOD'
-                    else: 
-                        pe_result = 'BAD'
-                else:
-                    pe_result = "No data for PE Ratio."
-                # PB Ratio
-                pb = 'N/A' if pbRatio == 'N/A' else pbRatio
-                if pb != 'N/A':
-                    if pb <= 1.5:
-                        pb_result = 'GOOD'
-                    else: 
-                        pb_result = 'BAD'
-                else:
-                    pb_result = "No data for PB Ratio."
-                # Gross Margin
+                ################################################################
+
+                # Gross Margin should be greater than 40%
                 grossm_value = 'N/A' if grossmargin == 'N/A' else float(grossmargin)*100
                 if grossm_value != 'N/A':
                     if grossm_value > 40:
@@ -3219,19 +3117,21 @@ if st.button("Get Data"):
                         grossm_result = 'BAD'
                 else:
                     grossm_result = 'N/A'
-                # SG&A Margin
+                ################################################################
+
+                # SG&A Margin should be less than 30%
                 try:
-                    sgna_value = income_statement.loc['Selling General And Administration'].iloc[0]
+                    sgna_value = income_statement_flipped.loc['Selling General And Administration'].iloc[0]
                     if pd.isna(sgna_value):
-                        sgna_value = 0
+                        sgna_value = 'N/A'
                 except:
-                    sgna_value = 0
+                    sgna_value = 'N/A'
                 try:
-                    gross_value = income_statement.loc['Gross Profit'].iloc[0]
+                    gross_value = income_statement_flipped.loc['Gross Profit'].iloc[0]
                     if pd.isna(gross_value):
-                        gross_value = 0
+                        gross_value = 'N/A'
                 except:
-                    gross_value = 0
+                    gross_value = 'N/A'
                 try:
                     if sgna_value / gross_value < 0.3:
                         sgna_result = 'GOOD'
@@ -3239,13 +3139,15 @@ if st.button("Get Data"):
                         sgna_result = 'BAD'
                 except:
                     sgna_result = 'N/A'
-                # R&D Margin
+                ################################################################
+
+                # R&D Margin should be less than 30%
                 try:
-                    rnd_value = income_statement.loc['Research And Development'].iloc[0]
+                    rnd_value = income_statement_flipped.loc['Research And Development'].iloc[0]
                     if pd.isna(rnd_value):
-                        rnd_value = 0
+                        rnd_value = 'N/A'
                 except:
-                    rnd_value = 0
+                    rnd_value = 'N/A'
                 try:
                     if rnd_value / gross_value < 0.3:
                         rnd_result = 'GOOD'
@@ -3253,13 +3155,15 @@ if st.button("Get Data"):
                         rnd_result = 'BAD'
                 except:
                     rnd_result = 'N/A'
-                # Depreciation Margin
+                ################################################################
+
+                # Depreciation Margin should be less than 10%
                 try:
-                    depreciation_value = income_statement.loc['Depreciation And Amortization In Income Statement'].iloc[0]
+                    depreciation_value = income_statement_flipped.loc['Depreciation And Amortization In Income Statement'].iloc[0]
                     if pd.isna(depreciation_value):
-                        depreciation_value = 0
+                        depreciation_value = 'N/A'
                 except:
-                    depreciation_value = 0
+                    depreciation_value = 'N/A'
                 try:
                     if depreciation_value / gross_value < 0.1:
                         depreciation_result = 'GOOD'
@@ -3267,19 +3171,21 @@ if st.button("Get Data"):
                         depreciation_result = 'BAD'
                 except:
                     depreciation_result = 'N/A'
-                # Interest Margin
+                ################################################################
+
+                # Interest Expense Margin should be less than 15%
                 try:
-                    operate_value = income_statement.loc['Operating Income'].iloc[0]
+                    operate_value = income_statement_flipped.loc['Operating Income'].iloc[0]
                     if pd.isna(operate_value):
-                        operate_value = 0
+                        operate_value = 'N/A'
                 except:
-                    operate_value = 0
+                    operate_value = 'N/A'
                 try:
-                    interest_value = income_statement.loc['Interest Expense'].iloc[0]
+                    interest_value = income_statement_flipped.loc['Interest Expense'].iloc[0]
                     if pd.isna(interest_value):
-                        interest_value = 0
+                        interest_value = 'N/A'
                 except:
-                    interest_value = 0
+                    interest_value = 'N/A'
                 try:
                     if interest_value / operate_value < 0.15:
                         interest_result = 'GOOD'
@@ -3287,13 +3193,15 @@ if st.button("Get Data"):
                         interest_result = 'BAD'
                 except:
                     interest_result = 'N/A'
-                # Income tax expense
+                ################################################################
+
+                # Tax Margin should be at corporate tax rate
                 try:
-                    taxrate_value = income_statement.loc['Tax Rate For Calcs'].iloc[0]
+                    taxrate_value = income_statement_flipped.loc['Tax Rate For Calcs'].iloc[0]
                     if pd.isna(taxrate_value):
-                        taxrate_value = 0
+                        taxrate_value = 'N/A'
                 except:
-                    taxrate_value = 0
+                    taxrate_value = 'N/A'
                 try:
                     if taxrate_value >= 0.21:
                         taxrate_result = 'GOOD'
@@ -3301,7 +3209,9 @@ if st.button("Get Data"):
                         taxrate_result = 'BAD'
                 except:
                     taxrate_result = 'N/A'
-                # Profit Margin
+                ################################################################
+
+                # Net Margin should be greater than 20%
                 profitm_value = 'N/A' if profitmargin == 'N/A' else float(profitmargin)*100
                 if profitm_value != 'N/A':
                     if profitm_value > 20:
@@ -3310,27 +3220,43 @@ if st.button("Get Data"):
                         profitm_result = 'BAD'
                 else:
                     profitm_result = 'N/A'
-                # Cash and Debt
-                
-                #Adjust Debt to Equity
+                ################################################################
+
+                # Cash should be more than debt
                 try:
-                    liability_value = balance_sheet.loc['Total Liabilities Net Minority Interest'].iloc[0]
+                    cash_value = balance_sheet_flipped.loc['Cash And Cash Equivalents'].iloc[0]
+                    if pd.isna(cash_value):
+                        cash_value = 'N/A'
+                except:
+                    cash_value = 'N/A'
+                try:
+                    totaldebt_value = balance_sheet_flipped.loc['Total Debt'].iloc[0]
+                    if pd.isna(totaldebt_value):
+                        totaldebt_value = 'N/A'
+                except:
+                    totaldebt_value = 'N/A'
+                try:
+                    if cash_value > totaldebt_value:
+                        cash_and_debt_result = 'GOOD'
+                    else: 
+                        cash_and_debt_result = 'BAD'
+                except:
+                    cash_and_debt_result = 'N/A'
+                ################################################################
+
+                # Adjusted Debt to Equity should be less than 0.8
+                try:
+                    liability_value = balance_sheet_flipped.loc['Total Liabilities Net Minority Interest'].iloc[0]
                     if pd.isna(liability_value):
-                        liability_value = 0
+                        liability_value = 'N/A'
                 except:
-                    liability_value = 0
+                    liability_value = 'N/A'
                 try:
-                    shareholder_value = balance_sheet.loc['Stockholders Equity'].iloc[0]
+                    shareholder_value = balance_sheet_flipped.loc['Stockholders Equity'].iloc[0]
                     if pd.isna(shareholder_value):
-                        shareholder_value = 0
+                        shareholder_value = 'N/A'
                 except:
-                    shareholder_value = 0
-                try:
-                    treasury_share_value = balance_sheet.loc['Treasury Shares Number'].iloc[0]
-                    if pd.isna(treasury_share_value):
-                        treasury_share_value = 0
-                except:
-                    shareholder_value = 0
+                    shareholder_value = 'N/A'
                 try:
                     if liability_value / shareholder_value < 1:
                         debt_to_equity_result = 'GOOD'
@@ -3338,11 +3264,15 @@ if st.button("Get Data"):
                         debt_to_equity_result = 'BAD'
                 except:
                     debt_to_equity_result = 'N/A'
-                # Preferred stock
-                
-                # Retained Earnings
-                
-                # Treasury Stock
+                ################################################################
+
+                # Treasury stocks should exist
+                try:
+                    treasury_share_value = balance_sheet_flipped.loc['Treasury Stock'].iloc[0]
+                    if pd.isna(treasury_share_value):
+                        treasury_share_value = 'N/A'
+                except:
+                    treasury_share_value = 'N/A'
                 try:
                     if treasury_share_value > 0:
                         treasury_share_result = 'GOOD'
@@ -3350,9 +3280,116 @@ if st.button("Get Data"):
                         treasury_share_result = 'BAD'
                 except:
                     treasury_share_result = 'N/A'
-                # Capex Margin
+                ################################################################
+
+                # Preferred stocks should not exist
+                try:
+                    preferred_value = balance_sheet_flipped.loc['Preferred Stock'].iloc[0]
+                    if pd.isna(preferred_value):
+                        preferred_value = 'N/A'
+                except:
+                    preferred_value = 'N/A'
+                try:
+                    if preferred_value > 0: 
+                        preferred_result = 'BAD'
+                    else:
+                        preferred_result = 'GOOD'
+                except:
+                    preferred_result = 'N/A'
+                ################################################################
+
+                # Retained Earnings should be consistently growing
+                try:
+                    retained_earnings_select = ['Retained Earnings']
+                    retained_earnings_values = balance_sheet_flipped.loc[retained_earnings_select].fillna(0).values.flatten()
+                    retained_earnings_values = [float(retained_earnings_values) for retained_earnings_values in retained_earnings_values]
+                    no_negative_retained_earnings = all(retained_earnings >= 0 for retained_earnings in retained_earnings_values)
+                    retained_earnings_result = all(retained_earnings_values[i] >= retained_earnings_values[i+1] for i in range(len(retained_earnings_values) - 1))
+                except:
+                    no_negative_retained_earnings = retained_earnings_result = "N/A"
+                ################################################################
+
+                # CAPEX margin should be less than 25%
+                try:
+                    capex_value = cashflow_statement_flipped.loc['Capital Expenditure'].iloc[0]
+                    netincome_number = income_statement_flipped.loc['Net Income'].iloc[0]
+                    if pd.isna(capex_value):
+                        capex_value = 'N/A'
+                except:
+                    capex_value = 'N/A'
+                try:
+                    if capex_value / netincome_number < 0.25:
+                        capex_result = 'GOOD'
+                    else:
+                        capex_result = 'BAD'
+                except:
+                    capex_result = 'N/A'
+                ################################################################
+
+                # Dividend yield should be greater than 0
+                divyield = 'N/A' if dividendYield == 'N/A' else dividendYield*100
+                if divyield != 'N/A':
+                    if divyield > 0:
+                        divyield_result = 'GOOD'
+                    else: 
+                        divyield_result = 'BAD'
+                else:
+                    divyield_result = 'No Dividend'
+                ################################################################
+
+                # Current ratio should be greater than or equal 1.5
+                current_ratio_value = 0 if current_ratio =='N/A' else current_ratio
+                if current_ratio_value >= 1.5:
+                    current_ratio_result = 'GOOD'
+                else:
+                    current_ratio_result = 'BAD'
+                ################################################################
+
+                # Total debt to current asset should be less than 1.1
+                try:
+                    totaldebt_value = balance_sheet_flipped.loc['Total Debt'].iloc[0]
+                    if pd.isna(totaldebt_value):
+                        totaldebt_value = 'N/A'
+                except:
+                    totaldebt_value = 'N/A'
+                try:
+                    currentasset_value = balance_sheet_flipped.loc['Current Assets'].iloc[0]
+                    if pd.isna(currentasset_value):
+                        currentasset_value = 'N/A'
+                except:
+                    currentasset_value = 'N/A'
+                try:
+                    if totaldebt_value / currentasset_value < 1.1:
+                        debt_to_asset_result = 'GOOD'
+                    else: 
+                        debt_to_asset_result = 'BAD'
+                except:
+                    debt_to_asset_result = 'N/A'
+                ################################################################
+
+                # PE ratio should be less than or equal 15
+                pe = 'N/A' if peRatio == 'N/A' else peRatio
+                if pe != 'N/A':
+                    if pe <= 15:
+                        pe_result = 'GOOD'
+                    else: 
+                        pe_result = 'BAD'
+                else:
+                    pe_result = "No data for PE Ratio."
+                ################################################################
+
+                # PB ratio should be less than or equal 1.5
+                pb = 'N/A' if pbRatio == 'N/A' else pbRatio
+                if pb != 'N/A':
+                    if pb <= 1.5:
+                        pb_result = 'GOOD'
+                    else: 
+                        pb_result = 'BAD'
+                else:
+                    pb_result = "No data for PB Ratio."
+                ################################################################
                 
-                # PE and forward PE
+                # Trailing PE should be less than 25
                 try:
                     if float(pe_value) < 25:
                         peterlynch_pe_result = 'GOOD'
@@ -3360,6 +3397,9 @@ if st.button("Get Data"):
                         peterlynch_pe_result = 'BAD'
                 except:
                     peterlynch_pe_result = 'N/A'
+                ################################################################
+
+                # Forward PE should be less than 15
                 try:
                     if float(forwardPe_value) < 15:
                         peterlynch_forwardpe_result = 'GOOD'
@@ -3367,7 +3407,9 @@ if st.button("Get Data"):
                         peterlynch_forwardpe_result = 'BAD'
                 except:
                     peterlynch_forwardpe_result = 'N/A'
-                # Institutional ownership
+                ################################################################
+
+                # Institutional ownership should be less than 10%
                 try: 
                     if float(institutionsPct) < 0.1:
                         peterlynch_instututional_result = 'GOOD'
@@ -3375,7 +3417,9 @@ if st.button("Get Data"):
                         peterlynch_instututional_result = 'BAD'
                 except:
                     peterlynch_instututional_result = 'N/A'
-                # Insider ownership
+                ################################################################
+
+                # Insider ownership should be greater than 20%
                 try:
                     if float(insiderPct) > 0.2:
                         peterlynch_insider_result = 'GOOD'
@@ -3383,7 +3427,9 @@ if st.button("Get Data"):
                         peterlynch_insider_result = 'BAD'
                 except:
                     peterlynch_insider_result = 'N/A'
-                # EPS growth
+                ################################################################
+
+                # EPS growth for last 5 years should be greater than 15%
                 eps_growth_values = sa_metrics_df2.loc[sa_metrics_df2['Fiscal Year'] == 'EPS Growth'].iloc[:, 2:].fillna(0).values.flatten()
                 eps_growth_values = [value.rstrip('%') if isinstance(value, str) else value for value in eps_growth_values]
                 eps_growth_values = pd.to_numeric(eps_growth_values, errors='coerce')
@@ -3395,7 +3441,9 @@ if st.button("Get Data"):
                         peterlynch_epsgrowth_result = 'BAD'
                 except: 
                     peterlynch_epsgrowth_result = 'N/A'
-                # D/E ratio 
+                ################################################################
+
+                # Debt/Equity should be less than 35%
                 try:
                     if float(deRatio_value) < 0.35:
                         peterlynch_deratio_result = 'GOOD'
@@ -3403,6 +3451,7 @@ if st.button("Get Data"):
                         peterlynch_deratio_result = 'BAD'
                 except:
                     peterlynch_deratio_result = 'N/A'
+                ################################################################
 
                 buffettology_data = [
                     {"Buffettology Checklist": "Track record of no negative earnings", "Result": 'GOOD' if no_negative_earnings else 'BAD'},
@@ -4334,4 +4383,14 @@ if st.button("Get Data"):
     except Exception as e:
         st.error(f"Failed to fetch data. Please check your ticker again.")
         st.warning("This tool supports only tickers from the U.S. stock market. Please note that ETFs and cryptocurrencies are not available for analysis. If the entered ticker is valid but the tool does not display results, it may be due to missing data or a technical issue. Kindly try again later. If the issue persists, please contact the developer for further assistance.")
+''
+st.subheader("", divider ='gray')
+iiqc1, iiqc2 = st.columns ([3,1])
+with iiqc1:
+    st.write("")
+    st.markdown("**Disclaimer:**")
+    st.write("This analysis dashboard is designed to enable beginner investors to analyze stocks effectively and with ease. Please note that the information in this page is intended for educational purposes only and it does not constitute investment advice or a recommendation to buy or sell any security. We are not responsible for any losses resulting from trading decisions based on this information.")
+with iiqc2:
+    invest_iq_central='./Image/InvestIQCentral.png'
+    st.image(invest_iq_central,width=300)
 ''
