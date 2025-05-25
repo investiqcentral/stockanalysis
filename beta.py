@@ -2715,7 +2715,7 @@ if st.button("Get Data"):
                         for col in sa_metrics_rs_df.columns:
                             if col != 'Date':
                                 original_values = sa_metrics_rs_df[col].copy()
-                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].str.replace('B', '').str.replace('M', '')
+                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].str.replace('B', '').str.replace('M', '').str.replace('-', '0')
                                 sa_metrics_rs_df[col] = sa_metrics_rs_df[col].astype(float)
                                 sa_metrics_rs_df[col] = sa_metrics_rs_df[col].where(~original_values.str.contains('M', na=False), sa_metrics_rs_df[col]/1000)
             
@@ -2757,7 +2757,9 @@ if st.button("Get Data"):
                         for idx in rs_pie_data.index:
                             value = rs_pie_data[idx]
                             if isinstance(value, str):
-                                if 'M' in value:
+                                if value == '-':
+                                    rs_pie_data[idx] = 0.0
+                                elif 'M' in value:
                                     rs_pie_data[idx] = float(value.replace('M', '')) / 1000
                                 else:
                                     rs_pie_data[idx] = float(value.replace('B', ''))
