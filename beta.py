@@ -383,6 +383,28 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         insider_mb = pd.DataFrame()
     ########################
 
+    ##### Market Beat earnings estimate #####
+    try:
+        mb_earning_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/earnings/'
+        mb_earning_response = requests.get(mb_earning_url)
+        mb_earning_soup = BeautifulSoup(mb_earning_response.content, "html.parser")
+        mb_earning_table = mb_earning_soup.find_all('table')[0]
+        headers = [header.get_text(strip=True) for header in mb_earning_table.find_all('th')]
+        headers[2] = "Stock's Industry"
+        rows = []
+        for row in mb_earning_table.find_all('tr')[1:]:
+            row_data = [cell.get_text(strip=True) for cell in row.find_all('td')]
+            rows.append(row_data)
+        mb_earning_df = pd.DataFrame(rows, columns=headers)
+        selected_columns = ["Quarter", "Stock's Industry", "High Estimate", "Average Estimate"]
+        mb_earning_df = mb_earning_df[selected_columns]
+        mb_earning_df = mb_earning_df.rename(columns={"Stock's Industry": "Low Estimate"})
+        mb_earning_df = mb_earning_df[~mb_earning_df['Quarter'].str.contains('FY')]
+    except Exception as e:
+        st.write(e) 
+        mb_earning_df = ""
+    ########################
+
     ##### Yahoo Finance #####
     ##### Profile #####
     name = stock.info.get('longName', 'N/A')
@@ -898,7 +920,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, \
     quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, ticker_id, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, \
     sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sa_metrics_rs_df, rs_first_date, rs_pie_data, \
-    insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, \
+    insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, mb_earning_df, \
     end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
     hist_price, \
     analysis3, analysis2, analysis
@@ -941,7 +963,7 @@ if st.button("Get Data"):
         performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, \
         quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, ticker_id, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, \
         sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sa_metrics_rs_df, rs_first_date, rs_pie_data, \
-        insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, \
+        insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, mb_earning_df, \
         end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
         hist_price, \
         analysis3, analysis2, analysis = get_stock_data(ticker, apiKey if apiKey.strip() else None, use_ai)
@@ -1353,7 +1375,7 @@ if st.button("Get Data"):
                         )
                         fig = go.Figure(data=[bar, estimate])
                         fig.update_layout(
-                            title='Earnings Estimate vs Actual',
+                            title={"text":'Earnings Estimate vs Actual',"font": {"size": 20}},
                             title_y=1,  
                             title_x=0, 
                             margin=dict(t=30, b=40, l=40, r=30),
@@ -1366,6 +1388,7 @@ if st.button("Get Data"):
                             width=600,
                         )
                         st.plotly_chart(fig, use_container_width=True)
+                        st.caption("Data source: Yahoo Finance")
                     else:
                         st.write(f'{name} has no earning estimates data.')
                 
@@ -1390,96 +1413,141 @@ if st.button("Get Data"):
             
                 with ecol3:
                     try:
-                        eps_data = eps_trend.loc[["0y", "+1y"], ["current", "7daysAgo", "30daysAgo", "60daysAgo", "90daysAgo"]]
-                        eps_data = eps_data.T.reset_index()
-                        eps_data.columns = ['TimePeriod', 'CurrentYear', 'NextYear']
-                        label_map = {
-                                'current': 'Current',
-                                '7daysAgo': '7 Days Ago',
-                                '30daysAgo': '30 Days Ago',
-                                '60daysAgo': '60 Days Ago',
-                                '90daysAgo': '90 Days Ago'
-                        }
-                        eps_data['TimePeriod'] = eps_data['TimePeriod'].map(label_map)
-                        eps_melted = pd.melt(eps_data, id_vars=['TimePeriod'], value_vars=['CurrentYear', 'NextYear'],
-                                                var_name='Year', value_name='EPS')
-                        current_year_data = eps_melted[eps_melted['Year'] == 'CurrentYear']
-                        next_year_data = eps_melted[eps_melted['Year'] == 'NextYear']
-                        color_map = {'CurrentYear': '#9678DC', 'NextYear': '#D772AD'}
+                        estimate_columns = ["Low Estimate", "High Estimate", "Average Estimate"]
+                        for col in estimate_columns:
+                            mb_earning_df[col] = pd.to_numeric(mb_earning_df[col].str.replace('$', ''), errors='coerce')
                         fig = go.Figure()
-                        fig.add_trace(go.Scatter(
-                                x=current_year_data['TimePeriod'],
-                                y=current_year_data['EPS'],
-                                mode='lines+markers',
-                                name='Current Year',
-                                line=dict(color=color_map['CurrentYear']),
-                                marker=dict(color=color_map['CurrentYear'])
-                        ))
-                        fig.add_trace(go.Scatter(
-                                x=next_year_data['TimePeriod'],
-                                y=next_year_data['EPS'],
-                                mode='lines+markers',
-                                name='Next Year',
-                                line=dict(color=color_map['NextYear']),
-                                marker=dict(color=color_map['NextYear'])
-                        ))
+                        colors = {
+                                'Low Estimate': '#3BAFDA',
+                                'High Estimate': '#4A89DC',
+                                'Average Estimate': '#F6BB42'
+                            }
+                        for column in estimate_columns:
+                            fig.add_trace(
+                                go.Bar(
+                                    name=column,
+                                    x=mb_earning_df['Quarter'],
+                                    y=mb_earning_df[column],
+                                    text=mb_earning_df[column].round(2),
+                                    textposition='none',
+                                    # textposition='auto',
+                                    # textangle=-90,
+                                    # textfont=dict(size=80), 
+                                    marker_color=colors[column],
+                                    hovertemplate="%{x}<br>" +
+                                                f"{column}: $%{{y:.2f}}<br>" +
+                                                "<extra></extra>"
+                                )
+                            )
                         fig.update_layout(
-                                title='EPS Trend',
-                                title_y=1,  
-                                title_x=0, 
-                                margin=dict(t=30, b=40, l=40, r=30),
-                                xaxis=dict(
-                                    title=None,
-                                    categoryorder='array',
-                                    showgrid=True,  
-                                    categoryarray=['90 Days Ago', '60 Days Ago', '30 Days Ago', '7 Days Ago', 'Current'],
-                                ),
-                                yaxis=dict(
-                                    title='EPS',
-                                    showgrid=True
-                                ),
-                                height=400,
-                                legend=dict(title_text=None),
+                            title={"text": f"{upper_ticker} Earnings Estimates", "font": {"size": 20}},
+                            xaxis=dict(title=None, showticklabels=True, showgrid=False),
+                            yaxis=dict(title="Estimate (USD)", showticklabels=True, showgrid=True),
+                            barmode='group',
+                            margin=dict(t=30, b=40, l=40, r=30),
+                            height=400,
+                            showlegend=True,
+                            legend=dict(
+                                orientation="h",
+                                yanchor="bottom",
+                                y=-0.25,
+                                xanchor="center",
+                                x=0.5
+                            )
                         )
                         st.plotly_chart(fig, use_container_width=True)
+                        st.caption("Data source: MarketBeat")
                     except:
                         try:
-                            epsmetrics = ['EPS (Diluted)']
-                            sa_eps_df_filtered = sa_metrics_df2[sa_metrics_df2['Fiscal Year'].isin(epsmetrics)]
-                            sa_eps_df_melted = sa_eps_df_filtered.melt(id_vars=['Fiscal Year'], 
-                                                        var_name='Year', 
-                                                        value_name='Value')
-                            eps_unique_years = sa_eps_df_melted['Year'].unique()
-                            eps_unique_years_sorted = sorted([year for year in eps_unique_years if year != 'TTM'])
-                            if 'TTM' in eps_unique_years:
-                                eps_unique_years_sorted.append('TTM')
-                            figg = go.Figure()
-                            for fiscal_year in sa_eps_df_melted['Fiscal Year'].unique():
-                                filtered_data = sa_eps_df_melted[sa_eps_df_melted['Fiscal Year'] == fiscal_year]
-                                figg.add_trace(go.Scatter(
-                                    x=filtered_data['Year'],
-                                    y=filtered_data['Value'],
+                            eps_data = eps_trend.loc[["0y", "+1y"], ["current", "7daysAgo", "30daysAgo", "60daysAgo", "90daysAgo"]]
+                            eps_data = eps_data.T.reset_index()
+                            eps_data.columns = ['TimePeriod', 'CurrentYear', 'NextYear']
+                            label_map = {
+                                    'current': 'Current',
+                                    '7daysAgo': '7 Days Ago',
+                                    '30daysAgo': '30 Days Ago',
+                                    '60daysAgo': '60 Days Ago',
+                                    '90daysAgo': '90 Days Ago'
+                            }
+                            eps_data['TimePeriod'] = eps_data['TimePeriod'].map(label_map)
+                            eps_melted = pd.melt(eps_data, id_vars=['TimePeriod'], value_vars=['CurrentYear', 'NextYear'],
+                                                    var_name='Year', value_name='EPS')
+                            current_year_data = eps_melted[eps_melted['Year'] == 'CurrentYear']
+                            next_year_data = eps_melted[eps_melted['Year'] == 'NextYear']
+                            color_map = {'CurrentYear': '#9678DC', 'NextYear': '#D772AD'}
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(
+                                    x=current_year_data['TimePeriod'],
+                                    y=current_year_data['EPS'],
                                     mode='lines+markers',
-                                    name=str(fiscal_year)
-                                ))
-                            figg.update_layout(
-                                title={"text":"EPS Trend", "font": {"size": 20}},
-                                title_y=1,  
-                                title_x=0, 
-                                margin=dict(t=30, b=30, l=40, r=30),
-                                xaxis_title=None,
-                                yaxis_title='Value',
-                                xaxis=dict(tickmode='array', tickvals=eps_unique_years_sorted, autorange='reversed',showgrid=True),
-                                yaxis=dict(showgrid=True),
-                                height=400
+                                    name='Current Year',
+                                    line=dict(color=color_map['CurrentYear']),
+                                    marker=dict(color=color_map['CurrentYear'])
+                            ))
+                            fig.add_trace(go.Scatter(
+                                    x=next_year_data['TimePeriod'],
+                                    y=next_year_data['EPS'],
+                                    mode='lines+markers',
+                                    name='Next Year',
+                                    line=dict(color=color_map['NextYear']),
+                                    marker=dict(color=color_map['NextYear'])
+                            ))
+                            fig.update_layout(
+                                    title='EPS Trend',
+                                    title_y=1,  
+                                    title_x=0, 
+                                    margin=dict(t=30, b=40, l=40, r=30),
+                                    xaxis=dict(
+                                        title=None,
+                                        categoryorder='array',
+                                        showgrid=True,  
+                                        categoryarray=['90 Days Ago', '60 Days Ago', '30 Days Ago', '7 Days Ago', 'Current'],
+                                    ),
+                                    yaxis=dict(
+                                        title='EPS',
+                                        showgrid=True
+                                    ),
+                                    height=400,
+                                    legend=dict(title_text=None),
                             )
-                            st.plotly_chart(figg, use_container_width=True)
-                        except: st.write("Failed to get EPS trend.")
+                            st.plotly_chart(fig, use_container_width=True)
+                        except:
+                            try:
+                                epsmetrics = ['EPS (Diluted)']
+                                sa_eps_df_filtered = sa_metrics_df2[sa_metrics_df2['Fiscal Year'].isin(epsmetrics)]
+                                sa_eps_df_melted = sa_eps_df_filtered.melt(id_vars=['Fiscal Year'], 
+                                                            var_name='Year', 
+                                                            value_name='Value')
+                                eps_unique_years = sa_eps_df_melted['Year'].unique()
+                                eps_unique_years_sorted = sorted([year for year in eps_unique_years if year != 'TTM'])
+                                if 'TTM' in eps_unique_years:
+                                    eps_unique_years_sorted.append('TTM')
+                                figg = go.Figure()
+                                for fiscal_year in sa_eps_df_melted['Fiscal Year'].unique():
+                                    filtered_data = sa_eps_df_melted[sa_eps_df_melted['Fiscal Year'] == fiscal_year]
+                                    figg.add_trace(go.Scatter(
+                                        x=filtered_data['Year'],
+                                        y=filtered_data['Value'],
+                                        mode='lines+markers',
+                                        name=str(fiscal_year)
+                                    ))
+                                figg.update_layout(
+                                    title={"text":"EPS Trend", "font": {"size": 20}},
+                                    title_y=1,  
+                                    title_x=0, 
+                                    margin=dict(t=30, b=30, l=40, r=30),
+                                    xaxis_title=None,
+                                    yaxis_title='Value',
+                                    xaxis=dict(tickmode='array', tickvals=eps_unique_years_sorted, autorange='reversed',showgrid=True),
+                                    yaxis=dict(showgrid=True),
+                                    height=400
+                                )
+                                st.plotly_chart(figg, use_container_width=True)
+                            except: st.write("Failed to get EPS trend.")
             except Exception as e: 
                 st.write("Failed to get earnings data.")
                 #st.write(e)
-            st.caption("Data source: Yahoo Finance")
-
+                
 #Estimate Data
             st.subheader('Growth Estimation', divider='gray')
             gcol1, gcol2= st.columns([3, 2])
@@ -1494,13 +1562,16 @@ if st.button("Get Data"):
                         if 'Current' in growth_unique_years:
                             growth_unique_years_sorted.append('Current')
                         fig_growth = go.Figure()
-                        for fiscal_year in sa_growth_metrics_df_melted['Fiscal Year'].unique():
+                        colors = ['#4A89DC', '#8CC152', '#F6BB42', '#37BC9B', '#967BDC', '#D772AD']
+                        for i, fiscal_year in enumerate(sa_growth_metrics_df_melted['Fiscal Year'].unique()):
                             filtered_data = sa_growth_metrics_df_melted[sa_growth_metrics_df_melted['Fiscal Year'] == fiscal_year]
                             fig_growth.add_trace(go.Scatter(
                                 x=filtered_data['Year'],
                                 y=filtered_data['Value'],
                                 mode='lines+markers',
-                                name=str(fiscal_year)
+                                name=str(fiscal_year),
+                                line=dict(color=colors[i % len(colors)]),
+                                marker=dict(color=colors[i % len(colors)])
                             ))
                         fig_growth.update_layout(
                             title={"text":"Growth Data", "font": {"size": 20}},
