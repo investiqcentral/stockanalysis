@@ -14,7 +14,7 @@ from dateutil.relativedelta import relativedelta
 import pytz
 from groq import Groq
 
-st.set_page_config(page_title='US Stock Analysis Tool', layout='wide', page_icon="./Image/logo.png")
+st.set_page_config(page_title='Face-off Analysis Tool', layout='wide', page_icon="./Image/logo.png")
 
 @st.cache_data(ttl=3600)
 def get_stock_data(ticker1, ticker2):
