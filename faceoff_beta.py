@@ -670,7 +670,7 @@ if st.button("Get Data"):
                 else:
                     st.warning('Metrics data not available for one or both stocks')
             except Exception as e:
-                st.write(e)
+                #st.write(e)
                 st.warning('Error plotting Debt/Equity ratio comparison')
         ########################
 
