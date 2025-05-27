@@ -401,7 +401,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         mb_earning_df = mb_earning_df.rename(columns={"Stock's Industry": "Low Estimate"})
         mb_earning_df = mb_earning_df[~mb_earning_df['Quarter'].str.contains('FY')]
     except Exception as e:
-        st.write(e) 
+        #st.write(e) 
         mb_earning_df = ""
     ########################
 
