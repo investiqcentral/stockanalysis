@@ -607,23 +607,25 @@ if st.button("Get Data"):
                 if not isinstance(sa_metrics_df1, str) and not isinstance(sa_metrics_df2, str):
                     sa_metrics_df1.columns = [col.replace('FY ', '') if 'FY' in col else 'TTM' if col == 'Current' else col for col in sa_metrics_df1.columns]
                     sa_metrics_df2.columns = [col.replace('FY ', '') if 'FY' in col else 'TTM' if col == 'Current' else col for col in sa_metrics_df2.columns]
-                    year_cols = [col for col in sa_metrics_df1.columns if col != 'Fiscal Year']
-                    year_only_cols = sorted([col for col in year_cols if col != 'TTM'])
-                    sorted_cols = year_only_cols + ['TTM']
-                    final_cols = ['Fiscal Year'] + sorted_cols
+                    years1 = [col for col in sa_metrics_df1.columns if col != 'Fiscal Year']
+                    years2 = [col for col in sa_metrics_df2.columns if col != 'Fiscal Year']
+                    common_years = sorted(list(set(years1) & set(years2)))
+                    if 'TTM' in years1 and 'TTM' in years2:
+                        common_years = [y for y in common_years if y != 'TTM'] + ['TTM']
+                    final_cols = ['Fiscal Year'] + common_years
                     sa_metrics_df1 = sa_metrics_df1[final_cols]
                     sa_metrics_df2 = sa_metrics_df2[final_cols]
                     de_ratio1 = sa_metrics_df1[sa_metrics_df1['Fiscal Year'] == 'Debt / Equity Ratio'].iloc[:, 1:].values.flatten()
                     de_ratio2 = sa_metrics_df2[sa_metrics_df2['Fiscal Year'] == 'Debt / Equity Ratio'].iloc[:, 1:].values.flatten()
                     df1 = pd.DataFrame({
-                        'Date': sorted_cols,
+                        'Date': common_years,
                         'Debt/Equity': [float(x) for x in de_ratio1],
-                        'Stock': [upper_ticker1] * len(sorted_cols)
+                        'Stock': [upper_ticker1] * len(common_years)
                     })
                     df2 = pd.DataFrame({
-                        'Date': sorted_cols,
+                        'Date': common_years,
                         'Debt/Equity': [float(x) for x in de_ratio2],
-                        'Stock': [upper_ticker2] * len(sorted_cols)
+                        'Stock': [upper_ticker2] * len(common_years)
                     })
                     combined_df = pd.concat([df1, df2])
                     fig = go.Figure()
@@ -637,7 +639,7 @@ if st.button("Get Data"):
                                 mode='lines+markers',
                                 line=dict(color=color1 if stock == upper_ticker1 else color2),
                                 marker=dict(
-                                    size=12,
+                                    size=10,
                                     color=color1 if stock == upper_ticker1 else color2
                                 ),
                                 hovertemplate=
@@ -657,7 +659,7 @@ if st.button("Get Data"):
                         xaxis=dict(
                             type='category',
                             categoryorder='array',  
-                            categoryarray=sorted_cols  
+                            categoryarray=common_years
                         ),
                         yaxis_title='Ratio',
                         legend=dict(yanchor=legend_yanchor, y=legend_y, xanchor=legend_xanchor, x=legend_x, orientation=legend_orientation),
@@ -668,6 +670,7 @@ if st.button("Get Data"):
                 else:
                     st.warning('Metrics data not available for one or both stocks')
             except Exception as e:
+                st.write(e)
                 st.warning('Error plotting Debt/Equity ratio comparison')
         ########################
 
