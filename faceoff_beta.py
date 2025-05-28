@@ -217,9 +217,9 @@ with main_col1:
     st.title("Face-off Analysis Tool (Beta)")
     input_col1, input_col2, input_col3 = st.columns([1, 1, 1])
     with input_col1:
-        ticker1 = st.text_input("Ticker1:", "AAPL")
+        ticker1 = st.text_input("Ticker 1:", "AAPL")
     with input_col2:
-        ticker2 = st.text_input("Ticker2:", "MSFT")
+        ticker2 = st.text_input("Ticker 2:", "MSFT")
 
 ""
 
