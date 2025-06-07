@@ -164,7 +164,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         sa_score_url = f'https://stockanalysis.com/stocks/{ticker}/statistics/'
         sa_score_response = requests.get(sa_score_url)
         sa_score_soup = BeautifulSoup(sa_score_response.content, "html.parser")
-        sa_score_table = sa_score_soup.find_all('table')[17]
+        sa_score_table = sa_score_soup.find_all('table')[18]
         sa_score_data = {}
         #sa_altmanz = "N/A"
         #sa_piotroski = "N/A"
@@ -454,7 +454,25 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     revenue_growth_current = stock.info.get('revenueGrowth','N/A')
     earnings_growth = stock.info.get('earningsGrowth', 'N/A')
     ##### News #####
-    news = stock.news
+    #news = stock.news
+    news_url = f'https://stockanalysis.com/stocks/{ticker}/'
+    news_page = requests.get(news_url)
+    soup = BeautifulSoup(news_page.text, "html.parser")
+    img_elements = soup.findAll("img", attrs={"class": "w-full rounded object-cover"})
+    img_urls = [img.get('src') for img in img_elements]
+    titles = soup.findAll("h3", attrs={"class":"mb-2 mt-3 text-xl font-bold leading-snug sm:order-2 sm:mt-0 sm:leading-tight"})
+    links = [title.find('a').get('href') for title in titles]
+    paragraphs = soup.findAll("p", attrs={"class":"overflow-auto text-[0.95rem] text-light sm:order-3"})
+    sources = soup.findAll("div", attrs={"class":"mt-1 text-sm text-faded sm:order-1 sm:mt-0"})
+    news = []
+    for i in range(len(titles)):
+        news_item = {
+            'title': titles[i].get_text(strip=True),
+            'link': links[i],
+            'thumbnail': {'resolutions': [{'url': img_urls[i]}]} if i < len(img_urls) else {},
+            'publisher': sources[i].get_text(strip=True) if i < len(sources) else 'Unknown Publisher'
+        }
+        news.append(news_item)
     
     ##### Sustainability #####
     try: 
@@ -714,15 +732,19 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
                 Analyze the stock {upper_ticker} for both long-term and short-term investment potential. Use the following financial data:
                 - Historical price data: {extended_data_r}
                 - Key financial metrics: 
-                    - Valuation: P/E Ratio = {peRatio}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}
+                    - Valuation: P/E Ratio = {peRatio}, Forward P/E Ratio = {forwardPe_value}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}, PEG Ratio = {pegRatio_value}
+                    - Earnings: EPS = {eps_value}, EPS Yield = {eps_yield_value}
                     - Profitability: Net profit margin = {profitmargin_pct}, ROE = {roe_value}, ROA = {roa_value}, Gross margin = {grossmargin_pct}
                     - Growth: Revenue growth = {revenue_growth_value}, Earnings growth = {earnings_growth_value}
                     - Financial health: Debt-to-equity = {deRatio_value}, Current ratio = {current_ratio}, Quick ratio = {quick_ratio}
-                    - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin_pct}
+                    - Cash flow: Free cash flow = {fcf}, Free cash flow Margin = {fcfmargin_pct}, Operating cash flow margin = {operatingmargin_pct}
                     - Dividends: Dividend yield = {dividendYield_value}, Dividend payout ratio = {payoutRatio}
-                - Income Statement data: {income_statement_tb}
-                - Balance Sheet data: {balance_sheet_tb}
-                - Cashflow Statement data: {cashflow_statement_tb}
+                    - Scores: Piotroski F-Score = {sa_piotroski_value}, Altman Z-Score = {sa_altmanz_value}
+                    - Ownership Percentages: Owned by Insiders = {insiderPct_value}, Owned by Institutions = {institutionsPct_value}
+                - News: {news}
+                - Income Statement data: {income_statement_flipped}
+                - Balance Sheet data: {balance_sheet_flipped}
+                - Cashflow Statement data: {cashflow_statement_flipped}
                         
                 Provide:
                 1. A summary of whether the stock is good to invest in or not.
@@ -846,15 +868,19 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
                 Analyze the stock {upper_ticker} and rate each category on a scale of 1 to 5 (where 1 is worst and 5 is best). Use the following financial data:
                 - Historical price data: {extended_data_r}
                 - Key financial metrics: 
-                    - Valuation: P/E Ratio = {peRatio}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}
+                    - Valuation: P/E Ratio = {peRatio}, Forward P/E Ratio = {forwardPe_value}, P/B Ratio = {pbRatio}, EV/EBITDA = {ev_to_ebitda}, PEG Ratio = {pegRatio_value}
+                    - Earnings: EPS = {eps_value}, EPS Yield = {eps_yield_value}
                     - Profitability: Net profit margin = {profitmargin_pct}, ROE = {roe_value}, ROA = {roa_value}, Gross margin = {grossmargin_pct}
                     - Growth: Revenue growth = {revenue_growth_value}, Earnings growth = {earnings_growth_value}
                     - Financial health: Debt-to-equity = {deRatio_value}, Current ratio = {current_ratio}, Quick ratio = {quick_ratio}
-                    - Cash flow: Free cash flow = {fcf}, Operating cash flow margin = {operatingmargin_pct}
+                    - Cash flow: Free cash flow = {fcf}, Free cash flow Margin = {fcfmargin_pct}, Operating cash flow margin = {operatingmargin_pct}
                     - Dividends: Dividend yield = {dividendYield_value}, Dividend payout ratio = {payoutRatio}
-                - Income Statement data: {income_statement_tb}
-                - Balance Sheet data: {balance_sheet_tb}
-                - Cashflow Statement data: {cashflow_statement_tb}
+                    - Scores: Piotroski F-Score = {sa_piotroski_value}, Altman Z-Score = {sa_altmanz_value}
+                    - Ownership Percentages: Owned by Insiders = {insiderPct_value}, Owned by Institutions = {institutionsPct_value}
+                - News: {news}
+                - Income Statement data: {income_statement_flipped}
+                - Balance Sheet data: {balance_sheet_flipped}
+                - Cashflow Statement data: {cashflow_statement_flipped}
                         
                 Provide ONLY these 5 numbers in the exact format below (no other text):
                 stock_current_value:X
@@ -4337,24 +4363,6 @@ if st.button("Get Data"):
         with news_data:
             try:
                 st.caption("News data is sourced from Stockanalysis.com.")
-                news_url = f'https://stockanalysis.com/stocks/{ticker}/'
-                news_page = requests.get(news_url)
-                soup = BeautifulSoup(news_page.text, "html.parser")
-                img_elements = soup.findAll("img", attrs={"class": "w-full rounded object-cover"})
-                img_urls = [img.get('src') for img in img_elements]
-                titles = soup.findAll("h3", attrs={"class":"mb-2 mt-3 text-xl font-bold leading-snug sm:order-2 sm:mt-0 sm:leading-tight"})
-                links = [title.find('a').get('href') for title in titles]
-                paragraphs = soup.findAll("p", attrs={"class":"overflow-auto text-[0.95rem] text-light sm:order-3"})
-                sources = soup.findAll("div", attrs={"class":"mt-1 text-sm text-faded sm:order-1 sm:mt-0"})
-                news = []
-                for i in range(len(titles)):
-                    news_item = {
-                        'title': titles[i].get_text(strip=True),
-                        'link': links[i],
-                        'thumbnail': {'resolutions': [{'url': img_urls[i]}]} if i < len(img_urls) else {},
-                        'publisher': sources[i].get_text(strip=True) if i < len(sources) else 'Unknown Publisher'
-                    }
-                    news.append(news_item)
                 num_columns = 3
                 columns = st.columns(num_columns)
                 for i, news_item in enumerate(news):
