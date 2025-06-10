@@ -2597,6 +2597,7 @@ if st.button("Get Data"):
                     sa_metrics_df_melted = sa_metrics_df_filtered.melt(id_vars=['Fiscal Year'], 
                                                 var_name='Year', 
                                                 value_name='Value')
+                    sa_metrics_df_melted['Value'] = sa_metrics_df_melted['Value'].replace({'-': '0'}, regex=True).astype(float)
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'Current'])
                     if 'Current' in unique_years:
@@ -2631,6 +2632,7 @@ if st.button("Get Data"):
                     sa_metrics_df_melted = sa_metrics_df_filtered.melt(id_vars=['Fiscal Year'], 
                                                 var_name='Year', 
                                                 value_name='Value')
+                    sa_metrics_df_melted['Value'] = sa_metrics_df_melted['Value'].replace({'-': '0'}, regex=True).astype(float)
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'Current'])
                     if 'Current' in unique_years:
@@ -2666,7 +2668,7 @@ if st.button("Get Data"):
                     sa_metrics_df_melted = sa_metrics_df_filtered.melt(id_vars=['Fiscal Year'], 
                                                 var_name='Year', 
                                                 value_name='Value (%)')
-                    sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': ''}, regex=True).astype(float)
+                    sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': '','-': '0'}, regex=True).astype(float)
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'Current'])
                     if 'Current' in unique_years:
@@ -2699,7 +2701,7 @@ if st.button("Get Data"):
                     pmetrics = ['Earnings Yield', 'FCF Yield', 'Dividend Yield']
                     sa_metrics_df_filtered = sa_metrics_df[sa_metrics_df['Fiscal Year'].isin(pmetrics)]
                     sa_metrics_df_melted = sa_metrics_df_filtered.melt(id_vars=['Fiscal Year'], var_name='Year', value_name='Value (%)')
-                    sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': ''}, regex=True).astype(float)
+                    sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': '','-': '0'}, regex=True).astype(float)
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'Current'])
                     if 'Current' in unique_years:
@@ -2736,7 +2738,7 @@ if st.button("Get Data"):
                     sa_metrics_df_melted = sa_metrics_df_filtered.melt(id_vars=['Fiscal Year'], 
                                                 var_name='Year', 
                                                 value_name='Value (%)')
-                    sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': ''}, regex=True).astype(float)
+                    sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': '','-': '0'}, regex=True).astype(float)
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'TTM'])
                     if 'TTM' in unique_years:
@@ -2773,7 +2775,7 @@ if st.button("Get Data"):
                     sa_metrics_df_melted = sa_metrics_df_filtered.melt(id_vars=['Fiscal Year'], 
                                                 var_name='Year', 
                                                 value_name='Value (%)')
-                    sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': ''}, regex=True).astype(float)
+                    sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': '','-': '0'}, regex=True).astype(float)
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'TTM'])
                     if 'TTM' in unique_years:
@@ -2812,9 +2814,10 @@ if st.button("Get Data"):
                         for col in sa_metrics_rs_df.columns:
                             if col != 'Date':
                                 original_values = sa_metrics_rs_df[col].copy()
-                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].str.replace('B', '').str.replace('M', '').str.replace('-', '0')
+                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].str.replace('B', '').str.replace('M', '').str.replace('K', '').str.replace('-', '0')
                                 sa_metrics_rs_df[col] = sa_metrics_rs_df[col].astype(float)
                                 sa_metrics_rs_df[col] = sa_metrics_rs_df[col].where(~original_values.str.contains('M', na=False), sa_metrics_rs_df[col]/1000)
+                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].where(~original_values.str.contains('K', na=False), sa_metrics_rs_df[col]/1000000)
             
                         fig_rs = go.Figure()
                         for column in sa_metrics_rs_df.columns:
@@ -2824,8 +2827,9 @@ if st.button("Get Data"):
                                         name=column,
                                         x=sa_metrics_rs_df['Date'],
                                         y=sa_metrics_rs_df[column],
-                                        text=sa_metrics_rs_df[column].round(2),
+                                        text=sa_metrics_rs_df[column].round(3),
                                         textposition='auto',
+                                        texttemplate='%{text:.3f}',
                                         hovertemplate="%{x}<br>" +
                                                     f"{column}: %{{y:.2f}}B<br>" +
                                                     "<extra></extra>"
@@ -2858,6 +2862,8 @@ if st.button("Get Data"):
                                     rs_pie_data[idx] = 0.0
                                 elif 'M' in value:
                                     rs_pie_data[idx] = float(value.replace('M', '')) / 1000
+                                elif 'K' in value:
+                                    rs_pie_data[idx] = float(value.replace('K', '')) / 1000000
                                 else:
                                     rs_pie_data[idx] = float(value.replace('B', ''))
                         positive_data = rs_pie_data[rs_pie_data > 0]
