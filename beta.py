@@ -2831,7 +2831,7 @@ if st.button("Get Data"):
                                         textposition='auto',
                                         texttemplate='%{text:.3f}',
                                         hovertemplate="%{x}<br>" +
-                                                    f"{column}: %{{y:.2f}}B<br>" +
+                                                    f"{column}: %{{y:.4f}}B<br>" +
                                                     "<extra></extra>"
                                     )
                                 )
@@ -2873,7 +2873,7 @@ if st.button("Get Data"):
                             values=positive_data.values,
                             hole=0.5,
                             hovertemplate="%{label}<br>" +
-                                        "%{value:.2f}B<br>" +
+                                        "%{value:.4f}B<br>" +
                                         "<extra></extra>"
                         )])
                         pie_fig.update_layout(
