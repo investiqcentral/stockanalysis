@@ -2814,8 +2814,13 @@ if st.button("Get Data"):
                         for col in sa_metrics_rs_df.columns:
                             if col != 'Date':
                                 original_values = sa_metrics_rs_df[col].copy()
-                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].str.replace('B', '').str.replace('M', '').str.replace('K', '').str.replace('-', '0')
+                                is_empty = sa_metrics_rs_df[col].str.strip() == '-'
+                                is_negative = sa_metrics_rs_df[col].str.startswith('-') & ~is_empty
+                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].where(~is_empty, float('nan'))
+                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].where(is_empty, 
+                                    sa_metrics_rs_df[col].str.lstrip('-').str.replace('B', '').str.replace('M', '').str.replace('K', ''))
                                 sa_metrics_rs_df[col] = sa_metrics_rs_df[col].astype(float)
+                                sa_metrics_rs_df[col] = sa_metrics_rs_df[col].where(~is_negative, -sa_metrics_rs_df[col])
                                 sa_metrics_rs_df[col] = sa_metrics_rs_df[col].where(~original_values.str.contains('M', na=False), sa_metrics_rs_df[col]/1000)
                                 sa_metrics_rs_df[col] = sa_metrics_rs_df[col].where(~original_values.str.contains('K', na=False), sa_metrics_rs_df[col]/1000000)
             
