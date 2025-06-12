@@ -14,7 +14,7 @@ from dateutil.relativedelta import relativedelta
 import pytz
 from groq import Groq
 
-st.set_page_config(page_title='Face-off Analysis Tool', layout='wide', page_icon="./Image/logo.png")
+st.set_page_config(page_title='US Stock Analysis Tool', layout='wide', page_icon="./Image/logo.png")
 
 @st.cache_data(ttl=3600)
 def get_stock_data(ticker1, ticker2, color1, color2):
@@ -217,10 +217,10 @@ with main_col1:
     st.title("Face-off Analysis Tool (Beta)")
     input_col1, input_col2, input_col3 = st.columns([1, 1, 1])
     with input_col1:
-        ticker1 = st.text_input("Ticker 1:", "AAPL")
+        ticker1 = st.text_input("Ticker1:", "AAPL")
         color1 = st.color_picker('Select color for first stock', '#3BAFDA')
     with input_col2:
-        ticker2 = st.text_input("Ticker 2:", "MSFT")
+        ticker2 = st.text_input("Ticker2:", "MSFT")
         color2 = st.color_picker('Select color for second stock', '#E9573F')
 
 ""
@@ -672,7 +672,7 @@ if st.button("Get Data"):
                 else:
                     st.warning('Metrics data not available for one or both stocks')
             except Exception as e:
-                #st.write(e)
+                st.write(e)
                 st.warning('Error plotting Debt/Equity ratio comparison')
         ########################
 
