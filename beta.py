@@ -244,7 +244,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         mb_com_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/competitors-and-alternatives/'
         mb_com_response = requests.get(mb_com_url)
         mb_com_soup = BeautifulSoup(mb_com_response.content, "html.parser")
-        mb_com_table = mb_com_soup.find_all('table')[5]
+        mb_com_table = mb_com_soup.find_all('table')[4]
         headers = [header.get_text(strip=True) for header in mb_com_table.find_all('th')]
         headers[2] = "Stock's Industry"
         rows = []
@@ -279,7 +279,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         mb_com_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/competitors-and-alternatives/'
         mb_com_response = requests.get(mb_com_url)
         mb_com_soup = BeautifulSoup(mb_com_response.content, "html.parser")
-        mb_com_table = mb_com_soup.find_all('table')[6]
+        mb_com_table = mb_com_soup.find_all('table')[5]
         mb_alt_headers = [mb_alt_header.get_text(strip=True) for mb_alt_header in mb_com_table.find_all('th')]
         rows = []
         for row in mb_com_table.find_all('tr')[1:]:
@@ -294,7 +294,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         url = f'https://stockanalysis.com/stocks/{ticker}/financials/ratios/'
         r = requests.get(url)
         soup = BeautifulSoup(r.text,"html.parser")
-        table = soup.find("table",class_ = "w-full border-separate border-spacing-0 text-sm sm:text-base [&_tbody]:sm:whitespace-nowrap [&_thead]:whitespace-nowrap")
+        table = soup.find("table",class_ = "financials-table w-full border-separate border-spacing-0 text-sm sm:text-base [&_tbody]:sm:whitespace-nowrap [&_thead]:whitespace-nowrap")
         rows = table.find_all("tr")
         headers = []
         data = []
@@ -315,7 +315,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         url2 = f'https://stockanalysis.com/stocks/{ticker}/financials/'
         r2 = requests.get(url2)
         soup2 = BeautifulSoup(r2.text,"html.parser")
-        table2 = soup2.find("table",class_ = "w-full border-separate border-spacing-0 text-sm sm:text-base [&_tbody]:sm:whitespace-nowrap [&_thead]:whitespace-nowrap")
+        table2 = soup2.find("table",class_ = "financials-table w-full border-separate border-spacing-0 text-sm sm:text-base [&_tbody]:sm:whitespace-nowrap [&_thead]:whitespace-nowrap")
         rows2 = table2.find_all("tr")
         headers2 = []
         data2 = []
