@@ -4184,7 +4184,7 @@ if st.button("Get Data"):
                                 all_levels = [(date, level) for date, level in resistance_levels + support_levels]
                                 all_levels = sorted(all_levels, key=lambda x: x[1], reverse=True)
                                 used_positions = set()
-                                label_spacing = 2  
+                                label_spacing = 2
                                 for start_date, level in all_levels:
                                     is_resistance = current_price < level
                                     line_color = 'red' if is_resistance else 'green'
@@ -4198,6 +4198,16 @@ if st.button("Get Data"):
                                         showlegend=False,
                                         name=f"{'Resistance' if is_resistance else 'Support'} {level:.2f}"
                                     ))
+
+                                    fig_sr.add_trace(go.Scatter(
+                                        x=[start_date],
+                                        y=[level],
+                                        mode='markers',
+                                        marker=dict(size=8, color='yellow', symbol='circle'),
+                                        showlegend=False,
+                                        name=f"Start Point {level:.2f}"
+                                    ))
+
                                     label_y = level
                                     while label_y in used_positions:
                                         label_y += label_spacing if is_resistance else -label_spacing
@@ -4219,7 +4229,7 @@ if st.button("Get Data"):
                                     title={"text": "Support and Resistance Levels", "font": {"size": 30}},
                                     xaxis_rangeslider_visible=False,
                                     xaxis=dict(
-                                        type="category",
+                                        type="date",
                                         showgrid=True,
                                         ticktext=tick_text,
                                         tickvals=tick_vals
