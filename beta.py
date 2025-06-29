@@ -4533,5 +4533,5 @@ with iiqc1:
     st.write("This analysis dashboard is designed to enable beginner investors to analyze stocks effectively and with ease. Please note that the information in this page is intended for educational purposes only and it does not constitute investment advice or a recommendation to buy or sell any security. We are not responsible for any losses resulting from trading decisions based on this information.")
 with iiqc2:
     invest_iq_central='./Image/InvestIQCentral.png'
-    #st.image(invest_iq_central,width=300)
+    st.image(invest_iq_central,width=300)
 ''
