@@ -2041,8 +2041,6 @@ if st.button("Get Data"):
                             )
                             st.plotly_chart(fig4, use_container_width=True)
                         except Exception as e:
-                            st.write(e)
-                            st.write(numeric_df)
                             st.warning("Net Income Comparison: No data available.")
                             
                 with col2:            
@@ -2201,7 +2199,6 @@ if st.button("Get Data"):
                             )
                             st.plotly_chart(fig3, use_container_width=True)
                         except Exception as e:
-                            st.write(e)
                             st.warning("Dividend Growth Comparison: No data available.")
             except Exception as e:
                 st.warning(f"Dividends Comparison: No data available.")
