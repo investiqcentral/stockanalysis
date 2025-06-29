@@ -48,6 +48,8 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     lowercase_ticker = ticker.lower()
     upper_ticker = ticker.upper()
     price = stock.info.get('currentPrice', 'N/A')
+    fiftyTwoWeekLow = stock.info.get('fiftyTwoWeekLow', 'N/A')
+    fiftyTwoWeekHigh = stock.info.get('fiftyTwoWeekHigh', 'N/A')
     picture_url = f'https://logos.stockanalysis.com/{lowercase_ticker}.svg'
 
     #### Exchange Value ####
@@ -953,7 +955,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         except Exception as e:
             analysis3 = ""
 
-    return price, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, apiKey, \
+    return price, fiftyTwoWeekLow, fiftyTwoWeekHigh, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, apiKey, \
     eps, pegRatio, revenue, eps_yield_value, eps_value, pegRatio_value, eps_yield, eps_trend, earnings_history, earningsDate, \
     yf_targetprice, yf_consensus, yf_analysts_count, yf_mos, \
     peRatio, forwardPe, pbRatio, pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda, \
@@ -996,7 +998,7 @@ use_ai = st.checkbox("Analyze using AI (The system will use the deepseek-r1-dist
 ""
 if st.button("Get Data"):
     try:
-        price, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, apiKey, \
+        price, fiftyTwoWeekLow, fiftyTwoWeekHigh, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, apiKey, \
         eps, pegRatio, revenue, eps_yield_value, eps_value, pegRatio_value, eps_yield, eps_trend, earnings_history, earningsDate, \
         yf_targetprice, yf_consensus, yf_analysts_count, yf_mos, \
         peRatio, forwardPe, pbRatio, pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda, \
@@ -1089,6 +1091,67 @@ if st.button("Get Data"):
                     height=350,
                 )
                 st.plotly_chart(hist_fig, use_container_width=True)
+            except Exception as e:
+                st.write("")
+
+            # 52 Weeks High and Low
+            try:
+                fig = go.Figure(go.Indicator(
+                mode="gauge",
+                value=price,
+                gauge={
+                    'shape': "bullet",
+                    'axis': {
+                        'range': [fiftyTwoWeekLow, fiftyTwoWeekHigh],
+                        'tickmode': 'array',
+                        'tickvals': [fiftyTwoWeekLow, price, fiftyTwoWeekHigh],
+                        'ticktext': [
+                            f"${fiftyTwoWeekLow:.2f}", 
+                            f"${price:.2f}", 
+                            f"${fiftyTwoWeekHigh:.2f}"
+                        ],
+                        'tickfont': {'color': 'white', 'size': 10},
+                        'ticklen': 0,
+                        'tickwidth': 0,
+                        'tickcolor': 'white'
+                    },
+                    'bar': {'color': '#DA4453', 'thickness': 0.3},
+                    'threshold': {
+                        'line': {'color': '#DA4453', 'width': 0},
+                        'thickness': 0.0,
+                        'value': price
+                    },
+                    'steps': []
+                    },
+                    domain={'x': [0.2, 0.8], 'y': [0, 1]},
+                ))
+                fig.add_annotation(
+                    x=0.0,
+                    y=0.5,
+                    xref="paper",
+                    yref="paper",
+                    text="52-Wk Low",
+                    showarrow=False,
+                    font=dict(color="white", size=13),
+                    align="left"
+                )
+                fig.add_annotation(
+                    x=1,
+                    y=0.5,
+                    xref="paper",
+                    yref="paper",
+                    text="52-Wk High",
+                    showarrow=False,
+                    font=dict(color="white", size=13),
+                    align="right"
+                )
+                fig.update_layout(
+                    height=60,
+                    margin=dict(l=30, r=30, t=20, b=20),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)'
+                )
+                st.plotly_chart(fig, use_container_width=True)
             except Exception as e:
                 st.write("")
         
