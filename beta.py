@@ -1104,10 +1104,10 @@ if st.button("Get Data"):
                     'axis': {
                         'range': [fiftyTwoWeekLow, fiftyTwoWeekHigh],
                         'tickmode': 'array',
-                        'tickvals': [fiftyTwoWeekLow, price, fiftyTwoWeekHigh],
+                        'tickvals': [fiftyTwoWeekLow, fiftyTwoWeekHigh],
                         'ticktext': [
                             f"${fiftyTwoWeekLow:.2f}", 
-                            f"${price:.2f}", 
+                            #f"${price:.2f}", 
                             f"${fiftyTwoWeekHigh:.2f}"
                         ],
                         'tickfont': {'color': 'white', 'size': 10},
@@ -1659,55 +1659,48 @@ if st.button("Get Data"):
                                 st.plotly_chart(figg, use_container_width=True)
                             except: st.write("Failed to get EPS trend.")
             except Exception as e: 
-                st.write("Failed to get earnings data.")
+                st.write("")
                 #st.write(e)
                 
 #Estimate Data
             st.subheader('Growth Estimation', divider='gray')
             gcol1, gcol2= st.columns([3, 2])
-            with gcol1:
-                try:
-                    if not isinstance(sa_growth_df, str) and not sa_growth_df.empty:
-                        growth_metrics = ['Revenue Growth', 'EPS Growth']
-                        sa_growth_df_filtered = sa_growth_df[sa_growth_df['Fiscal Year'].isin(growth_metrics)]
-                        sa_growth_metrics_df_melted = sa_growth_df_filtered.melt(id_vars=['Fiscal Year'], var_name='Year', value_name='Value')
-                        growth_unique_years = sa_growth_metrics_df_melted['Year'].unique()
-                        growth_unique_years_sorted = sorted([year for year in growth_unique_years if year != 'Current'])
-                        if 'Current' in growth_unique_years:
-                            growth_unique_years_sorted.append('Current')
-                        fig_growth = go.Figure()
-                        colors = ['#4A89DC', '#8CC152', '#F6BB42', '#37BC9B', '#967BDC', '#D772AD']
-                        for i, fiscal_year in enumerate(sa_growth_metrics_df_melted['Fiscal Year'].unique()):
-                            filtered_data = sa_growth_metrics_df_melted[sa_growth_metrics_df_melted['Fiscal Year'] == fiscal_year]
-                            fig_growth.add_trace(go.Scatter(
-                                x=filtered_data['Year'],
-                                y=filtered_data['Value'],
-                                mode='lines+markers',
-                                name=str(fiscal_year),
-                                line=dict(color=colors[i % len(colors)]),
-                                marker=dict(color=colors[i % len(colors)])
-                            ))
-                        fig_growth.update_layout(
-                            title={"text":"Growth Data", "font": {"size": 20}},
-                            title_y=1,  
-                            title_x=0, 
-                            margin=dict(t=30, b=30, l=40, r=30),
-                            xaxis_title=None,
-                            yaxis_title='Value (%)',
-                            xaxis=dict(tickmode='array', tickvals=growth_unique_years_sorted,showgrid=True),
-                            yaxis=dict(showgrid=True),
-                            legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
-                            height=400
-                        )
-                        st.plotly_chart(fig_growth, use_container_width=True)
-                    else:
-                        st.warning(f'{ticker} has no growth estimates data.')
-                except Exception as e:
-                        st.warning(f'{ticker} has no growth estimates data.')
-                st.caption("Data source: Stockanalysis.com")
-            
-            with gcol2:
-                try:
+            try:
+                with gcol1:
+                    growth_metrics = ['Revenue Growth', 'EPS Growth']
+                    sa_growth_df_filtered = sa_growth_df[sa_growth_df['Fiscal Year'].isin(growth_metrics)]
+                    sa_growth_metrics_df_melted = sa_growth_df_filtered.melt(id_vars=['Fiscal Year'], var_name='Year', value_name='Value')
+                    growth_unique_years = sa_growth_metrics_df_melted['Year'].unique()
+                    growth_unique_years_sorted = sorted([year for year in growth_unique_years if year != 'Current'])
+                    if 'Current' in growth_unique_years:
+                        growth_unique_years_sorted.append('Current')
+                    fig_growth = go.Figure()
+                    colors = ['#4A89DC', '#8CC152', '#F6BB42', '#37BC9B', '#967BDC', '#D772AD']
+                    for i, fiscal_year in enumerate(sa_growth_metrics_df_melted['Fiscal Year'].unique()):
+                        filtered_data = sa_growth_metrics_df_melted[sa_growth_metrics_df_melted['Fiscal Year'] == fiscal_year]
+                        fig_growth.add_trace(go.Scatter(
+                            x=filtered_data['Year'],
+                            y=filtered_data['Value'],
+                            mode='lines+markers',
+                            name=str(fiscal_year),
+                            line=dict(color=colors[i % len(colors)]),
+                            marker=dict(color=colors[i % len(colors)])
+                        ))
+                    fig_growth.update_layout(
+                        title={"text":"Growth Data", "font": {"size": 20}},
+                        title_y=1,  
+                        title_x=0, 
+                        margin=dict(t=30, b=30, l=40, r=30),
+                        xaxis_title=None,
+                        yaxis_title='Value (%)',
+                        xaxis=dict(tickmode='array', tickvals=growth_unique_years_sorted,showgrid=True),
+                        yaxis=dict(showgrid=True),
+                        legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
+                        height=400
+                    )
+                    st.plotly_chart(fig_growth, use_container_width=True)
+                
+                with gcol2:
                     sub_gcol1 = st.columns(2)
                     current_year = datetime.datetime.now().year
                     one_yr_header = f'FY {current_year + 1}'
@@ -1758,8 +1751,9 @@ if st.button("Get Data"):
                     sub_gcol3[1].metric(label='+3Y EPS Growth',value=three_yr_earnings_value)
 
                     st.caption("Please note that estimated data may not always be accurate and should not be solely relied upon for making investment decisions.")
-                except Exception as e: 
-                    st.write(f'{name} has no other estimates data. {e}')
+            except Exception as e:
+                st.write(f'{name} has no growth estimates data.')
+            st.caption("Data source: Stockanalysis.com")
 
 # Scores
             st.subheader('Scores', divider='gray')
