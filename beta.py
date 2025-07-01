@@ -2408,63 +2408,90 @@ if st.button("Get Data"):
                 income_statement_formatted_df = income_statement_flipped.applymap(format_numbers)
                 st.dataframe(income_statement_formatted_df,use_container_width=True)
                 #chart_setup
-                income_items = ['Total Revenue', 'Gross Profit', 'Operating Income', 'Net Income', 'EBITDA']
-                income_bar_data = income_statement_flipped.loc[income_items].transpose()
-                income_bar_data_million = income_bar_data / 1e6
-                income_bar_data_million = income_bar_data_million.reset_index().rename(columns={'index': 'Date'})
-                income_bar_data_melted = income_bar_data_million.melt('Date', var_name='Key Values', value_name='USD in Million')
-                income_bar_data_melted['Key Values'] = pd.Categorical(income_bar_data_melted['Key Values'], categories=income_items, ordered=True)
+                income_col1, income_col2 = st.columns([3, 2])
+                with income_col1:
+                    income_items = ['Total Revenue', 'Gross Profit', 'Operating Income', 'Net Income', 'EBITDA']
+                    income_bar_data = income_statement_flipped.reindex(income_items).fillna(0).transpose()
+                    #income_bar_data = income_statement_flipped.loc[income_items].transpose()
+                    income_bar_data_million = income_bar_data / 1e6
+                    income_bar_data_million = income_bar_data_million.reset_index().rename(columns={'index': 'Date'})
+                    income_bar_data_melted = income_bar_data_million.melt('Date', var_name='Key Values', value_name='USD in Millions')
+                    income_bar_data_melted['Key Values'] = pd.Categorical(income_bar_data_melted['Key Values'], categories=income_items, ordered=True)
 
-                colors = {
-                    'Total Revenue': '#ED5565',
-                    'Gross Profit': '#EC87C0',
-                    'Operating Income': '#FFCE54',
-                    'Net Income': '#AC92EC',
-                    'EBITDA': '#4FC1E9'
-                }
-                fig = go.Figure()
-                for item in income_items:
-                    fig.add_trace(
-                        go.Bar(
-                            x=income_bar_data_melted[income_bar_data_melted['Key Values'] == item]['Date'],
-                            y=income_bar_data_melted[income_bar_data_melted['Key Values'] == item]['USD in Million'],
-                            name=item,
-                            marker_color=colors[item]
+                    colors = {
+                        'Total Revenue': '#ED5565',
+                        'Gross Profit': '#EC87C0',
+                        'Operating Income': '#FFCE54',
+                        'Net Income': '#AC92EC',
+                        'EBITDA': '#4FC1E9',
+                    }
+                    fig = go.Figure()
+                    for item in income_items:
+                        fig.add_trace(
+                            go.Bar(
+                                x=income_bar_data_melted[income_bar_data_melted['Key Values'] == item]['Date'],
+                                y=income_bar_data_melted[income_bar_data_melted['Key Values'] == item]['USD in Millions'],
+                                name=item,
+                                marker_color=colors[item]
+                            )
                         )
+                    fig.update_layout(
+                        title={"text":"Income Statement Key Values Chart", "font": {"size": 20}},
+                        title_y=1,  
+                        title_x=0, 
+                        margin=dict(t=30, b=40, l=40, r=30),
+                        barmode='group', 
+                        xaxis_title=None,
+                        yaxis_title='USD in Millions',
+                        legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
+                        height=400
                     )
-                fig.update_layout(
-                    title={"text":"Income Statement Key Values Chart", "font": {"size": 20}},
-                    title_y=1,  
-                    title_x=0, 
-                    margin=dict(t=30, b=40, l=40, r=30),
-                    barmode='group', 
-                    xaxis_title=None,
-                    yaxis_title='USD in Million',
-                    legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
-                    height=400
-                )
-                fig.update_xaxes(
-                    type='category',
-                    categoryorder='category ascending'
-                )       
-                st.plotly_chart(fig, use_container_width=True)
-                #barChartColumn
-                # income_statement.fillna(0, inplace=True)
-                # date_columns = sorted([col for col in income_statement_flipped.columns if col not in ['TTM', 'Trend']])
-                # ordered_columns = date_columns + ['TTM', 'Trend']
-                # income_statement_flipped['Trend'] = income_statement_flipped.apply(lambda row: list(row)[::-1], axis=1)
-                # income_statement_flipped = income_statement_flipped[ordered_columns]
-                # st.dataframe(
-                #     income_statement_flipped,
-                #     column_config={
-                #         "Trend": st.column_config.BarChartColumn(
-                #             label="Trend",
-                #             help="Trend of financial values across years",
-                #             width="small"
-                #         )
-                #     }, use_container_width=True
-                # )
-                st.caption("Data source: Yahoo Finance")
+                    fig.update_xaxes(
+                        type='category',
+                        categoryorder='category ascending'
+                    )       
+                    st.plotly_chart(fig, use_container_width=True)
+                    st.caption("Data source: Yahoo Finance")
+
+                with income_col2:
+                    try:
+                        eps_item = ['Diluted EPS']
+                        eps_bar_data = income_statement_flipped.loc[eps_item].transpose()
+                        eps_bar_data = eps_bar_data.reset_index().rename(columns={'index': 'Date'})
+                        eps_bar_data_melted = eps_bar_data.melt('Date', var_name='Key Values', value_name='USD')
+                        eps_bar_data_melted['Key Values'] = pd.Categorical(eps_bar_data_melted['Key Values'], categories=eps_item, ordered=True)
+                        eps_color = {
+                            'Diluted EPS': '#8CC152'
+                        }
+                        fig = go.Figure()
+                        for item in eps_item:
+                            fig.add_trace(
+                                go.Bar(
+                                    x=eps_bar_data_melted[eps_bar_data_melted['Key Values'] == item]['Date'],
+                                    y=eps_bar_data_melted[eps_bar_data_melted['Key Values'] == item]['USD'],
+                                    name=item,
+                                    marker_color=eps_color[item]
+                                )
+                            )
+                        fig.update_layout(
+                            title={"text":"EPS Chart", "font": {"size": 20}},
+                            title_y=1,  
+                            title_x=0, 
+                            margin=dict(t=30, b=40, l=40, r=30),
+                            barmode='group', 
+                            xaxis_title=None,
+                            xaxis=dict(tickfont=dict(size=10)),
+                            yaxis_title='USD',
+                            legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
+                            height=400
+                        )
+                        fig.update_xaxes(
+                            type='category',
+                            categoryorder='category ascending'
+                        )       
+                        st.plotly_chart(fig, use_container_width=True)
+                    except Exception as e:
+                        st.write("EPS Data is not available.")
                 ''
                 if use_ai:
                     income_cleaned_text = analysis2['income'].replace('\\n', '\n').replace('\\', '')
@@ -2483,67 +2510,80 @@ if st.button("Get Data"):
             st.subheader("Balance Sheet (Financial Position)", divider ='gray')
             st.info("Notes: A balance sheet is a financial statement that reports a company's assets, liabilities, and shareholder equity. It provides a snapshot of a company's finances (what it owns and owes) as of the date of publication. The balance sheet adheres to an equation that equates assets with the sum of liabilities and shareholder equity.")
             try:
-                formatted_columns2 = [col.strftime('%Y-%m-%d') if isinstance(col, pd.Timestamp) else col for col in balance_sheet_flipped.columns]
-                balance_sheet_flipped.columns = formatted_columns2
-                #st.dataframe(balance_sheet_flipped,use_container_width=True)
+                formatted_columns = [col.strftime('%Y-%m-%d') if isinstance(col, pd.Timestamp) else col for col in balance_sheet_flipped.columns]
+                balance_sheet_flipped.columns = formatted_columns
                 balance_sheet_formatted_df = balance_sheet_flipped.applymap(format_numbers)
                 st.dataframe(balance_sheet_formatted_df,use_container_width=True)
                 #chart_setup
-                balance_items = ['Cash And Cash Equivalents','Total Assets', 'Total Liabilities Net Minority Interest', 'Stockholders Equity']
-                balance_bar_data = balance_sheet_flipped.loc[balance_items].transpose()
-                balance_bar_data_million = balance_bar_data / 1e6
-                balance_bar_data_million = balance_bar_data_million.reset_index().rename(columns={'index': 'Date'})
-                balance_bar_data_melted = balance_bar_data_million.melt('Date', var_name='Key Values', value_name='USD in Million')
-                balance_bar_data_melted['Key Values'] = pd.Categorical(balance_bar_data_melted['Key Values'], categories=balance_items, ordered=True)
-                colors = {
-                    'Cash And Cash Equivalents': '#FFCE54',
-                    'Total Assets': '#5F9BEB',
-                    'Total Liabilities Net Minority Interest': '#FB6E51',
-                    'Stockholders Equity': '#48CFAD',
-                }
-                fig = go.Figure()
-                for item in balance_items:
-                    fig.add_trace(
-                        go.Bar(
-                            x=balance_bar_data_melted[balance_bar_data_melted['Key Values'] == item]['Date'],
-                            y=balance_bar_data_melted[balance_bar_data_melted['Key Values'] == item]['USD in Million'],
-                            name=item,
-                            marker_color=colors[item]
+                balance_col1, balance_col2 = st.columns([3, 2])
+                with balance_col1:
+                    balance_items = ['Cash And Cash Equivalents','Total Assets', 'Total Liabilities Net Minority Interest', 'Stockholders Equity']
+                    balance_bar_data = balance_sheet_flipped.reindex(balance_items).fillna(0).transpose()
+                    #balance_bar_data = balance_sheet_flipped.loc[balance_items].transpose()
+                    balance_bar_data_million = balance_bar_data / 1e6
+                    balance_bar_data_million = balance_bar_data_million.reset_index().rename(columns={'index': 'Date'})
+                    balance_bar_data_melted = balance_bar_data_million.melt('Date', var_name='Key Values', value_name='USD in Millions')
+                    balance_bar_data_melted['Key Values'] = pd.Categorical(balance_bar_data_melted['Key Values'], categories=balance_items, ordered=True)
+                    colors = {
+                        'Cash And Cash Equivalents': '#FFCE54',
+                        'Total Assets': '#5F9BEB',
+                        'Total Liabilities Net Minority Interest': '#FB6E51',
+                        'Stockholders Equity': '#48CFAD',
+                    }
+                    fig = go.Figure()
+                    for item in balance_items:
+                        fig.add_trace(
+                            go.Bar(
+                                x=balance_bar_data_melted[balance_bar_data_melted['Key Values'] == item]['Date'],
+                                y=balance_bar_data_melted[balance_bar_data_melted['Key Values'] == item]['USD in Millions'],
+                                name=item,
+                                marker_color=colors[item]
+                            )
                         )
+                    fig.update_layout(
+                        title={"text":"Balance Sheet Key Values Chart", "font": {"size": 20}},
+                        title_y=1,  
+                        title_x=0, 
+                        margin=dict(t=30, b=40, l=40, r=30),
+                        barmode='group', 
+                        xaxis_title=None,
+                        yaxis_title='USD in Millions',
+                        legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
+                        height=400
                     )
-                fig.update_layout(
-                    title={"text":"Balance Sheet Key Values Chart", "font": {"size": 20}},
-                    title_y=1,  
-                    title_x=0, 
-                    margin=dict(t=30, b=40, l=40, r=30),
-                    barmode='group', 
-                    xaxis_title=None,
-                    yaxis_title='USD in Million',
-                    legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
-                    height=400
-                )
-                fig.update_xaxes(
-                    type='category',
-                    categoryorder='category ascending'
-                )       
-                st.plotly_chart(fig, use_container_width=True)
-                #
-                # balance_sheet.fillna(0, inplace=True)
-                # date_columns = sorted([col for col in balance_sheet_flipped.columns if col not in ['TTM', 'Trend']])
-                # ordered_columns = date_columns + ['TTM', 'Trend']
-                # balance_sheet_flipped['Trend'] = balance_sheet_flipped.apply(lambda row: list(row)[::-1], axis=1)
-                # balance_sheet_flipped = balance_sheet_flipped[ordered_columns]
-                # st.dataframe(
-                #     balance_sheet_flipped,
-                #     column_config={
-                #         "Trend": st.column_config.BarChartColumn(
-                #             label="Trend",
-                #             help="Trend of financial values across years",
-                #             width="small"
-                #         )
-                #     }, use_container_width=True
-                # )
-                st.caption("Data source: Yahoo Finance")
+                    fig.update_xaxes(
+                        type='category',
+                        categoryorder='category ascending'
+                    )       
+                    st.plotly_chart(fig, use_container_width=True)
+                    st.caption("Data source: Yahoo Finance")
+                
+                with balance_col2:
+                    try:
+                        ttm_row = balance_bar_data_million[balance_bar_data_million['Date'] == 'TTM'].iloc[0]
+                        asset_value = ttm_row['Total Assets']
+                        liability_value = ttm_row['Total Liabilities Net Minority Interest']
+                        fig = go.Figure(data=[go.Pie(
+                            labels=['Total Assets', 'Total Liabilities Net Minority Interest'],
+                            values=[asset_value, liability_value],
+                            hole=0.3, 
+                            marker=dict(colors=['#36A2EB', '#FF6384'])
+                        )])
+                        fig.update_layout(
+                            title={"text":"Asset Vs Liabilities (TTM)", "font": {"size": 20}},
+                            margin=dict(t=50, b=40, l=40, r=30),
+                            legend=dict(
+                                orientation="h",
+                                yanchor="bottom",
+                                y=-0.2,
+                                xanchor="center",
+                                x=0.5
+                            ),
+                            height=400
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    except Exception as e:
+                        st.write("Asset Vs Liabilities Data is not available.")
                 ''
                 if use_ai:
                     balance_cleaned_text = analysis2['balance'].replace('\\n', '\n').replace('\\', '')
@@ -2567,62 +2607,91 @@ if st.button("Get Data"):
                 cashflow_statement_formatted_df = cashflow_statement_flipped.applymap(format_numbers)
                 st.dataframe(cashflow_statement_formatted_df,use_container_width=True)
                 #chart_setup
-                cashflow_items = ['Operating Cash Flow', 'Investing Cash Flow', 'Financing Cash Flow', 'Free Cash Flow']
-                cashflow_bar_data = cashflow_statement_flipped.loc[cashflow_items].transpose()
-                cashflow_bar_data_million = cashflow_bar_data / 1e6
-                cashflow_bar_data_million = cashflow_bar_data_million.reset_index().rename(columns={'index': 'Date'})
-                cashflow_bar_data_melted = cashflow_bar_data_million.melt('Date', var_name='Key Values', value_name='USD in Million')
-                cashflow_bar_data_melted['Key Values'] = pd.Categorical(cashflow_bar_data_melted['Key Values'], categories=cashflow_items, ordered=True)
-                colors = {
-                    'Operating Cash Flow': '#8CC152',
-                    'Investing Cash Flow': '#ED5565',
-                    'Financing Cash Flow': '#FB6E51',
-                    'Free Cash Flow': '#48CFAD',
-                }
-                fig = go.Figure()
-                for item in cashflow_items:
-                    fig.add_trace(
-                        go.Bar(
-                            x=cashflow_bar_data_melted[cashflow_bar_data_melted['Key Values'] == item]['Date'],
-                            y=cashflow_bar_data_melted[cashflow_bar_data_melted['Key Values'] == item]['USD in Million'],
-                            name=item,
-                            marker_color=colors[item]
+                st.info("Operating activities should be positive (+ve). Investing activities should be negative (-ve). Financing activities should be negative (-ve).")   
+                cashflow_col1, cashflow_col2 = st.columns([3,2])
+                with cashflow_col1:
+                    cashflow_items = ['Operating Cash Flow', 'Investing Cash Flow', 'Financing Cash Flow', 'Free Cash Flow']
+                    cashflow_bar_data = cashflow_statement_flipped.reindex(cashflow_items).fillna(0).transpose()
+                    #cashflow_bar_data = cashflow_statement_flipped.loc[cashflow_items].transpose()
+                    cashflow_bar_data_million = cashflow_bar_data / 1e6
+                    cashflow_bar_data_million = cashflow_bar_data_million.reset_index().rename(columns={'index': 'Date'})
+                    cashflow_bar_data_melted = cashflow_bar_data_million.melt('Date', var_name='Key Values', value_name='USD in Millions')
+                    cashflow_bar_data_melted['Key Values'] = pd.Categorical(cashflow_bar_data_melted['Key Values'], categories=cashflow_items, ordered=True)
+                    colors = {
+                        'Operating Cash Flow': '#8CC152',
+                        'Investing Cash Flow': '#ED5565',
+                        'Financing Cash Flow': '#FB6E51',
+                        'Free Cash Flow': '#48CFAD',
+                    }
+                    fig = go.Figure()
+                    for item in cashflow_items:
+                        fig.add_trace(
+                            go.Bar(
+                                x=cashflow_bar_data_melted[cashflow_bar_data_melted['Key Values'] == item]['Date'],
+                                y=cashflow_bar_data_melted[cashflow_bar_data_melted['Key Values'] == item]['USD in Millions'],
+                                name=item,
+                                marker_color=colors[item]
+                            )
                         )
+                    fig.update_layout(
+                        title={"text":"Cashflow Statement Key Values Chart", "font": {"size": 20}},
+                        title_y=1,  
+                        title_x=0, 
+                        margin=dict(t=30, b=40, l=40, r=30),
+                        barmode='group', 
+                        xaxis_title=None,
+                        yaxis_title='USD in Millions',
+                        legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
+                        height=400
                     )
-                fig.update_layout(
-                    title={"text":"Cashflow Statement Key Values Chart", "font": {"size": 20}},
-                    title_y=1,  
-                    title_x=0, 
-                    margin=dict(t=30, b=40, l=40, r=30),
-                    barmode='group', 
-                    xaxis_title=None,
-                    yaxis_title='USD in Million',
-                    legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
-                    height=400
-                )
-                fig.update_xaxes(
-                    type='category',
-                    categoryorder='category ascending'
-                )
-                st.info("Operating activities should be positive (+ve). Investing activities should be negative (-ve). Financing activities should be negative (-ve).")       
-                st.plotly_chart(fig, use_container_width=True)
-                #
-                # cashflow_statement.fillna(0, inplace=True)
-                # date_columns = sorted([col for col in cashflow_statement_flipped.columns if col not in ['TTM', 'Trend']])
-                # ordered_columns = date_columns + ['TTM', 'Trend']
-                # cashflow_statement_flipped['Trend'] = cashflow_statement_flipped.apply(lambda row: list(row)[::-1], axis=1)
-                # cashflow_statement_flipped = cashflow_statement_flipped[ordered_columns]
-                # st.dataframe(
-                #     cashflow_statement_flipped,
-                #     column_config={
-                #         "Trend": st.column_config.BarChartColumn(
-                #             label="Trend",
-                #             help="Trend of financial values across years",
-                #             width="small",
-                #         )
-                #     }, use_container_width=True
-                # )
-                st.caption("Data source: Yahoo Finance")
+                    fig.update_xaxes(
+                        type='category',
+                        categoryorder='category ascending'
+                    )    
+                    st.plotly_chart(fig, use_container_width=True)
+                    st.caption("Data source: Yahoo Finance")
+
+                with cashflow_col2:
+                    try:
+                        dividend_item = ['Cash Dividends Paid']
+                        dividend_bar_data = cashflow_statement_flipped.loc[dividend_item].transpose()
+                        dividend_bar_data_million = dividend_bar_data / 1e6
+                        dividend_bar_data_million = dividend_bar_data_million.reset_index().rename(columns={'index': 'Date'})
+                        dividend_bar_data_melt = dividend_bar_data_million.melt('Date', var_name='Key Values', value_name='USD in Millions')
+                        dividend_bar_data_melt['Key Values'] = pd.Categorical(dividend_bar_data_melt['Key Values'], categories=dividend_item, ordered=True)
+                        dividend_color = {
+                            'Cash Dividends Paid': '#D772AD'
+                        }
+                        fig = go.Figure()
+                        for item in dividend_item:
+                            fig.add_trace(
+                                go.Bar(
+                                    x=dividend_bar_data_melt[dividend_bar_data_melt['Key Values'] == item]['Date'],
+                                    y=dividend_bar_data_melt[dividend_bar_data_melt['Key Values'] == item]['USD in Millions'],
+                                    name=item,
+                                    marker_color=dividend_color[item]
+                                )
+                            )
+                        fig.update_layout(
+                            title={"text":"Dividends Paid Chart", "font": {"size": 20}},
+                            title_y=1,  
+                            title_x=0, 
+                            margin=dict(t=30, b=40, l=40, r=30),
+                            barmode='group', 
+                            xaxis_title=None,
+                            xaxis=dict(tickfont=dict(size=10)),
+                            yaxis_title='USD in Millions',
+                            legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
+                            height=400
+                        )
+                        fig.update_xaxes(
+                            type='category',
+                            categoryorder='category ascending'
+                        )       
+                        st.plotly_chart(fig, use_container_width=True)
+                    except Exception as e:
+                        st.write("Dividends Data is not available.")
+                        st.write("This company is not giving dividends or there might be error in dividends data.")
                 ''
                 if use_ai:
                     cashflow_cleaned_text = analysis2['cashflow'].replace('\\n', '\n').replace('\\', '')
@@ -2669,7 +2738,7 @@ if st.button("Get Data"):
                         yaxis_title='Value',
                         xaxis=dict(tickmode='array', tickvals=unique_years_sorted, autorange='reversed',showgrid=True),
                         yaxis=dict(showgrid=True),
-                        height=400
+                        height=300
                     )
                     st.plotly_chart(figf, use_container_width=True)
                 except Exception as e:
@@ -2704,7 +2773,7 @@ if st.button("Get Data"):
                         yaxis_title='Value',
                         xaxis=dict(tickmode='array', tickvals=unique_years_sorted, autorange='reversed',showgrid=True),
                         yaxis=dict(showgrid=True),
-                        height=400
+                        height=300
                     )
                     st.plotly_chart(figv, use_container_width=True)
                 except Exception as e:
@@ -2740,7 +2809,7 @@ if st.button("Get Data"):
                         yaxis_title='Value (%)',
                         xaxis=dict(tickmode='array', tickvals=unique_years_sorted, autorange='reversed',showgrid=True),
                         yaxis=dict(showgrid=True),
-                        height=400
+                        height=300
                     )
                     st.plotly_chart(figp, use_container_width=True)
                 except Exception as e:
@@ -2773,7 +2842,7 @@ if st.button("Get Data"):
                         yaxis_title='Value (%)',
                         xaxis=dict(tickmode='array', tickvals=unique_years_sorted, autorange='reversed',showgrid=True),
                         yaxis=dict(showgrid=True),
-                        height=400
+                        height=300
                     )
                     st.plotly_chart(figy, use_container_width=True)
                 except Exception as e:
@@ -2812,7 +2881,7 @@ if st.button("Get Data"):
                         yaxis_title='Value (%)',
                         barmode='group',  
                         xaxis=dict(autorange='reversed'),
-                        height=400  
+                        height=300  
                     )
                     st.plotly_chart(figm, use_container_width=True)
                 except Exception as e:
@@ -2847,7 +2916,7 @@ if st.button("Get Data"):
                         yaxis_title='Value (%)',
                         xaxis=dict(tickmode='array', tickvals=unique_years_sorted, autorange='reversed',showgrid=True),
                         yaxis=dict(showgrid=True),
-                        height=400
+                        height=300
                     )
                     st.plotly_chart(figg, use_container_width=True)
                 except Exception as e:
@@ -4532,6 +4601,7 @@ if st.button("Get Data"):
                 st.write("To access this section, please ensure the 'Analyze using AI' box is checked.")
             
     except Exception as e:
+        #st.write(e)
         st.error(f"Failed to fetch data. Please check your ticker again.")
         st.warning("This tool supports only tickers from the U.S. stock market. Please note that ETFs and cryptocurrencies are not available for analysis. If the entered ticker is valid but the tool does not display results, it may be due to missing data or a technical issue. Kindly try again later. If the issue persists, please contact the developer for further assistance.")
 ''
@@ -4543,5 +4613,5 @@ with iiqc1:
     st.write("This analysis dashboard is designed to enable beginner investors to analyze stocks effectively and with ease. Please note that the information in this page is intended for educational purposes only and it does not constitute investment advice or a recommendation to buy or sell any security. We are not responsible for any losses resulting from trading decisions based on this information.")
 with iiqc2:
     invest_iq_central='./Image/InvestIQCentral.png'
-    st.image(invest_iq_central,width=300)
+    #st.image(invest_iq_central,width=300)
 ''
