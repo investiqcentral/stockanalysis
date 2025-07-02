@@ -2010,6 +2010,17 @@ if st.button("Get Data"):
                                     text=[f"{date}: {ret*100:.2f}%" for date, ret in zip(df_ticker['Date'], df_ticker['Relative Return'])]
                                 )
                             )
+                        fig.add_shape(
+                            type="line",
+                            x0=0,
+                            x1=1,
+                            y0=0,
+                            y1=0,
+                            xref="paper",
+                            yref="y",
+                            line=dict(color="#31333E", width=3),
+                            layer="below"
+                        )
                         fig.update_layout(
                             title={"text":f'{upper_ticker} - 5 Years Price Performance Comparison With Indices', "font": {"size": 22}},
                             title_y=1,  
@@ -2062,10 +2073,12 @@ if st.button("Get Data"):
             st.caption("Data source: Yahoo Finance")
             ''
             st.subheader("Industry and Sector Comparison", divider = 'gray')
+            isc_all_fail = True
             try:
                 col1,col2,col3= st.columns([3,3,3])
                 with col1:  
                         vscolors = ['#4FC1E9', '#48CFAD', '#EC87C0', '#FFCE54']
+                        chart1_success = False
                         try:
                             numeric_df = mb_com_df.copy()
                             def convert_to_billions(value):
@@ -2087,6 +2100,16 @@ if st.button("Get Data"):
                                 marker=dict(cornerradius=5),
                                 marker_color=vscolors
                             ))
+                            fig4.add_shape(
+                                type="line",
+                                x0=0,
+                                x1=1,
+                                y0=0,
+                                y1=0,
+                                xref="paper",
+                                yref="y",
+                                line=dict(color="#656D78", width=2)
+                            )
                             fig4.update_layout(
                                 title={"text":"Net Income Comparison (in Billions USD)","font": {"size": 15}},
                                 xaxis_title=None,
@@ -2097,10 +2120,14 @@ if st.button("Get Data"):
                                 showlegend=False
                             )
                             st.plotly_chart(fig4, use_container_width=True)
+                            chart1_success = True
+                            isc_all_fail = False
                         except Exception as e:
-                            st.warning("Net Income Comparison: No data available.")
+                            if not isc_all_fail:
+                                st.warning("Net Income Comparison: No data available.")
                             
                 with col2:            
+                        chart2_success = False
                         try:
                             ratio_metrics = ['P/E Ratio', 'Price / Sales', 'Price / Cash', 'Price / Book']
                             ratio_data = numeric_df[numeric_df['Metric'].isin(ratio_metrics)]
@@ -2116,6 +2143,16 @@ if st.button("Get Data"):
                                     marker=dict(cornerradius=5),
                                     marker_color=vscolors[i]
                                 ))
+                            fig2.add_shape(
+                                type="line",
+                                x0=0,
+                                x1=1,
+                                y0=0,
+                                y1=0,
+                                xref="paper",
+                                yref="y",
+                                line=dict(color="#656D78", width=2)
+                            )
                             fig2.update_layout(
                                 title={"text":"Ratios Comparison","font": {"size": 15}},
                                 xaxis_title=None,
@@ -2128,9 +2165,13 @@ if st.button("Get Data"):
                                 legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
                             )
                             st.plotly_chart(fig2, use_container_width=True)
+                            chart2_success = True
+                            isc_all_fail = False
                         except Exception as e:
-                            st.warning("Ratio Comparison: No data available.")
+                            if not isc_all_fail:
+                                st.warning("Ratio Comparison: No data available.")
                 with col3:
+                        chart3_success = False
                         try:
                             performance_metrics = ['7 Day Performance', '1 Month Performance', '1 Year Performance']
                             performance_data = numeric_df[numeric_df['Metric'].isin(performance_metrics)]
@@ -2146,6 +2187,16 @@ if st.button("Get Data"):
                                     marker=dict(cornerradius=5),
                                     marker_color=vscolors[i]
                                 ))
+                            fig3.add_shape(
+                                type="line",
+                                x0=0,
+                                x1=1,
+                                y0=0,
+                                y1=0,
+                                xref="paper",
+                                yref="y",
+                                line=dict(color="#656D78", width=2)
+                            )
                             fig3.update_layout(
                                 title={"text":"Performance Comparison","font": {"size": 15}},
                                 xaxis_title=None,
@@ -2158,28 +2209,25 @@ if st.button("Get Data"):
                                 legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
                             )
                             st.plotly_chart(fig3, use_container_width=True)
+                            chart3_success = True
+                            isc_all_fail = False
                         except Exception as e:
-                            st.warning("Performance Comparison: No data available.")
+                            if not isc_all_fail:
+                                st.warning("Performance Comparison: No data available.")
                             
             except Exception as e:
                 st.warning(f"Valuation Comparison: No data available.")
+            if isc_all_fail:
+                st.write("There is no data available.")
             st.caption("Data source: Market Beat")
             ''            
                 
             st.subheader("Dividend Comparison", divider = 'gray')
+            dc_all_fail = True
             try:
                 col5, col6, col7 = st.columns([3,3,3])
                 with col5:
-                    #try:
-                    #    st.subheader('Dividends Comparison')
-                    #    def highlight_company(s):
-                    #        return ['background-color: yellow' if s.name == mb_div_df.columns[1] else '' for _ in s]
-                    #    mb_div_styled_df = mb_div_df.style.apply(highlight_company, axis=0)
-                    #    st.dataframe(mb_div_styled_df,hide_index=True,use_container_width=True)
-                    #except Exception as e:
-                    #    st.warning(f"Dividends Comparison: No data available.")
-                    #st.caption("Data source: Market Beat")
-    
+                        chart4_success = False
                         try:
                             numeric_df = mb_div_df.copy()
                             for col in numeric_df.columns:
@@ -2188,6 +2236,9 @@ if st.button("Get Data"):
                                     numeric_df.loc[mask, col] = numeric_df.loc[mask, col].replace('[\$,\%]', '', regex=True).astype(float)
                             vscolors2 = ['#4FC1E9', '#48CFAD', '#EC87C0', '#FFCE54']
                             annual_data = numeric_df[numeric_df['Type'] == 'Annual Dividend']
+                            values = annual_data.iloc[0, 1:]
+                            if values.isnull().all() or (values.fillna(0) == 0).all():
+                                raise ValueError("All values are zero or missing.")
                             fig1 = go.Figure()
                             fig1.add_trace(go.Bar(
                                 x=mb_div_df.columns[1:],
@@ -2197,6 +2248,16 @@ if st.button("Get Data"):
                                 marker=dict(cornerradius=5),
                                 marker_color=vscolors2[:3]
                             ))
+                            fig1.add_shape(
+                                type="line",
+                                x0=0,
+                                x1=1,
+                                y0=0,
+                                y1=0,
+                                xref="paper",
+                                yref="y",
+                                line=dict(color="#656D78", width=2)
+                            )
                             fig1.update_layout(
                                 title={"text":"Annual Dividend Comparison","font": {"size": 15}},
                                 xaxis_title=None,
@@ -2207,11 +2268,18 @@ if st.button("Get Data"):
                                 showlegend=False
                             )
                             st.plotly_chart(fig1, use_container_width=True)
+                            chart4_success = True
+                            dc_all_fail = False
                         except Exception as e:
-                            st.warning("Annual Dividend Comparison: No data available.")
+                            if not dc_all_fail:
+                                st.warning("Annual Dividend Comparison: No data available.")
                 with col6:
+                        chart5_success = False
                         try:
                             yield_data = numeric_df[numeric_df['Type'] == 'Dividend Yield']
+                            values = yield_data.iloc[0, 1:]
+                            if values.isnull().all() or (values.fillna(0) == 0).all():
+                                raise ValueError("All values are zero or missing.")
                             fig2 = go.Figure()
                             fig2.add_trace(go.Bar(
                                 x=mb_div_df.columns[1:],
@@ -2221,6 +2289,16 @@ if st.button("Get Data"):
                                 marker=dict(cornerradius=5),
                                 marker_color=vscolors2[:3]
                             ))
+                            fig2.add_shape(
+                                type="line",
+                                x0=0,
+                                x1=1,
+                                y0=0,
+                                y1=0,
+                                xref="paper",
+                                yref="y",
+                                line=dict(color="#656D78", width=2)
+                            )
                             fig2.update_layout(
                                 title={"text":"Dividend Yield Comparison","font": {"size": 15}},
                                 xaxis_title=None,
@@ -2231,11 +2309,18 @@ if st.button("Get Data"):
                                 showlegend=False
                             )
                             st.plotly_chart(fig2, use_container_width=True)
+                            chart5_success = True
+                            dc_all_fail = False
                         except Exception as e:
-                            st.warning("Dividend Yield Comparison: No data available.")
+                            if not dc_all_fail:
+                                st.warning("Dividend Yield Comparison: No data available.")
                 with col7:
+                        chart6_success = False
                         try:
                             growth_data = numeric_df[numeric_df['Type'] == 'Annualized 3-Year Dividend Growth']
+                            values = growth_data.iloc[0, 1:]
+                            if values.isnull().all() or (values.fillna(0) == 0).all():
+                                raise ValueError("All values are zero or missing.")
                             fig3 = go.Figure()
                             fig3.add_trace(go.Bar(
                                 x=mb_div_df.columns[1:],
@@ -2245,6 +2330,16 @@ if st.button("Get Data"):
                                 marker=dict(cornerradius=5),
                                 marker_color=vscolors2[:3]
                             ))
+                            fig3.add_shape(
+                                type="line",
+                                x0=0,
+                                x1=1,
+                                y0=0,
+                                y1=0,
+                                xref="paper",
+                                yref="y",
+                                line=dict(color="#656D78", width=2)
+                            )
                             fig3.update_layout(
                                 title={"text":"Annualized 3-Year Dividend Growth Comparison","font": {"size": 15}},
                                 xaxis_title=None,
@@ -2255,16 +2350,21 @@ if st.button("Get Data"):
                                 showlegend=False
                             )
                             st.plotly_chart(fig3, use_container_width=True)
+                            chart6_success = True
+                            dc_all_fail = False
                         except Exception as e:
-                            st.warning("Dividend Growth Comparison: No data available.")
+                            if not dc_all_fail:
+                                st.warning("Dividend Growth Comparison: No data available.")
             except Exception as e:
                 st.warning(f"Dividends Comparison: No data available.")
+            if dc_all_fail:
+                st.write("There is no data available.")
             st.caption("Data source: Market Beat")
             ''
 
             try:
                 SPECIAL_TICKERS = {'NVDA', 'ARM', 'NXPI', 'LHX', 'AVGO', 'QCOM', 'TXN', 'INTC', 'STM',
-                                    'THO', 'EME', 'KBR', 'ACM', 'PCAR', 'HPQ', 'SAP', 'PAR', 'USNA'
+                                    'THO', 'EME', 'KBR', 'ACM', 'PCAR', 'HPQ', 'SAP', 'PAR', 'USNA', 'NU'
                                     }
                 def clean_ticker_name(text):
                     for ticker in SPECIAL_TICKERS:
@@ -2341,6 +2441,17 @@ if st.button("Get Data"):
                                             text=[f"{date}: {ret*100:.2f}%" for date, ret in zip(df_ticker['Date'], df_ticker['Relative Return'])]
                                         )
                                     )
+                                fig.add_shape(
+                                    type="line",
+                                    x0=0,
+                                    x1=1,
+                                    y0=0,
+                                    y1=0,
+                                    xref="paper",
+                                    yref="y",
+                                    line=dict(color="#31333E", width=3),
+                                    layer="below"
+                                )
                                 fig.update_layout(
                                     title={"text":f'{upper_ticker} - 5 Years Price Performance Comparison With Competitors', "font": {"size": 22}},
                                     title_y=1,  
@@ -2360,6 +2471,7 @@ if st.button("Get Data"):
                                 )
                                 st.plotly_chart(fig, use_container_width=True)
                             plot_relative_return_comparison(mb_alt_df_melted, custom_colors, upper_ticker)
+                            st.caption("Data source: Yahoo Finance")
                     except Exception as e:
                         print(f"Failed to scrape ticker data from table.")
                 with compcol4:
@@ -2384,7 +2496,6 @@ if st.button("Get Data"):
                         st.write("")
             except Exception as e:
                 print(f"Failed to scrape ticker data from table.")
-            st.caption("Data source: Yahoo Finance")
 
 #############################################            #############################################
 ############################################# Statements #############################################
@@ -2435,6 +2546,16 @@ if st.button("Get Data"):
                                 marker_color=colors[item]
                             )
                         )
+                    fig.add_shape(
+                        type="line",
+                        x0=0,
+                        x1=1,
+                        y0=0,
+                        y1=0,
+                        xref="paper",
+                        yref="y",
+                        line=dict(color="#656D78", width=2)
+                    )
                     fig.update_layout(
                         title={"text":"Income Statement Key Values Chart", "font": {"size": 20}},
                         title_y=1,  
@@ -2473,6 +2594,16 @@ if st.button("Get Data"):
                                     marker_color=eps_color[item]
                                 )
                             )
+                        fig.add_shape(
+                            type="line",
+                            x0=0,
+                            x1=1,
+                            y0=0,
+                            y1=0,
+                            xref="paper",
+                            yref="y",
+                            line=dict(color="#656D78", width=2)
+                        )
                         fig.update_layout(
                             title={"text":"EPS Chart", "font": {"size": 20}},
                             title_y=1,  
@@ -2540,6 +2671,16 @@ if st.button("Get Data"):
                                 marker_color=colors[item]
                             )
                         )
+                    fig.add_shape(
+                        type="line",
+                        x0=0,
+                        x1=1,
+                        y0=0,
+                        y1=0,
+                        xref="paper",
+                        yref="y",
+                        line=dict(color="#656D78", width=2)
+                    )
                     fig.update_layout(
                         title={"text":"Balance Sheet Key Values Chart", "font": {"size": 20}},
                         title_y=1,  
@@ -2633,6 +2774,16 @@ if st.button("Get Data"):
                                 marker_color=colors[item]
                             )
                         )
+                    fig.add_shape(
+                        type="line",
+                        x0=0,
+                        x1=1,
+                        y0=0,
+                        y1=0,
+                        xref="paper",
+                        yref="y",
+                        line=dict(color="#656D78", width=2)
+                    )
                     fig.update_layout(
                         title={"text":"Cashflow Statement Key Values Chart", "font": {"size": 20}},
                         title_y=1,  
@@ -2672,6 +2823,16 @@ if st.button("Get Data"):
                                     marker_color=dividend_color[item]
                                 )
                             )
+                        fig.add_shape(
+                            type="line",
+                            x0=0,
+                            x1=1,
+                            y0=0,
+                            y1=0,
+                            xref="paper",
+                            yref="y",
+                            line=dict(color="#656D78", width=2)
+                        )
                         fig.update_layout(
                             title={"text":"Dividends Paid Chart", "font": {"size": 20}},
                             title_y=1,  
@@ -2716,6 +2877,8 @@ if st.button("Get Data"):
                                                 var_name='Year', 
                                                 value_name='Value')
                     sa_metrics_df_melted['Value'] = sa_metrics_df_melted['Value'].replace({'-': '0'}, regex=True).astype(float)
+                    if sa_metrics_df_melted['Value'].isnull().all() or (sa_metrics_df_melted['Value'].fillna(0) == 0).all():
+                        raise ValueError("All values are zero or missing.")
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'Current'])
                     if 'Current' in unique_years:
@@ -2729,6 +2892,17 @@ if st.button("Get Data"):
                             mode='lines+markers',
                             name=str(fiscal_year)
                         ))
+                    figf.add_shape(
+                        type="line",
+                        x0=0,
+                        x1=1,
+                        y0=0,
+                        y1=0,
+                        xref="paper",
+                        yref="y",
+                        line=dict(color="#31333E", width=3),
+                        layer="below"
+                    )
                     figf.update_layout(
                         title={"text":"Financial Health Data", "font": {"size": 20}},
                         title_y=1,  
@@ -2751,6 +2925,8 @@ if st.button("Get Data"):
                                                 var_name='Year', 
                                                 value_name='Value')
                     sa_metrics_df_melted['Value'] = sa_metrics_df_melted['Value'].replace({'-': '0'}, regex=True).astype(float)
+                    if sa_metrics_df_melted['Value'].isnull().all() or (sa_metrics_df_melted['Value'].fillna(0) == 0).all():
+                        raise ValueError("All values are zero or missing.")
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'Current'])
                     if 'Current' in unique_years:
@@ -2764,6 +2940,17 @@ if st.button("Get Data"):
                             mode='lines+markers',
                             name=str(fiscal_year)
                         ))
+                    figv.add_shape(
+                        type="line",
+                        x0=0,
+                        x1=1,
+                        y0=0,
+                        y1=0,
+                        xref="paper",
+                        yref="y",
+                        line=dict(color="#31333E", width=3),
+                        layer="below"
+                    )
                     figv.update_layout(
                         title={"text":"Valuation Data", "font": {"size": 20}},
                         title_y=1,  
@@ -2787,6 +2974,8 @@ if st.button("Get Data"):
                                                 var_name='Year', 
                                                 value_name='Value (%)')
                     sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': '','-': '0'}, regex=True).astype(float)
+                    if sa_metrics_df_melted['Value (%)'].isnull().all() or (sa_metrics_df_melted['Value (%)'].fillna(0) == 0).all():
+                        raise ValueError("All values are zero or missing.")
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'Current'])
                     if 'Current' in unique_years:
@@ -2800,6 +2989,17 @@ if st.button("Get Data"):
                             mode='lines+markers',
                             name=str(fiscal_year)
                         ))
+                    figp.add_shape(
+                        type="line",
+                        x0=0,
+                        x1=1,
+                        y0=0,
+                        y1=0,
+                        xref="paper",
+                        yref="y",
+                        line=dict(color="#31333E", width=3),
+                        layer="below"
+                    )
                     figp.update_layout(
                         title={"text":"Profitability Data", "font": {"size": 20}},
                         title_y=1,  
@@ -2820,6 +3020,8 @@ if st.button("Get Data"):
                     sa_metrics_df_filtered = sa_metrics_df[sa_metrics_df['Fiscal Year'].isin(pmetrics)]
                     sa_metrics_df_melted = sa_metrics_df_filtered.melt(id_vars=['Fiscal Year'], var_name='Year', value_name='Value (%)')
                     sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': '','-': '0'}, regex=True).astype(float)
+                    if sa_metrics_df_melted['Value (%)'].isnull().all() or (sa_metrics_df_melted['Value (%)'].fillna(0) == 0).all():
+                        raise ValueError("All values are zero or missing.")
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'Current'])
                     if 'Current' in unique_years:
@@ -2833,6 +3035,17 @@ if st.button("Get Data"):
                             mode='lines+markers',
                             name=str(fiscal_year)
                         ))
+                    figy.add_shape(
+                        type="line",
+                        x0=0,
+                        x1=1,
+                        y0=0,
+                        y1=0,
+                        xref="paper",
+                        yref="y",
+                        line=dict(color="#31333E", width=3),
+                        layer="below"
+                    )
                     figy.update_layout(
                         title={"text":"Yield Data", "font": {"size": 20}},
                         title_y=1,  
@@ -2857,6 +3070,8 @@ if st.button("Get Data"):
                                                 var_name='Year', 
                                                 value_name='Value (%)')
                     sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': '','-': '0'}, regex=True).astype(float)
+                    if sa_metrics_df_melted['Value (%)'].isnull().all() or (sa_metrics_df_melted['Value (%)'].fillna(0) == 0).all():
+                        raise ValueError("All values are zero or missing.")
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'TTM'])
                     if 'TTM' in unique_years:
@@ -2872,6 +3087,17 @@ if st.button("Get Data"):
                             hoverinfo='y+name',
                             #marker=dict(line=dict(width=1))
                         ))
+                    figm.add_shape(
+                        type="line",
+                        x0=0,
+                        x1=1,
+                        y0=0,
+                        y1=0,
+                        xref="paper",
+                        yref="y",
+                        line=dict(color="#31333E", width=3),
+                        layer="below"
+                    )
                     figm.update_layout(
                         title={"text":"Margin Data", "font": {"size": 20}},
                         title_y=1,  
@@ -2894,6 +3120,8 @@ if st.button("Get Data"):
                                                 var_name='Year', 
                                                 value_name='Value (%)')
                     sa_metrics_df_melted['Value (%)'] = sa_metrics_df_melted['Value (%)'].replace({'%': '','-': '0'}, regex=True).astype(float)
+                    if sa_metrics_df_melted['Value (%)'].isnull().all() or (sa_metrics_df_melted['Value (%)'].fillna(0) == 0).all():
+                        raise ValueError("All values are zero or missing.")
                     unique_years = sa_metrics_df_melted['Year'].unique()
                     unique_years_sorted = sorted([year for year in unique_years if year != 'TTM'])
                     if 'TTM' in unique_years:
@@ -2907,6 +3135,17 @@ if st.button("Get Data"):
                             mode='lines+markers',
                             name=str(fiscal_year)
                         ))
+                    figg.add_shape(
+                        type="line",
+                        x0=0,
+                        x1=1,
+                        y0=0,
+                        y1=0,
+                        xref="paper",
+                        yref="y",
+                        line=dict(color="#31333E", width=3),
+                        layer="below"
+                    )
                     figg.update_layout(
                         title={"text":"Growth Data", "font": {"size": 20}},
                         title_y=1,  
@@ -2958,6 +3197,16 @@ if st.button("Get Data"):
                                                     "<extra></extra>"
                                     )
                                 )
+                        fig_rs.add_shape(
+                            type="line",
+                            x0=0,
+                            x1=1,
+                            y0=0,
+                            y1=0,
+                            xref="paper",
+                            yref="y",
+                            line=dict(color="#656D78", width=2)
+                        )
                         fig_rs.update_layout(
                             title={"text":f'{upper_ticker} Revenue by Segment', "font": {"size": 20}},
                             xaxis=dict(title=None, showticklabels=True, showgrid=False),
@@ -4035,7 +4284,7 @@ if st.button("Get Data"):
                                     open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'],
                                     name="Candlestick",
                                     showlegend=False,
-                                    increasing_line_width=0.5, decreasing_line_width=0.5,
+                                    increasing_line_width=1, decreasing_line_width=1,
                                     increasing_line_color='rgba(0,150,0,1)',
                                     decreasing_line_color='rgba(150,0,0,1)',
                                     opacity=1
@@ -4245,7 +4494,7 @@ if st.button("Get Data"):
                                     open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'],
                                     name="Price",
                                     showlegend=False,
-                                    increasing_line_width=0.5, decreasing_line_width=0.5,
+                                    increasing_line_width=1, decreasing_line_width=1,
                                     increasing_line_color='rgba(0,150,0,1)',
                                     decreasing_line_color='rgba(150,0,0,1)',
                                     opacity=1
