@@ -4048,7 +4048,7 @@ if st.button("Get Data"):
                     insider_mb["Transaction Date"].apply(lambda x: is_valid_date(x) and x != unwanted_string)
                 ]
                 filtered_insider_mb['Transaction Date'] = pd.to_datetime(filtered_insider_mb['Transaction Date']).dt.strftime('%Y-%m-%d')
-                st.dataframe(filtered_insider_mb.style.applymap(highlight_insider_trades, subset=['Buy/Sell']), use_container_width=True, hide_index=True, height = 600)
+                st.dataframe(filtered_insider_mb.style.applymap(highlight_insider_trades, subset=['Buy/Sell']), use_container_width=True, hide_index=True, height = 500)
                 st.caption("Data source: Market Beat")
             except Exception as e:
                 st.warning("Insider information is not available.")
@@ -4733,7 +4733,6 @@ if st.button("Get Data"):
                                     st.info("Support and Resistance levels are key price levels where the stock has historically found support (price stops falling) or resistance (price stops rising). These levels are important as they often act as psychological barriers and can indicate potential reversal points in price movement.")
                                 
             except Exception as e: 
-                st.write(e)
                 st.warning("Failed to request historical price data.")
 
             ###Finviz picture
