@@ -579,7 +579,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
                     "Communication Services": "XLC"
                     }
         matching_etf = sector_etf_mapping.get(sector)
-        compare_tickers = (upper_ticker, '^GSPC', matching_etf)
+        compare_tickers = (upper_ticker, '^GSPC', matching_etf, 'GLD')
         end = datetime.datetime.today()
         start = end - relativedelta(years=5)
         def relativereturn(df):
@@ -1164,7 +1164,7 @@ if st.button("Get Data"):
 ############################################# Tabs #############################################
 #############################################      #############################################
 
-        overview_data, comparison_data, statements_data, ratios_and_metrics_data, guru_checklist, insider_trades, technicalAnalysis_data, news_data, ai_analysis = st.tabs (["Overview","Comparisons","Financial Statements", "Ratios & Metrics", "Guru Checklist","Insider Trades","Technical Analysis","Top News", "AI Analysis"])
+        overview_data, comparison_data, statements_data, ratios_and_metrics_data, guru_checklist, ownership, technicalAnalysis_data, news_data, ai_analysis = st.tabs (["Overview","Comparisons","Financial Statements", "Ratios & Metrics", "Guru Checklist","Ownership","Technical Analysis","Top News", "AI Analysis"])
 
 #############################################               #############################################
 ############################################# Overview Data #############################################
@@ -1985,12 +1985,13 @@ if st.button("Get Data"):
                 try:
                     yf_com_df = yf_com
                     yf_com_df_melted = yf_com_df.reset_index().melt(id_vars='Date', var_name='Ticker', value_name='Relative Return')
-                    yf_com_df_melted['Ticker'] = yf_com_df_melted['Ticker'].replace({'^GSPC': 'S&P500', matching_etf: 'Sector'})
+                    yf_com_df_melted['Ticker'] = yf_com_df_melted['Ticker'].replace({'^GSPC': 'S&P500', matching_etf: 'Sector', 'GLD': 'Gold'})
                     unique_years_sorted = yf_com_df_melted['Date'].dt.year.unique()
                     custom_colors = {
                             upper_ticker: '#DA4453',  
                             'S&P500': '#5E9BEB',
-                            'Sector': '#FFCE54'
+                            'Sector': '#48CFAD',
+                            'Gold': '#F6BB42'
                     }
                     def plot_relative_return_chart(yf_com_df_melted, custom_colors, upper_ticker):
                         df_plot = yf_com_df_melted.copy()
@@ -2052,17 +2053,22 @@ if st.button("Get Data"):
                         label="S&P500",
                         value=f"{last_values.loc['S&P500', 'Relative Return']*100:.2f}%"
                     )
+                    st.metric(
+                        label="Gold",
+                        value=f"{last_values.loc['Gold', 'Relative Return']*100:.2f}%"
+                    )
                     stock_return = last_values.loc[upper_ticker, 'Relative Return']
                     sector_return = last_values.loc['Sector', 'Relative Return']
                     sp500_return = last_values.loc['S&P500', 'Relative Return']
+                    gld_return = last_values.loc['Gold', 'Relative Return']
                     
                     performance_text = f"{upper_ticker} has "
-                    if stock_return > sector_return and stock_return > sp500_return:
-                        performance_text += f"outperformed both its sector ({sector_return*100:.2f}%) and S&P500 ({sp500_return*100:.2f}%) with a return of {stock_return*100:.2f}%"
-                    elif stock_return < sector_return and stock_return < sp500_return:
-                        performance_text += f"underperformed both its sector ({sector_return*100:.2f}%) and S&P500 ({sp500_return*100:.2f}%) with a return of {stock_return*100:.2f}%"
+                    if stock_return > sector_return and stock_return > sp500_return and stock_return > gld_return:
+                        performance_text += f"outperformed both its sector ({sector_return*100:.2f}%), S&P500 ({sp500_return*100:.2f}%) and gold ({gld_return*100:.2f}%) with a return of {stock_return*100:.2f}%"
+                    elif stock_return < sector_return and stock_return < sp500_return and stock_return < gld_return:
+                        performance_text += f"underperformed both its sector ({sector_return*100:.2f}%), S&P500 ({sp500_return*100:.2f}%) and gold ({gld_return*100:.2f}%) with a return of {stock_return*100:.2f}%"
                     else:
-                        performance_text += f"shown mixed performance with a return of {stock_return*100:.2f}% compared to its sector ({sector_return*100:.2f}%) and S&P500 ({sp500_return*100:.2f}%)"
+                        performance_text += f"shown mixed performance with a return of {stock_return*100:.2f}% compared to its sector ({sector_return*100:.2f}%), S&P500 ({sp500_return*100:.2f}%) and gold ({gld_return*100:.2f}%)"
                     
                     st.write("")
                     st.caption(performance_text)
@@ -2496,6 +2502,84 @@ if st.button("Get Data"):
                         st.write("")
             except Exception as e:
                 print(f"Failed to scrape ticker data from table.")
+
+            ''
+            st.subheader("Correlation", divider = 'gray')
+            core_col1, core_col2 = st.columns([3,1])
+            try:
+                end_date = datetime.datetime.today()
+                start_date = end_date - relativedelta(years=5)
+                window_size = 60
+                with core_col1:
+                    if ticker:
+                        stock_data = yf.download(ticker, start=start_date, end=end_date)
+                        sp500_data = yf.download("^GSPC", start=start_date, end=end_date) 
+                        gold_data = yf.download("GLD", start=start_date, end=end_date)
+                        if not stock_data.empty and not sp500_data.empty:
+                            stock_returns = stock_data["Close"].pct_change().dropna()
+                            sp500_returns = sp500_data["Close"].pct_change().dropna()
+                            gold_returns = gold_data["Close"].pct_change().dropna()
+                            combined = pd.concat([stock_returns, sp500_returns, gold_returns], axis=1)
+                            combined.columns = [ticker, "S&P500", "Gold"]
+                            combined.dropna(inplace=True)
+                            corr_sp500 = combined[ticker].rolling(window=window_size).corr(combined["S&P500"])
+                            corr_gold = combined[ticker].rolling(window=window_size).corr(combined["Gold"])
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(
+                                x=corr_sp500.index,
+                                y=corr_sp500,
+                                mode="lines",
+                                line=dict(color="#5E9BEB", width=2),
+                                name="S&P500"
+                            ))
+                            fig.add_trace(go.Scatter(
+                                x=corr_gold.index,
+                                y=corr_gold,
+                                mode="lines",
+                                name="Gold",
+                                line=dict(color="#F6BB42", width=2)
+                            ))
+                            fig.add_shape(
+                                type="line",
+                                x0=0,
+                                x1=1,
+                                y0=0,
+                                y1=0,
+                                xref="paper",
+                                yref="y",
+                                line=dict(color="#31333E", width=3),
+                                layer="below"
+                            )
+                            fig.update_layout(
+                                title={"text":f'{upper_ticker} vs. S&P500 and Gold - Rolling Correlation (Window = {window_size} Days)', "font": {"size": 22}},
+                                title_y=1,  
+                                title_x=0, 
+                                margin=dict(t=70, b=40, l=40, r=30),
+                                xaxis=dict(title=None), 
+                                yaxis=dict(title="Correlation", showgrid=True, range=[-1, 1]),
+                                legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
+                                height=500,
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+                        else:
+                            st.warning("Data not found. Check symbol and dates.")
+                with core_col2:
+                    ""
+                    correlation_sp500 = corr_sp500.dropna().iloc[-1] if not corr_sp500.dropna().empty else None
+                    correlation_gold = corr_gold.dropna().iloc[-1] if not corr_gold.dropna().empty else None
+                    st.metric(
+                        label="Current Correlation with S&P500",
+                        value=f"{correlation_sp500:.4f}"
+                    )
+                    st.metric(
+                        label="Current Correlation with Gold",
+                        value=f"{correlation_gold:.4f}"
+                    )
+                    st.caption("+1 Positive Correlation: This means the stock and the index move in the exact same direction, by the same proportion. If the index goes up by 1%, the stock also goes up by 1%. This is rare in practice.")
+                    st.caption("-1 Negative Correlation: This means the stock and the index move in completely opposite directions. If the index goes up by 1%, the stock goes down by 1%. This is also very rare.")
+                    st.caption("0 No Linear Correlation: This indicates there's no linear relationship between the movements of the stock and the index. Their price changes are independent of each other.")
+            except Exception as e:
+                st.write("")
 
 #############################################            #############################################
 ############################################# Statements #############################################
@@ -4025,7 +4109,7 @@ if st.button("Get Data"):
 #############################################                #############################################
 ############################################# Insider Trades #############################################
 #############################################                ############################################# 
-        with insider_trades:
+        with ownership:
             def highlight_insider_trades(val):
                 if val == 'Buy':
                     bscolor = '#37BC9B'
@@ -4034,7 +4118,7 @@ if st.button("Get Data"):
                 else:
                     bscolor ='#AAB2BD'
                 return f'background-color: {bscolor}; color: white'
-            
+            st.subheader("Insider Trades", divider ='gray')
             try:
                 insider_mb = pd.DataFrame(insider_mb).iloc[:, :-2]
                 def is_valid_date(value):
@@ -4048,10 +4132,11 @@ if st.button("Get Data"):
                     insider_mb["Transaction Date"].apply(lambda x: is_valid_date(x) and x != unwanted_string)
                 ]
                 filtered_insider_mb['Transaction Date'] = pd.to_datetime(filtered_insider_mb['Transaction Date']).dt.strftime('%Y-%m-%d')
-                st.dataframe(filtered_insider_mb.style.applymap(highlight_insider_trades, subset=['Buy/Sell']), use_container_width=True, hide_index=True, height = 500)
+                st.dataframe(filtered_insider_mb.style.applymap(highlight_insider_trades, subset=['Buy/Sell']), use_container_width=True, hide_index=True, height = 400)
                 st.caption("Data source: Market Beat")
             except Exception as e:
                 st.warning("Insider information is not available.")
+            ''
 
 #############################################                         #############################################
 ############################################# Technical Analysis Data #############################################
@@ -4733,6 +4818,7 @@ if st.button("Get Data"):
                                     st.info("Support and Resistance levels are key price levels where the stock has historically found support (price stops falling) or resistance (price stops rising). These levels are important as they often act as psychological barriers and can indicate potential reversal points in price movement.")
                                 
             except Exception as e: 
+                st.write(e)
                 st.warning("Failed to request historical price data.")
 
             ###Finviz picture
