@@ -4825,7 +4825,7 @@ if st.button("Get Data"):
                                     st.info("Support and Resistance levels are key price levels where the stock has historically found support (price stops falling) or resistance (price stops rising). These levels are important as they often act as psychological barriers and can indicate potential reversal points in price movement.")
                                 
             except Exception as e: 
-                st.write(e)
+                #st.write(e)
                 st.warning("Failed to request historical price data.")
 
             ###Finviz picture
