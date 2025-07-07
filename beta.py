@@ -4403,14 +4403,14 @@ if st.button("Get Data"):
                                 tick_vals = data.index[::30]
                                 tick_text = [date.strftime("%b %Y") for date in tick_vals]
                                 fig.update_layout(
-                                    title={"text":f"Price Data with Moving Average & RSI", "font": {"size": 30}},
+                                    title={"text":f"Price Data with Moving Average, RSI and MACD", "font": {"size": 30}},
                                     xaxis_rangeslider_visible=False,
                                     xaxis=dict(
                                         type="category",
                                         showgrid=True,
                                         ticktext=tick_text,
                                         tickvals=tick_vals,
-                                        showticklabels=False 
+                                        showticklabels=True 
                                     ),
                                     yaxis=dict(
                                         title="Price (USD)",
@@ -4461,7 +4461,9 @@ if st.button("Get Data"):
                                 tick_vals = macd_data.index[::30]
                                 tick_text = [date.strftime("%b %Y") for date in tick_vals]
                                 fig_macd.update_layout(
-                                    title={"text":f"MACD Chart", "font": {"size": 30}}, xaxis_title=None, yaxis_title="MACD Value",
+                                    #title={"text":f"MACD Chart", "font": {"size": 30}}, xaxis_title=None, yaxis_title="MACD Value",
+                                    xaxis_title=None,
+                                    yaxis_title="MACD",
                                     xaxis_rangeslider_visible=False,
                                     xaxis=dict(
                                         type="category",
@@ -4469,6 +4471,9 @@ if st.button("Get Data"):
                                         tickvals=tick_vals,
                                         showgrid=True
                                     ),
+                                    yaxis=dict(showgrid=False, showticklabels=True),
+                                    height=200,
+                                    margin=dict(l=0, r=0, t=0, b=0),
                                     legend=dict(
                                     yanchor="top",
                                     y=0.99,
@@ -4492,7 +4497,8 @@ if st.button("Get Data"):
                                         type="category",
                                         ticktext=tick_text_rsi,
                                         tickvals=tick_vals_rsi,
-                                        showgrid=True
+                                        showgrid=True,
+                                        showticklabels=True
                                     ),
                                     yaxis=dict(range=[0, 100], showgrid=False, showticklabels=True),
                                     height=200,
@@ -4729,7 +4735,10 @@ if st.button("Get Data"):
                                     st.plotly_chart(create_gauge("RSI Consensus", rsi_score))
                                 
                                 st.plotly_chart(fig)
+                                ''
                                 st.plotly_chart(fig_rsi)
+                                ''
+                                st.plotly_chart(fig_macd)
                                 ''
                                 ma_tcol1, ma_tcol2 = st.columns([3,3])
                                 with ma_tcol1:
@@ -4753,9 +4762,7 @@ if st.button("Get Data"):
                                     st.write(trend_analysis)
                                 with rsi_tcol2:
                                     st.info("If RSI > 70, it generally indicates an Overbought condition. If RSI < 30, it generally indicates an Oversold condition. If RSI is between 30 and 70, it indicates a Neutral condition.")
-                                st.subheader("",divider = 'gray')
-                                
-                                st.plotly_chart(fig_macd)
+                                ''
                                 md_tcol1, md_tcol2 = st.columns([3,3])
                                 with md_tcol1:
                                     st.write(macd_signal)
