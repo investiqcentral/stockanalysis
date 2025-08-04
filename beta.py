@@ -262,7 +262,7 @@ def get_stock_data(ticker, use_ai=True):
         url = f'https://stockanalysis.com/stocks/{ticker}/metrics/revenue-by-segment/'
         r = requests.get(url)
         soup = BeautifulSoup(r.text,"html.parser")
-        table = soup.find("table",class_ = "svelte-7muvl3")
+        table = soup.find("table",class_ = "svelte-1swpzu1")
         rows = table.find_all("tr")
         headers = []
         data = []
