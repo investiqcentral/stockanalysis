@@ -42,7 +42,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 @st.cache_data(ttl=3600)
-def get_stock_data(ticker, apiKey=None, use_ai=True):
+def get_stock_data(ticker, use_ai=True):
 
     stock = yf.Ticker(ticker)
     lowercase_ticker = ticker.lower()
@@ -61,107 +61,6 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     else:
         exchange_value = "N/A"
     lower_exchange = exchange_value.lower()
-    ########################
-
-    ##### Morning Star #####
-    fair_value = fvDate = moat = moatDate = starRating = assessment = 'N/A'
-    performance_id = None
-    if apiKey:
-        try:
-            conn = http.client.HTTPSConnection("morning-star.p.rapidapi.com")
-            headers = {
-                'x-rapidapi-key': apiKey,
-                'x-rapidapi-host': "morning-star.p.rapidapi.com"
-            }
-            conn.request("GET", "/market/v2/auto-complete?q=" + ticker, headers=headers)
-            res = conn.getresponse()
-            data = res.read()
-            json_data = json.loads(data.decode("utf-8"))
-            for item in json_data.get('results', []):
-                if item.get('ticker', '').upper() == ticker.upper():
-                    performance_id = item.get('performanceId')
-                    break
-        except Exception as e:
-            print(f"APIkey: Morningstar API request failed.")
-
-    if performance_id:
-        try:
-            conn = http.client.HTTPSConnection("morning-star.p.rapidapi.com")
-            headers = {
-                'x-rapidapi-key': apiKey,
-                'x-rapidapi-host': "morning-star.p.rapidapi.com"
-            }
-            conn.request("GET", "/stock/v2/get-analysis-data?performanceId="+ performance_id, headers=headers)
-            res = conn.getresponse()
-            data = res.read()
-            json_data = json.loads(data.decode("utf-8"))
-            fair_value = json_data['valuation']['fairValue']
-            fvDate = json_data['valuation']['fairValueDate']
-            moat = json_data['valuation']['moat']
-            moatDate = json_data['valuation']['moatDate']
-            starRating = json_data['valuation']['startRating']
-            assessment = json_data['valuation']['assessment']
-        except Exception as e:
-            print("Performance ID: Morningstar API request failed.")
-    ########################
-
-    #### Seeking Alpha ####
-    authors_strongsell_count = authors_strongbuy_count = authors_sell_count = authors_hold_count = authors_buy_count = authors_rating = authors_count = epsRevisionsGrade = dpsRevisionsGrade = dividendYieldGrade = divSafetyCategoryGrade = divGrowthCategoryGrade = divConsistencyCategoryGrade = sellSideRating = ticker_id = quant_rating = growth_grade = momentum_grade = profitability_grade = value_grade = yield_on_cost_grade = 'N/A'
-    sk_targetprice = 'N/A'
-    if apiKey:
-        try:
-            conn = http.client.HTTPSConnection("seeking-alpha.p.rapidapi.com")
-            headers = {
-                'x-rapidapi-key': apiKey,
-                'x-rapidapi-host': "seeking-alpha.p.rapidapi.com"
-            }
-            conn.request("GET", "/symbols/get-ratings?symbol=" + ticker, headers=headers)
-            res = conn.getresponse()
-            data = res.read()
-            json_data = json.loads(data.decode("utf-8"))
-            first_data = json_data['data'][0]['attributes']['ratings']
-            ticker_id = json_data['data'][0]['attributes']['tickerId']
-            #
-            quant_rating = first_data['quantRating']
-            growth_grade = first_data['growthGrade']
-            momentum_grade = first_data['momentumGrade']
-            profitability_grade = first_data['profitabilityGrade']
-            value_grade = first_data['valueGrade']
-            yield_on_cost_grade = first_data['yieldOnCostGrade']
-            epsRevisionsGrade = first_data['epsRevisionsGrade']
-            dpsRevisionsGrade = first_data['dpsRevisionsGrade']
-            dividendYieldGrade = first_data['dividendYieldGrade']
-            divSafetyCategoryGrade = first_data['divSafetyCategoryGrade']
-            divGrowthCategoryGrade = first_data['divGrowthCategoryGrade']
-            divConsistencyCategoryGrade = first_data['divConsistencyCategoryGrade']
-            sellSideRating = first_data['sellSideRating']
-            #
-            authors_count = first_data['authorsCount']
-            authors_rating = first_data['authorsRating']
-            authors_buy_count = first_data['authorsRatingBuyCount']
-            authors_hold_count = first_data['authorsRatingHoldCount']
-            authors_sell_count = first_data['authorsRatingSellCount']
-            authors_strongbuy_count = first_data['authorsRatingStrongBuyCount']
-            authors_strongsell_count = first_data['authorsRatingStrongSellCount']
-        except Exception as e:
-            print("Analysts Data: Seeking Alpha API request failed.")
-
-    if apiKey and ticker_id and ticker_id != 'N/A':
-        ticker_id_str = str(ticker_id)
-        try:
-            conn = http.client.HTTPSConnection("seeking-alpha.p.rapidapi.com")
-            headers = {
-                'x-rapidapi-key': apiKey,
-                'x-rapidapi-host': "seeking-alpha.p.rapidapi.com"
-            }
-            conn.request("GET", "/symbols/get-analyst-price-target?ticker_ids=" + ticker_id_str + "&return_window=1&group_by_month=false", headers=headers)
-            res = conn.getresponse()
-            data = res.read()
-            json_data = json.loads(data.decode("utf-8"))
-            get_sk_data = json_data['estimates'][f'{ticker_id}']['target_price']['0'][0]
-            sk_targetprice = get_sk_data['dataitemvalue']
-        except Exception as e:
-            print("Price Data: Seeking Alpha API request failed.")
     ########################
     
     ##### SA forecasts #####
@@ -955,7 +854,7 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
         except Exception as e:
             analysis3 = ""
 
-    return price, fiftyTwoWeekLow, fiftyTwoWeekHigh, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, apiKey, \
+    return price, fiftyTwoWeekLow, fiftyTwoWeekHigh, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, \
     eps, pegRatio, revenue, eps_yield_value, eps_value, pegRatio_value, eps_yield, eps_trend, earnings_history, earningsDate, \
     yf_targetprice, yf_consensus, yf_analysts_count, yf_mos, \
     peRatio, forwardPe, pbRatio, pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda, \
@@ -970,8 +869,6 @@ def get_stock_data(ticker, apiKey=None, use_ai=True):
     income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, \
     news, \
     matching_etf, yf_com, \
-    performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, \
-    quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, ticker_id, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, \
     sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sa_metrics_rs_df, rs_first_date, rs_pie_data, \
     insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, mb_earning_df, \
     end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
@@ -990,15 +887,13 @@ with main_col1:
     input_col1, input_col2, input_col3 = st.columns([1, 3, 1])
     with input_col1:
         ticker = st.text_input("US Stock Ticker:", "AAPL")
-    with input_col2:
-        apiKey = st.text_input("Enter your RapidAPI Key (optional):", "")
-st.info("Certain sections require API keys to operate. Users are advised to subscribe to the Morningstar and Seeking Alpha APIs provided by Api Dojo through rapidapi.com.")
 
-use_ai = st.checkbox("Analyze using AI (The system will use the deepseek-r1-distill-llama-70b model to analyze the stock. It will take some time for the process to complete. For a faster process, please uncheck this box.)", value=True)
+use_ai = st.checkbox("Analyze using AI", value=True)
+st.info("The system will use the deepseek-r1-distill-llama-70b model to analyze the stock. It will take some time for the process to complete. For a faster process, please uncheck this box.")
 ""
 if st.button("Get Data"):
     try:
-        price, fiftyTwoWeekLow, fiftyTwoWeekHigh, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, apiKey, \
+        price, fiftyTwoWeekLow, fiftyTwoWeekHigh, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, \
         eps, pegRatio, revenue, eps_yield_value, eps_value, pegRatio_value, eps_yield, eps_trend, earnings_history, earningsDate, \
         yf_targetprice, yf_consensus, yf_analysts_count, yf_mos, \
         peRatio, forwardPe, pbRatio, pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda, \
@@ -1013,13 +908,11 @@ if st.button("Get Data"):
         income_statement_flipped, balance_sheet_flipped, cashflow_statement_flipped, cashflow_statement_tb, quarterly_cashflow_statement_tb, balance_sheet_tb, quarterly_balance_sheet_tb, income_statement_tb, quarterly_income_statement_tb, \
         news, \
         matching_etf, yf_com, \
-        performance_id, fair_value, fvDate, moat, moatDate, starRating, assessment, \
-        quant_rating, growth_grade, momentum_grade, profitability_grade, value_grade, yield_on_cost_grade, ticker_id, sk_targetprice, authors_strongsell_count, authors_strongbuy_count, authors_sell_count, authors_hold_count, authors_buy_count, authors_rating, authors_count, epsRevisionsGrade, dpsRevisionsGrade, dividendYieldGrade, divSafetyCategoryGrade, divGrowthCategoryGrade, divConsistencyCategoryGrade, sellSideRating, \
         sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sa_metrics_rs_df, rs_first_date, rs_pie_data, \
         insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, mb_earning_df, \
         end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
         hist_price, \
-        analysis3, analysis2, analysis = get_stock_data(ticker, apiKey if apiKey.strip() else None, use_ai)
+        analysis3, analysis2, analysis = get_stock_data(ticker, use_ai)
 
 #############################################         #############################################
 ############################################# Profile #############################################
@@ -1172,100 +1065,23 @@ if st.button("Get Data"):
 
         with overview_data:
 #Stock Performance
-            if apiKey is None:
-                st.subheader('Stock Performance', divider='gray')
-                cols = st.columns(5)
-                cols[0].metric(label='Current Price',value=f'${price:,.2f}',delta=f'{change_dollar:,.2f} ({change_percent:.2f}%)',delta_color='normal')
-                cols[1].metric(label='EPS (ttm)',value=eps_value)
-                cols[2].metric(label='PEG Ratio',value=pegRatio_value)
-                cols[3].metric(label='Beta',value=beta_value)
-                cols[4].metric(label='ROE',value=roe_value)
-    
-                cols1 = st.columns(5)
-                cols1[0].metric(label='PE Ratio',value=pe_value)
-                cols1[1].metric(label='Forward PE',value=forwardPe_value)
-                cols1[2].metric(label='PB Ratio',value=pbRatio_value)
-                cols1[3].metric(label='DE Ratio',value=deRatio_value)
-                cols1[4].metric(label='Revenue Growth',value=revenue_growth_current_value)
-    
-                st.caption("Data source: Yahoo Finance")
-                ''
- #Morning Star Research           
-            else:
-                st.subheader('Stock Performance', divider='gray')
-                cols = st.columns(5)
-                cols[0].metric(label='Current Price',value=f'${price:,.2f}',delta=f'{change_dollar:,.2f} ({change_percent:.2f}%)',delta_color='normal')
-                cols[1].metric(label='EPS (ttm)',value=eps_value)
-                cols[2].metric(label='PEG Ratio',value=pegRatio_value)
-                cols[3].metric(label='Beta',value=beta_value)
-                cols[4].metric(label='ROE',value=roe_value)
-    
-                cols1 = st.columns(5)
-                cols1[0].metric(label='PE Ratio',value=pe_value)
-                cols1[1].metric(label='Forward PE',value=forwardPe_value)
-                cols1[2].metric(label='PB Ratio',value=pbRatio_value)
-                cols1[3].metric(label='DE Ratio',value=deRatio_value)
-                cols1[4].metric(label='Revenue Growth',value=revenue_growth_current_value)
-    
-                st.caption("Data source: Yahoo Finance")
-                ######
-                st.subheader('Morningstar Research', divider='gray')
-                st.caption("This section only works with RapidAPI key.")
-                
-                starRating_value = 0 if starRating == 'N/A' else int(starRating)
-                star_rating = ":star:" * int(round(starRating_value, 0))
-                column1, column2, column3 = st.columns(3)
-                with column1:
-                    st.write("Economic Moat")
-                    st.subheader(f'{moat}')
-                fair_value_mos = 'N/A' if fair_value == 'N/A' else f'{((float(fair_value) - price)/float(fair_value)) * 100:.2f}%'
-                fair_value_fix = 'N/A' if fair_value == 'N/A' else f'${float(fair_value):.2f}'
-                with column2:
-                    st.write("Fair Value")
-                    st.subheader(f'{fair_value_fix}')  
-                    if fair_value != 'N/A':  
-                        mos_value = ((float(fair_value) - price)/float(fair_value)) * 100
-                        if mos_value < 0:
-                            st.markdown(f'<p style="color:red;">{fair_value_mos}</p>', unsafe_allow_html=True)
-                        else:
-                            st.markdown(f'<p style="color:green;">{fair_value_mos}</p>', unsafe_allow_html=True)
-                    else:
-                        st.markdown('<p style="color:gray;">N/A</p>', unsafe_allow_html=True)  
-                with column3:
-                    st.write("Rating")
-                    st.subheader(f'{star_rating}')
-                ''
-                #st.markdown(f'Current price of the stock is <span style="color:blue;">{assessment}</span>.', unsafe_allow_html=True)
-                st.write(f'Morningstar Current Assessment: {assessment}')
-                ''
-                try:
-                    formatted_moat_date = datetime.datetime.strptime(moatDate, "%Y-%m-%dT%H:%M:%S.%f").strftime("%Y-%m-%d")
-                    formatted_fv_date = datetime.datetime.strptime(fvDate, "%Y-%m-%dT%H:%M:%S.%f").strftime("%Y-%m-%d")
-                    st.caption(f"An economic moat refers to a company's ability to maintain competitive advantages to protect its long-term profits and market share from competitors.<br>Moat Assessment Date: {formatted_moat_date}", unsafe_allow_html=True)
-                    st.caption(f"The Star Rating is determined by three factors: a stock's current price, Morningstar's estimate of the stock's fair value, and the uncertainty rating of the fair value. The bigger the discount, the higher the star rating. Four- and 5-star ratings mean the stock is undervalued, while a 3-star rating means it's fairly valued, and 1- and 2-star stocks are overvalued. When looking for investments, a 5-star stock is generally a better opportunity than a 1-star stock.<br>Fair Value Assessment Date: {formatted_fv_date}", unsafe_allow_html=True)
-                    st.caption("Data source: Morning Star")
-                except Exception as e:
-                    st.write("")
-                ''
+            st.subheader('Stock Performance', divider='gray')
+            cols = st.columns(5)
+            cols[0].metric(label='Current Price',value=f'${price:,.2f}',delta=f'{change_dollar:,.2f} ({change_percent:.2f}%)',delta_color='normal')
+            cols[1].metric(label='EPS (ttm)',value=eps_value)
+            cols[2].metric(label='PEG Ratio',value=pegRatio_value)
+            cols[3].metric(label='Beta',value=beta_value)
+            cols[4].metric(label='ROE',value=roe_value)
 
-#Quant Rating
-                st.subheader('Seeking Alpha Quantitative Analysis', divider = 'gray')
-                st.caption("This section only works with RapidAPI key.")
+            cols1 = st.columns(5)
+            cols1[0].metric(label='PE Ratio',value=pe_value)
+            cols1[1].metric(label='Forward PE',value=forwardPe_value)
+            cols1[2].metric(label='PB Ratio',value=pbRatio_value)
+            cols1[3].metric(label='DE Ratio',value=deRatio_value)
+            cols1[4].metric(label='Revenue Growth',value=revenue_growth_current_value)
 
-                cols = st.columns(3)
-                quant_rating_value = 'N/A' if quant_rating == 'N/A' else f'{quant_rating:.2f}'
-                cols[0].metric(label='Quant Rating',value=quant_rating_value)
-                cols[1].metric(label='Growth Grade',value=growth_grade)
-                cols[2].metric(label='Momentum Grade',value=momentum_grade)
-
-                cols = st.columns(3)
-                cols[0].metric(label='Profitability Grade',value=profitability_grade)
-                cols[1].metric(label='Value Grade',value=value_grade)
-                cols[2].metric(label='Yield on Cost Grade',value=yield_on_cost_grade)
-                ''
-                st.caption("Quant rating is a score from 1.0 to 5.0, where 1.0 is Strong Sell and 5.0 is Strong Buy.")
-                st.caption("Grades refer to a system where a higher number indicates a better result.")
-                st.caption("Data source: Seeking Alpha")
+            st.caption("Data source: Yahoo Finance")
+            ''
 
 #Margins data
             st.subheader('Margins', divider='gray')
@@ -1885,7 +1701,7 @@ if st.button("Get Data"):
             except Exception as e:
                 largest_count_type = 'N/A'
                 largest_value = 'N/A'
-            col1, col2, col3, col4 = st.columns([3, 3, 3, 3])
+            col1, col2, col3 = st.columns([3, 3, 3])
             try:
                 yf_targetprice_value = 'N/A' if yf_targetprice == 'N/A' else f'${yf_targetprice:.2f}'
             except: yf_targetprice_value = 'N/A'
@@ -1905,16 +1721,6 @@ if st.button("Get Data"):
                 st.write(f'Forecasted Difference: {mb_predicted_upside}%')
                 st.write(f'Analyst Consensus: {mb_consensus_rating}')
                 st.write(f'Rating Score: {mb_rating_score}')
-                ''
-            
-            sk_targetprice_fix = 'N/A' if sk_targetprice == 'N/A' else f'${float(sk_targetprice):.2f}'
-            sk_targetprice_mos ='N/A' if sk_targetprice =='N/A' else f'{((float(sk_targetprice) - price)/float(sk_targetprice)) * 100:.2f}%'
-            with col4:
-                st.markdown(''':orange-background[Seeking Alpha]''')
-                st.write(f'Price Target: {sk_targetprice_fix}')
-                st.write(f'Forecasted Difference: {sk_targetprice_mos}')
-                st.write(f'Analyst Consensus: {largest_count_type}')
-                st.write(f'Analyst Count: {largest_value}')
                 ''
 
             sa_mos_value = 'N/A' if sa_mos == 'N/A' else f'{sa_mos:.2f}%'
@@ -4935,9 +4741,9 @@ if st.button("Get Data"):
                                 for char in special_chars:
                                     cleaned_text = cleaned_text.replace(char, f"\\{char}")
                                 st.markdown(cleaned_text, unsafe_allow_html=True)
-                        st.warning("This analysis, generated by AI, should not be the sole basis for investment decisions.")
                     except Exception as e:
                         st.warning("AI analysis is currently unavailable.")
+                st.warning("This analysis, generated by AI, should not be the sole basis for investment decisions.")
             else:
                 st.write("To access this section, please ensure the 'Analyze using AI' box is checked.")
             
