@@ -149,7 +149,7 @@ def get_stock_data(ticker1, ticker2, color1, color2):
         url = f'https://stockanalysis.com/stocks/{ticker1}/financials/ratios/'
         r = requests.get(url)
         soup = BeautifulSoup(r.text,"html.parser")
-        table = soup.find("table",class_ = "w-full border-separate border-spacing-0 text-sm sm:text-base [&_tbody]:sm:whitespace-nowrap [&_thead]:whitespace-nowrap")
+        table = soup.find("table",class_ = "financials-table w-full border-separate border-spacing-0 text-sm sm:text-base [&_tbody]:sm:whitespace-nowrap [&_thead]:whitespace-nowrap")
         rows = table.find_all("tr")
         headers = []
         data = []
@@ -167,7 +167,7 @@ def get_stock_data(ticker1, ticker2, color1, color2):
         url = f'https://stockanalysis.com/stocks/{ticker2}/financials/ratios/'
         r = requests.get(url)
         soup = BeautifulSoup(r.text,"html.parser")
-        table = soup.find("table",class_ = "w-full border-separate border-spacing-0 text-sm sm:text-base [&_tbody]:sm:whitespace-nowrap [&_thead]:whitespace-nowrap")
+        table = soup.find("table",class_ = "financials-table w-full border-separate border-spacing-0 text-sm sm:text-base [&_tbody]:sm:whitespace-nowrap [&_thead]:whitespace-nowrap")
         rows = table.find_all("tr")
         headers = []
         data = []
