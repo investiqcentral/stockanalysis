@@ -47,7 +47,14 @@ def get_fcf_growth(ticker):
     """Calculates historical FCF growth for a suggestion."""
     try:
         stock = yf.Ticker(ticker)
-        cash_flow = stock.cashflow
+        cashflow_statement_tb = stock.cashflow
+        quarterly_cashflow_statement_tb = stock.quarterly_cashflow
+        cashflow_statement = cashflow_statement_tb
+        quarterly_cashflow_statement = quarterly_cashflow_statement_tb
+        ttm = quarterly_cashflow_statement.iloc[:, :4].sum(axis=1)
+        cashflow_statement.insert(0, 'TTM', ttm)
+        cash_flow = cashflow_statement.iloc[::-1]
+        #cash_flow = stock.cashflow
         if cash_flow.empty:
             return None
         
@@ -94,7 +101,14 @@ def get_wacc(ticker):
     try:
         stock = yf.Ticker(ticker)
         info = stock.info
-        balance_sheet = stock.balance_sheet
+        balance_sheet_tb = stock.balance_sheet
+        quarterly_balance_sheet_tb = stock.quarterly_balance_sheet
+        balance_sheet = balance_sheet_tb
+        quarterly_balance_sheet = quarterly_balance_sheet_tb
+        ttm = quarterly_balance_sheet.iloc[:, :4].sum(axis=1)
+        balance_sheet.insert(0, 'TTM', ttm)
+        balance_sheet = balance_sheet.iloc[::-1]
+        #balance_sheet = stock.balance_sheet
 
         # Get components for WACC calculation
         market_cap = info.get('marketCap')
@@ -114,7 +128,14 @@ def get_wacc(ticker):
         
         # Tax Rate (T) - approximation from financial statements
         try:
-            income_statement = stock.income_stmt
+            income_statement_tb = stock.income_stmt
+            quarterly_income_statement_tb = stock.quarterly_income_stmt
+            income_statement = income_statement_tb  
+            quarterly_income_statement = quarterly_income_statement_tb
+            ttm = quarterly_income_statement.iloc[:, :4].sum(axis=1)
+            income_statement.insert(0, 'TTM', ttm)
+            income_statement = income_statement.iloc[::-1]
+            #income_statement = stock.income_stmt
             tax_provision = income_statement.loc['Tax Provision'].iloc[0]
             pretax_income = income_statement.loc['Pretax Income'].iloc[0]
             tax_rate = tax_provision / pretax_income
@@ -151,6 +172,7 @@ with col1:
 # Display FCF growth suggestion
     if ticker:
         fcf_growth_suggestion = get_fcf_growth(ticker)
+        ''
         if fcf_growth_suggestion is not None:
             st.info(f"💡 **Suggestion:** The historical average annual FCF growth rate for **{ticker}** over the last few years is approximately **{fcf_growth_suggestion:.2%}**. Or you can also use the growth rate from this link: https://www.gurufocus.com/term/cashflow-growth-3y/{ticker}")
         else:
@@ -162,6 +184,7 @@ with col2:
 # Display WACC suggestion
     if ticker:
         wacc_suggestion = get_wacc(ticker)
+        ''
         if wacc_suggestion is not None:
             st.info(f"💡 **Suggestion:** The calculated WACC for **{ticker}** is approximately **{wacc_suggestion:.2%}**. Or you can also use the WACC from this link: https://www.gurufocus.com/term/wacc/{ticker}")
         else:
@@ -178,8 +201,22 @@ st.markdown("---")
 def calculate_dcf(ticker, growth_rate, discount_rate, perpetual_growth_rate):
     try:
         stock = yf.Ticker(ticker)
-        cash_flow = stock.cashflow
-        balance_sheet = stock.balance_sheet
+        cashflow_statement_tb = stock.cashflow
+        quarterly_cashflow_statement_tb = stock.quarterly_cashflow
+        cashflow_statement = cashflow_statement_tb
+        quarterly_cashflow_statement = quarterly_cashflow_statement_tb
+        ttm = quarterly_cashflow_statement.iloc[:, :4].sum(axis=1)
+        cashflow_statement.insert(0, 'TTM', ttm)
+        cash_flow = cashflow_statement.iloc[::-1]
+        #cash_flow = stock.quarterly_cashflow
+        balance_sheet_tb = stock.balance_sheet
+        quarterly_balance_sheet_tb = stock.quarterly_balance_sheet
+        balance_sheet = balance_sheet_tb
+        quarterly_balance_sheet = quarterly_balance_sheet_tb
+        ttm = quarterly_balance_sheet.iloc[:, :4].sum(axis=1)
+        balance_sheet.insert(0, 'TTM', ttm)
+        balance_sheet = balance_sheet.iloc[::-1]
+        #balance_sheet = stock.balance_sheet
         if cash_flow.empty or balance_sheet.empty:
             st.error("Could not fetch cash flow or balance sheet data. Please check the ticker.")
             return None
