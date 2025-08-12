@@ -47,14 +47,14 @@ def get_fcf_growth(ticker):
     """Calculates historical FCF growth for a suggestion."""
     try:
         stock = yf.Ticker(ticker)
-        cashflow_statement_tb = stock.cashflow
-        quarterly_cashflow_statement_tb = stock.quarterly_cashflow
-        cashflow_statement = cashflow_statement_tb
-        quarterly_cashflow_statement = quarterly_cashflow_statement_tb
-        ttm = quarterly_cashflow_statement.iloc[:, :4].sum(axis=1)
-        cashflow_statement.insert(0, 'TTM', ttm)
-        cash_flow = cashflow_statement.iloc[::-1]
-        #cash_flow = stock.cashflow
+        # cashflow_statement_tb = stock.cashflow
+        # quarterly_cashflow_statement_tb = stock.quarterly_cashflow
+        # cashflow_statement = cashflow_statement_tb
+        # quarterly_cashflow_statement = quarterly_cashflow_statement_tb
+        # ttm = quarterly_cashflow_statement.iloc[:, :4].sum(axis=1)
+        # cashflow_statement.insert(0, 'TTM', ttm)
+        # cash_flow = cashflow_statement.iloc[::-1]
+        cash_flow = stock.cashflow
         if cash_flow.empty:
             return None
         
