@@ -151,7 +151,6 @@ with col1:
 # Display FCF growth suggestion
     if ticker:
         fcf_growth_suggestion = get_fcf_growth(ticker)
-        ''
         if fcf_growth_suggestion is not None:
             st.info(f"💡 **Suggestion:** The historical average annual FCF growth rate for **{ticker}** over the last few years is approximately **{fcf_growth_suggestion:.2%}**. Or you can also use the growth rate from this link: https://www.gurufocus.com/term/cashflow-growth-3y/{ticker}")
         else:
@@ -163,7 +162,6 @@ with col2:
 # Display WACC suggestion
     if ticker:
         wacc_suggestion = get_wacc(ticker)
-        ''
         if wacc_suggestion is not None:
             st.info(f"💡 **Suggestion:** The calculated WACC for **{ticker}** is approximately **{wacc_suggestion:.2%}**. Or you can also use the WACC from this link: https://www.gurufocus.com/term/wacc/{ticker}")
         else:
