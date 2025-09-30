@@ -17,29 +17,29 @@ from groq import Groq
 st.set_page_config(page_title='US Stock Analysis Tool', layout='wide', page_icon="./Image/logo.png")
 
 #Font Styles#
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap');
-    * {
-        font-family: 'Barlow', sans-serif !important;
-    }
-    .streamlit-expanderContent {
-        font-family: 'Barlow', sans-serif !important;
-    }
-    .stMarkdown {
-        font-family: 'Barlow', sans-serif !important;
-    }
-    p {
-        font-family: 'Barlow', sans-serif !important;
-    }
-    div {
-        font-family: 'Barlow', sans-serif !important;
-    }
-    .stDataFrame {
-        font-family: 'Barlow', sans-serif !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+# st.markdown("""
+# <style>
+#     @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap');
+#     * {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+#     .streamlit-expanderContent {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+#     .stMarkdown {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+#     p {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+#     div {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+#     .stDataFrame {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+# </style>
+# """, unsafe_allow_html=True)
 
 @st.cache_data(ttl=3600)
 def get_stock_data(ticker, use_ai=True):
