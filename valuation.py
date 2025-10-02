@@ -6,29 +6,29 @@ import datetime
 st.set_page_config(page_title='Stock Valuation Calculator', layout='wide', page_icon="./Image/logo.png")
 
 #Font Styles#
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap');
-    * {
-        font-family: 'Barlow', sans-serif !important;
-    }
-    .streamlit-expanderContent {
-        font-family: 'Barlow', sans-serif !important;
-    }
-    .stMarkdown {
-        font-family: 'Barlow', sans-serif !important;
-    }
-    p {
-        font-family: 'Barlow', sans-serif !important;
-    }
-    div {
-        font-family: 'Barlow', sans-serif !important;
-    }
-    .stDataFrame {
-        font-family: 'Barlow', sans-serif !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+# st.markdown("""
+# <style>
+#     @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap');
+#     * {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+#     .streamlit-expanderContent {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+#     .stMarkdown {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+#     p {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+#     div {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+#     .stDataFrame {
+#         font-family: 'Barlow', sans-serif !important;
+#     }
+# </style>
+# """, unsafe_allow_html=True)
 
 # --- Main App Title and Description ---
 st.title("💰 Stock Valuation Calculator")
