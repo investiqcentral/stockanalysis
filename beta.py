@@ -890,7 +890,7 @@ with main_col1:
         ticker = st.text_input("US Stock Ticker:", "AAPL")
 
 use_ai = st.checkbox("Analyze using AI", value=True)
-st.info(f'The system will use the {ai_model} model to analyze the stock. It will take some time for the process to complete. For a faster process, please uncheck this box.')
+st.info("The system will use the llama-3.3-70b-versatile model to analyze the stock. It will take some time for the process to complete. For a faster process, please uncheck this box.")
 ""
 if st.button("Get Data"):
     try:
