@@ -51,6 +51,7 @@ def get_stock_data(ticker, use_ai=True):
     fiftyTwoWeekLow = stock.info.get('fiftyTwoWeekLow', 'N/A')
     fiftyTwoWeekHigh = stock.info.get('fiftyTwoWeekHigh', 'N/A')
     picture_url = f'https://logos.stockanalysis.com/{lowercase_ticker}.svg'
+    ai_model = 'llama-3.3-70b-versatile'
 
     #### Exchange Value ####
     exchange = stock.info.get('exchange', 'N/A')
@@ -683,7 +684,7 @@ def get_stock_data(ticker, use_ai=True):
     
             def analyze_stock(prompt_text, tokens):
                 response = client.chat.completions.create(
-                    model="deepseek-r1-distill-llama-70b",
+                    model=ai_model,
                     messages=[
                         {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
                         {"role": "user", "content": prompt_text}
@@ -758,7 +759,7 @@ def get_stock_data(ticker, use_ai=True):
     
             def analyze_stock2(prompt_text, tokens):
                 response = client.chat.completions.create(
-                    model="deepseek-r1-distill-llama-70b",
+                    model=ai_model,
                     messages=[
                         {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
                         {"role": "user", "content": prompt_text}
@@ -832,7 +833,7 @@ def get_stock_data(ticker, use_ai=True):
     
             def analyze_stock3(prompt_text, tokens):
                 response = client.chat.completions.create(
-                    model="deepseek-r1-distill-llama-70b",
+                    model=ai_model,
                     messages=[
                         {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
                         {"role": "user", "content": prompt_text}
@@ -873,7 +874,7 @@ def get_stock_data(ticker, use_ai=True):
     insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, mb_earning_df, \
     end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
     hist_price, \
-    analysis3, analysis2, analysis
+    analysis3, analysis2, analysis, ai_model
 
 ''
 ''
@@ -889,7 +890,7 @@ with main_col1:
         ticker = st.text_input("US Stock Ticker:", "AAPL")
 
 use_ai = st.checkbox("Analyze using AI", value=True)
-st.info("The system will use the deepseek-r1-distill-llama-70b model to analyze the stock. It will take some time for the process to complete. For a faster process, please uncheck this box.")
+st.info(f'The system will use the {ai_model} model to analyze the stock. It will take some time for the process to complete. For a faster process, please uncheck this box.')
 ""
 if st.button("Get Data"):
     try:
@@ -912,7 +913,7 @@ if st.button("Get Data"):
         insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, mb_earning_df, \
         end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
         hist_price, \
-        analysis3, analysis2, analysis = get_stock_data(ticker, use_ai)
+        analysis3, analysis2, analysis, ai_model = get_stock_data(ticker, use_ai)
 
 #############################################         #############################################
 ############################################# Profile #############################################
