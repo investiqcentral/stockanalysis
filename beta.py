@@ -1202,6 +1202,8 @@ if st.button("Get Data"):
                         rotate = 0
                         pie_values = [0, 1]
                         annotation_text = "No Data"
+                    else if fcfmargin_value > 100:
+                        fcfmargin_value = 100
                     else:
                         pie_values = [fcfmargin_value, 1 - fcfmargin_value]
                         rotate = 0 if fcfmargin_value > 0.5 else (fcfmargin_value * 360) + 360
