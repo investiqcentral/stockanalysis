@@ -1202,12 +1202,12 @@ if st.button("Get Data"):
                         rotate = 0
                         pie_values = [0, 1]
                         annotation_text = "No Data"
-                    else if fcfmargin_value > 100:
-                        fcfmargin_value = 100
                     else:
-                        pie_values = [fcfmargin_value, 1 - fcfmargin_value]
-                        rotate = 0 if fcfmargin_value > 0.5 else (fcfmargin_value * 360) + 360
-                        annotation_text = f"{fcfmargin_value * 100:.1f}%"
+                        original_fcf_value = float(fcfmargin_value)
+                        fcf_plot_value = min(original_fcf_value, 1.0)
+                        pie_values = [fcf_plot_value, 1.0 - fcf_plot_value]
+                        rotate = 0 if fcf_plot_value > 0.5 else (fcf_plot_value * 360) + 360
+                        annotation_text = f"{original_fcf_value * 100:.1f}%"
                     fig = go.Figure(go.Pie(
                         values=pie_values,
                         labels=["FCF Margin", "Remaining"],
