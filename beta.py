@@ -1095,9 +1095,11 @@ if st.button("Get Data"):
                         pie_values = [0, 1]
                         annotation_text = "No Data"
                     else:
-                        pie_values = [grossmargin_value, 1 - grossmargin_value]
-                        rotate = 0 if grossmargin_value > 0.5 else (grossmargin_value * 360) + 360
-                        annotation_text = f"{grossmargin_value * 100:.1f}%"
+                        original_grossmargin_value = float(grossmargin_value)
+                        grossmargin_plot_value = min(original_grossmargin_value, 1.0)
+                        pie_values = [grossmargin_plot_value, 1.0 - grossmargin_plot_value]
+                        rotate = 0 if grossmargin_plot_value > 0.5 else (grossmargin_plot_value * 360) + 360
+                        annotation_text = f"{original_grossmargin_value * 100:.1f}%"
                     fig = go.Figure(go.Pie(
                         values=pie_values,
                         labels=["Gross Margin", "Remaining"],
@@ -1131,9 +1133,11 @@ if st.button("Get Data"):
                         pie_values = [0, 1]
                         annotation_text = "No Data"
                     else:
-                        pie_values = [operatingmargin_value, 1 - operatingmargin_value]
-                        rotate = 0 if operatingmargin_value > 0.5 else (operatingmargin_value * 360) + 360
-                        annotation_text = f"{operatingmargin_value * 100:.1f}%"
+                        original_operatingmargin_value = float(operatingmargin_value)
+                        operatingmargin_plot_value = min(original_operatingmargin_value, 1.0)
+                        pie_values = [operatingmargin_plot_value, 1.0 - operatingmargin_plot_value]
+                        rotate = 0 if operatingmargin_plot_value > 0.5 else (operatingmargin_plot_value * 360) + 360
+                        annotation_text = f"{original_operatingmargin_value * 100:.1f}%"
                     fig = go.Figure(go.Pie(
                         values=pie_values,
                         labels=["Operating Margin", "Remaining"],
@@ -1167,9 +1171,11 @@ if st.button("Get Data"):
                         pie_values = [0, 1]
                         annotation_text = "No Data"
                     else:
-                        pie_values = [profitmargin_value, 1 - profitmargin_value]
-                        rotate = 0 if profitmargin_value > 0.5 else (profitmargin_value * 360) + 360
-                        annotation_text = f"{profitmargin_value * 100:.1f}%"
+                        original_profitmargin_value = float(profitmargin_value)
+                        profitmargin_plot_value = min(original_profitmargin_value, 1.0)
+                        pie_values = [profitmargin_plot_value, 1.0 - profitmargin_plot_value]
+                        rotate = 0 if profitmargin_plot_value > 0.5 else (profitmargin_plot_value * 360) + 360
+                        annotation_text = f"{original_profitmargin_value * 100:.1f}%"
                     fig = go.Figure(go.Pie(
                         values=pie_values,
                         labels=["Profit Margin", "Remaining"],
