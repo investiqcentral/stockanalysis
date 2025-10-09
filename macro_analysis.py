@@ -573,7 +573,7 @@ with overview_data:
                     except: 
                         cleaned_response = raw_response
                     return cleaned_response
-                summary_analysis = analyze_stock(summary_prompt,10000)
+                summary_analysis = analyze_stock(summary_prompt,1000)
                 analysis = {
                     'summary': summary_analysis,
                 }
