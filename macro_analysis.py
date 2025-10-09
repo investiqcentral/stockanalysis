@@ -550,10 +550,17 @@ with overview_data:
                 api_key = st.secrets["GROQ_API_KEY"]
                 client = Groq(api_key=api_key)
                 summary_prompt = f"""
-                    Analyze the economic data: {df_latest} and PMI data: {df_data}. 
-                    Provide:
-                    - current U.S. economic condition (expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, moving to expansion) with explanations 
-                    - the concluded answer with this format: Economic Cycle level - [expansion or moving to peak or peak or moving to contraction or contraction or moving to trough or trough or moving to expansion]
+                    Analyze the provided economic data in {df_latest} and {df_data} to determine the current phase of the U.S. economic cycle. The possible phases are: expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, or moving to expansion.
+                    {df_latest} contains the last 20 data points for Real GDP, Non-farm Payroll, Industrial Production, Consumer Price Index, Unemployment Rate, Yield Curve (10Y-2Y Spread), Money Supply (M2), Consumer Sentiment Index, Debt to GDP Ratio, FED Fund Rate, and Inflation (Annual % Chg). {df_data} contains the last 20 data points for PMI data.
+                    Your analysis must:
+                    1.Prioritize the signals from leading indicators (PMI, Yield Curve) to forecast direction.
+                    2.Evaluate the coincident indicators (Real GDP, Non-farm Payroll, Industrial Production) to establish the current level of activity.
+                    3.Incorporate lagging indicators (Unemployment Rate, Inflation) and policy/sentiment indicators (FED Fund Rate, Consumer Sentiment) to build a complete picture.
+                    4.Provide a detailed explanation justifying the determined economic cycle phase by explicitly referencing the trends observed in the provided data.
+                    Conclude the analysis with the final determination in the specified format.
+                    Format your response as follows:
+                    [Detailed Explanation and Justification]
+                    Economic Cycle level - [expansion or moving to peak or peak or moving to contraction or contraction or moving to trough or trough or moving to expansion]
                     """
         
                 def analyze_stock(prompt_text, tokens):
