@@ -163,38 +163,31 @@ def hex_to_rgba(hex_color, alpha):
 @st.cache_data(ttl=3600)
 def fetch_pmi_data(url: str) -> pd.DataFrame:
     """
-    Fetches PMI data from the DB.nomics API, processes the JSON, and returns a pandas DataFrame.
+    Fetches PMI data from the API, processes the JSON, and returns a pandas DataFrame.
     """
     try:
         response = requests.get(url)
         response.raise_for_status() 
         data = response.json()
         series_data = data.get("series", {}).get("docs", [])
-        
         if not series_data:
-            st.error("Error: No time series data found in the API response for PMI.")
+            st.error("Error: No time series data found in the API response.")
             return pd.DataFrame()
-            
         dates = series_data[0].get("period_start_day", [])
         values = series_data[0].get("value", [])
-        
-        df_full = pd.DataFrame({
+        df_data = pd.DataFrame({
             'Date': dates,
             'Value': values
         })
-        df_full['Date'] = pd.to_datetime(df_full['Date'])
-        df_full['Value'] = pd.to_numeric(df_full['Value'])
-
-        df_full.set_index('Date', inplace=True)
-        df_data = df_full.dropna().tail(NUM_POINTS).reset_index()
+        df_data['Date'] = pd.to_datetime(df_data['Date'])
 
         return df_data
 
     except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching PMI data from the API: Network error or API is unavailable. Details: {e}")
+        st.error(f"Error fetching data from the API: A network error occurred or the API is unavailable. Details: {e}")
         return pd.DataFrame()
     except Exception as e:
-        st.error(f"An unexpected error occurred during PMI data processing: {e}")
+        st.error(f"An unexpected error occurred during data processing: {e}")
         return pd.DataFrame()
 
 @st.cache_data(ttl=3600)
