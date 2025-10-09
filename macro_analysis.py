@@ -550,7 +550,8 @@ with overview_data:
                 api_key = st.secrets["GROQ_API_KEY"]
                 client = Groq(api_key=api_key)
                 summary_prompt = f"""
-                    Analyze the economic data: {df_latest} and PMI data: {df_data}. Provide:
+                    Analyze the economic data: {df_latest} and PMI data: {df_data}. 
+                    Provide:
                     - current U.S. economic condition (expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, moving to expansion) with explanations 
                     - the concluded answer with this format: Economic Cycle level - [expansion or moving to peak or peak or moving to contraction or contraction or moving to trough or trough or moving to expansion]
                     """
