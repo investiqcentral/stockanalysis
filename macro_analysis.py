@@ -375,7 +375,7 @@ with overview_data:
                     line=dict(color=color) 
                 ))
             fig.update_layout(
-                title={"text":f"Cumulative Relative Return Over 1 Year", "font": {"size": 25}},
+                title={"text":f"Cumulative Return Over 1 Year", "font": {"size": 25}},
                 xaxis_title="Date",
                 yaxis_type="linear", 
                 yaxis_title="Cumulative Return (%)",
