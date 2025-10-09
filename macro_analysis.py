@@ -58,7 +58,7 @@ SERIES_CONFIG = {
         {"name": "ISM Manufacturing PMI", "id": "PMI_ISM", "type": "Line+Fifty", "color": "#A0D468"},
         {"name": "Leading Index", "id": "USSLIND", "type": "Line+Zero", "color": "#37BC9B"},
     ],
-    "Debt Metrics": [
+    "Monetary Metrics": [
         {"name": "Debt to GDP ratio", "id": "GFDEGDQ188S", "type": "Line", "color": "#48CFAD"},
         {"name": "Real Broad Dollar Index", "id": "RTWEXBGS", "type": "Line+100", "color": "#4FC1E9"},
     ],
@@ -71,7 +71,7 @@ SERIES_CONFIG = {
 
 SERIES_DESCRIPTIONS = {
     "Real GDP": "The **total value** of all final goods and services produced in an economy, **adjusted for inflation**.",
-    "Non-farm Payroll (NFP)": "The **net change** in the number of **paid US workers**, excluding farm workers and some government/non-profit jobs. strong job growth = expansion, job losses = contraction",
+    "Non-farm Payroll (NFP)": "A measure of the number of U.S. workers in the economy that excludes **proprietors, private household employees, unpaid volunteers, farm employees, and the unincorporated self-employed**. strong job growth = expansion, job losses = contraction",
     "Industrial Production Index": "Measures the **total output** of the manufacturing, mining, and electric and gas utility industries. growing production = economic expansion",
     "Unemployment Rate": "The **percentage** of the total labor force that is **unemployed** but actively seeking employment. rising rate = a recession has started",
     "Consumer Price Index (CPI)": "Measures the **average change** over time in the prices paid by urban consumers for a **market basket** of consumer goods and services. High inflation can persist into early recession phases.",
@@ -351,6 +351,7 @@ def plot_single_area_line(df, name, series_id, chart_type, line_color, target_li
 
 st.title("U.S. Macroeconomics Dashboard")
 st.markdown(f"Data sourced from FRED, Yahoo Finance and DB.nomics.")
+st.info("Data updates may be delayed due to the data providers’ release schedules. For the most recent figures, please refer to the official announcements from the respective sources. To get the most accurate analysis, please verify all figures against the original source documents and official announcements. Analyses and conclusions should be based on those primary documents rather than secondary summaries or third-party reports.")
 st.write("")
 st.write("")
 
@@ -549,7 +550,7 @@ with overview_data:
                 api_key = st.secrets["GROQ_API_KEY"]
                 client = Groq(api_key=api_key)
                 summary_prompt = f"""
-                    Analyze the economic data. Provide:
+                    Analyze the economic data: {df_latest} and PMI data: {df_data}. Provide:
                     - current U.S. economic condition (expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, moving to expansion) with explanations 
                     - the concluded answer with this format: Economic Cycle level - [expansion or moving to peak or peak or moving to contraction or contraction or moving to trough or trough or moving to expansion]
                     """
