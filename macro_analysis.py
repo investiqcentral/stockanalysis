@@ -12,7 +12,7 @@ import yfinance as yf
 from groq import Groq
 import re
 
-st.set_page_config(layout="wide", page_title="Economic Analysis Dashboard")
+st.set_page_config(layout="wide", page_title="Economic Analysis Dashboard", page_icon="./Image/logo.png")
 
 ai_model = 'llama-3.3-70b-versatile'
 FRED_API_KEY = st.secrets["FRED_API_KEY"]
@@ -688,6 +688,7 @@ with overview_data:
                 xanchor="center"
             )
             st.plotly_chart(fig, use_container_width=True)
+            st.warning("This analysis is generated through artificial intelligence and should not be relied upon as the sole basis for investment decisions. AI-generated insights may contain inaccuracies and should be complemented with independent research and professional judgment.")
         
     except Exception as e:
         st.error(f"An error occurred: {e}")
