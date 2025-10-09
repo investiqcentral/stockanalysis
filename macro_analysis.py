@@ -497,14 +497,13 @@ with overview_data:
             'CPIAUCSL': 'Consumer Price Index',
             'UNRATE': 'Unemployment Rate',
             'T10Y2Y': 'Yield Curve (10Y-2Y Spread)',
-            'M2SL': 'Money Supply (M2)',
             'UMCSENT': 'Consumer Sentiment Index',
             'GFDEGDQ188S': 'Debt to GDP Ratio',
             'DFF': 'FED Fund Rate',
             'FPCPITOTLZGUSA': 'Inflation (Annual % Chg)'
         }
         
-        LATEST_OBSERVATIONS = 10
+        LATEST_OBSERVATIONS = 5
         
         @st.cache_data(ttl=3600)
         def get_latest_fred_data_and_process(series_map, n_obs):
@@ -551,9 +550,9 @@ with overview_data:
                 client = Groq(api_key=api_key)
                 summary_prompt = f"""
                     Analyze the provided economic data in {df_latest} and {df_data} to determine the current phase of the U.S. economic cycle. The possible phases are: expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, or moving to expansion.
-                    {df_latest} contains the last {LATEST_OBSERVATIONS} data points for Real GDP, Non-farm Payroll, Industrial Production, Consumer Price Index, Unemployment Rate, Yield Curve (10Y-2Y Spread), Money Supply (M2), Consumer Sentiment Index, Debt to GDP Ratio, FED Fund Rate, and Inflation (Annual % Chg). {df_data} contains the last data points for PMI data.
+                    {df_latest} contains the last {LATEST_OBSERVATIONS} data points for Real GDP, Non-farm Payroll, Industrial Production, Consumer Price Index, Unemployment Rate, Yield Curve (10Y-2Y Spread), Consumer Sentiment Index, Debt to GDP Ratio, FED Fund Rate, and Inflation (Annual % Chg). {df_data} contains the last data points for PMI data.
                     Your analysis must:
-                    1.Prioritize the signals from leading indicators (PMI, Yield Curve) to forecast direction.
+                    1.Prioritize the signals from leading indicators (PMI-a reading below 50 indicates possible contraction, Yield Curve- a reading below 0 indicates possible recession, Consumer Sentiment Index- a reading below 80 indicates possible contraction) to forecast direction.
                     2.Evaluate the coincident indicators (Real GDP, Non-farm Payroll, Industrial Production) to establish the current level of activity.
                     3.Incorporate lagging indicators (Unemployment Rate, Inflation) and policy/sentiment indicators (FED Fund Rate, Consumer Sentiment) to build a complete picture.
                     4.Provide a detailed explanation justifying the determined economic cycle phase by explicitly referencing the trends observed in the provided data.
