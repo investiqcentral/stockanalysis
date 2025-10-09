@@ -349,7 +349,7 @@ def plot_single_area_line(df, name, series_id, chart_type, line_color, target_li
         fig.update_yaxes(title_text=f"{name}")
     return fig
 
-st.title("U.S. Macroeconomic Dashboard")
+st.title("U.S. Macroeconomics Dashboard")
 st.markdown(f"Data sourced from FRED, Yahoo Finance and DB.nomics.")
 st.write("")
 st.write("")
