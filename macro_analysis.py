@@ -504,7 +504,7 @@ with overview_data:
             'FPCPITOTLZGUSA': 'Inflation (Annual % Chg)'
         }
         
-        LATEST_OBSERVATIONS = 30
+        LATEST_OBSERVATIONS = 10
         
         @st.cache_data(ttl=3600)
         def get_latest_fred_data_and_process(series_map, n_obs):
@@ -551,7 +551,7 @@ with overview_data:
                 client = Groq(api_key=api_key)
                 summary_prompt = f"""
                     Analyze the provided economic data in {df_latest} and {df_data} to determine the current phase of the U.S. economic cycle. The possible phases are: expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, or moving to expansion.
-                    {df_latest} contains the last 20 data points for Real GDP, Non-farm Payroll, Industrial Production, Consumer Price Index, Unemployment Rate, Yield Curve (10Y-2Y Spread), Money Supply (M2), Consumer Sentiment Index, Debt to GDP Ratio, FED Fund Rate, and Inflation (Annual % Chg). {df_data} contains the last 20 data points for PMI data.
+                    {df_latest} contains the last {LATEST_OBSERVATIONS} data points for Real GDP, Non-farm Payroll, Industrial Production, Consumer Price Index, Unemployment Rate, Yield Curve (10Y-2Y Spread), Money Supply (M2), Consumer Sentiment Index, Debt to GDP Ratio, FED Fund Rate, and Inflation (Annual % Chg). {df_data} contains the last data points for PMI data.
                     Your analysis must:
                     1.Prioritize the signals from leading indicators (PMI, Yield Curve) to forecast direction.
                     2.Evaluate the coincident indicators (Real GDP, Non-farm Payroll, Industrial Production) to establish the current level of activity.
@@ -580,7 +580,7 @@ with overview_data:
                     except: 
                         cleaned_response = raw_response
                     return cleaned_response
-                summary_analysis = analyze_stock(summary_prompt,1000)
+                summary_analysis = analyze_stock(summary_prompt,10000)
                 analysis = {
                     'summary': summary_analysis,
                 }
