@@ -548,17 +548,32 @@ with overview_data:
             try:
                 api_key = st.secrets["GROQ_API_KEY"]
                 client = Groq(api_key=api_key)
+                df_latest_markdown = df_latest.to_markdown(index=False)
+                try:
+                    df_data_markdown = df_data.to_markdown(index=False)
+                except NameError:
+                    df_data_markdown = "| Date | PMI Value |\n|---|---|"
+                
                 summary_prompt = f"""
-                    Analyze the provided economic data in {df_latest} and {df_data} to determine the current phase of the U.S. economic cycle. The possible phases are: expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, or moving to expansion.
-                    {df_latest} contains the last {LATEST_OBSERVATIONS} data points for Real GDP, Non-farm Payroll, Industrial Production, Consumer Price Index, Unemployment Rate, Yield Curve (10Y-2Y Spread), Consumer Sentiment Index, Debt to GDP Ratio, FED Fund Rate, and Inflation (Annual % Chg). {df_data} contains the last data points for PMI data.
+                    Analyze the provided economic data to determine the current phase of the U.S. economic cycle. The possible phases are: expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, or moving to expansion.
+                
+                    **Table 1: Key Economic Indicators (df_latest - Last {LATEST_OBSERVATIONS} Months)**
+                    {df_latest_markdown}
+                
+                    **Table 2: PMI Data (df_data)**
+                    {df_data_markdown}
+                
                     Your analysis must:
-                    1.Prioritize the signals from leading indicators (PMI-a reading below 50 indicates possible contraction, Yield Curve- a reading below 0 indicates possible recession, Consumer Sentiment Index- a reading below 80 indicates possible contraction) to forecast direction.
-                    2.Evaluate the coincident indicators (Real GDP, Non-farm Payroll, Industrial Production) to establish the current level of activity.
-                    3.Incorporate lagging indicators (Unemployment Rate, Inflation) and policy/sentiment indicators (FED Fund Rate, Consumer Sentiment) to build a complete picture.
-                    4.Provide a detailed explanation justifying the determined economic cycle phase by explicitly referencing the trends observed in the provided data.
+                    1. Prioritize the signals from **leading indicators** (PMI - a reading below 50 indicates possible contraction, Yield Curve - a reading below 0 indicates possible recession, Consumer Sentiment Index - a reading below 80 indicates possible contraction) to forecast direction.
+                    2. Evaluate the **coincident indicators** (Real GDP, Non-farm Payroll, Industrial Production) to establish the current level of activity.
+                    3. Incorporate **lagging indicators** (Unemployment Rate, Inflation) and **policy/sentiment indicators** (FED Fund Rate, Consumer Sentiment) to build a complete picture.
+                    4. Provide a detailed explanation justifying the determined economic cycle phase by explicitly referencing the trends observed in the provided data.
+                
                     Conclude the analysis with the final determination in the specified format.
+                
                     Format your response as follows:
                     [Detailed Explanation and Justification]
+                
                     Economic Cycle level - [expansion or moving to peak or peak or moving to contraction or contraction or moving to trough or trough or moving to expansion]
                     """
         
