@@ -546,7 +546,6 @@ with overview_data:
             cpi = df_latest['Consumer Price Index']
             unemployment_rate = df_latest['Unemployment Rate']
             yield_curve_spread = df_latest['Yield Curve (10Y-2Y Spread)']
-            money_supply_m2 = df_latest['Money Supply (M2)']
             consumer_sentiment = df_latest['Consumer Sentiment Index']
             debt_to_gdp_ratio = df_latest['Debt to GDP Ratio']
             fed_fund_rate = df_latest['FED Fund Rate']
@@ -567,7 +566,6 @@ with overview_data:
                     Consumer Price Index - {cpi}
                     Unemployment Rate - {unemployment_rate}
                     Yield curve (10Y-2Y spread) - {yield_curve_spread}
-                    Money Supply (M2) - {money_supply_m2}
                     Consumer Sentiment - {consumer_sentiment}
                     Debt to GDP ratio - {debt_to_gdp_ratio}
                     FED fund rate - {fed_fund_rate}
