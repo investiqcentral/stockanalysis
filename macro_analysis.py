@@ -536,15 +536,44 @@ with overview_data:
             #     st.dataframe(df_latest, use_container_width=True) 
             # else:
             #     st.error("No data could be retrieved. Please check your API key and network connection.")
-        
+
+            df_latest['Date'] = pd.to_datetime(df_latest['Date'])
+            df_latest = df_latest.set_index('Date')
+            
+            real_gdp = df_latest['Real GDP']
+            nfp = df_latest['Non-farm Payroll']
+            industrial_production = df_latest['Industrial Production']
+            cpi = df_latest['Consumer Price Index']
+            unemployment_rate = df_latest['Unemployment Rate']
+            yield_curve_spread = df_latest['Yield Curve (10Y-2Y Spread)']
+            money_supply_m2 = df_latest['Money Supply (M2)']
+            consumer_sentiment = df_latest['Consumer Sentiment Index']
+            debt_to_gdp_ratio = df_latest['Debt to GDP Ratio']
+            fed_fund_rate = df_latest['FED Fund Rate']
+            inflation_annual_chg = df_latest['Inflation (Annual % Chg)']
+            
             analysis = ""
             pmi_data = fetch_pmi_data(PMI_API_URL)
             try:
                 api_key = st.secrets["GROQ_API_KEY"]
                 client = Groq(api_key=api_key)
                 summary_prompt = f"""
-                    Analyze the provided economic data in {df_latest} and {pmi_data} to determine the current phase of the U.S. economic cycle. The possible phases are: expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, or moving to expansion.
-                    {df_latest} contains the last {LATEST_OBSERVATIONS} data points for Real GDP, Non-farm Payroll, Industrial Production, Consumer Price Index, Unemployment Rate, Yield Curve (10Y-2Y Spread), Consumer Sentiment Index, Debt to GDP Ratio, FED Fund Rate, and Inflation (Annual % Chg). {pmi_data} contains the last data points for PMI data.
+                    Analyze the provided economic data to determine the current phase of the U.S. economic cycle. The possible phases are: expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, or moving to expansion.
+                    
+                    The data are listed as follows:
+                    Real GDP - {real_gdp}
+                    Non-farm Payrolls - {nfp}
+                    Industrial Production - {industrial_production}
+                    Consumer Price Index - {cpi}
+                    Unemployment Rate - {unemployment_rate}
+                    Yield curve (10Y-2Y spread) - {yield_curve_spread}
+                    Money Supply (M2) - {money_supply_m2}
+                    Consumer Sentiment - {consumer_sentiment}
+                    Debt to GDP ratio - {debt_to_gdp_ratio}
+                    FED fund rate - {fed_fund_rate}
+                    Annual Inflation - {inflation_annual_chg}
+                    Purchasing Managers Index (PMI) - {pmi_data}
+                    
                     Your analysis must:
                     1.Prioritize the signals from leading indicators (PMI-a reading below 50 indicates possible contraction, Yield Curve- a reading below 0 indicates possible recession, Consumer Sentiment Index- a reading below 80 indicates possible contraction) to forecast direction.
                     2.Evaluate the coincident indicators (Real GDP, Non-farm Payroll, Industrial Production) to establish the current level of activity.
