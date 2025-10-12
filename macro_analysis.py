@@ -1444,6 +1444,9 @@ with crypto_market_data:
         st.write("")
 
         ############################################## Fear & Greed ####################################################
+        st.write("")
+        st.write("")
+        
         try:
             SENTIMENT_ZONES = {
                 'Fear (0-25)':    {'y_val': 20, 'color': 'red',       'line_label': 'Fear (20)'},
