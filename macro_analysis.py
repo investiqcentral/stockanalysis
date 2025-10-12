@@ -1539,7 +1539,7 @@ with crypto_market_data:
                         name='Index Value',
                         line=dict(
                             color='skyblue', 
-                            width=3, 
+                            width=2, 
                             shape='spline',     
                             smoothing=1.3    
                         )
