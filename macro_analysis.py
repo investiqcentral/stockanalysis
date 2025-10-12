@@ -1286,6 +1286,144 @@ with crypto_market_data:
             width=400
         )
         return fig
+    ############################################## Fear & Greed ####################################################
+    try:
+        SENTIMENT_ZONES = {
+            'Fear (0-25)':    {'y_val': 20, 'color': 'red',       'line_label': 'Fear (20)'},
+            'Neutral (50)':   {'y_val': 50, 'color': 'yellow',    'line_label': 'Neutral (50)'},
+            'Greed (75-100)': {'y_val': 80, 'color': 'green',     'line_label': 'Greed (80)'} 
+        }
+        NEUTRAL_MIDPOINT = 50 
+        
+        START_DATE_FILTER = datetime.datetime.now() - datetime.timedelta(days=365)
+        START_DATE_FILTER = START_DATE_FILTER.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        def get_classification(score):
+            if score < 20: return "Extreme Fear"
+            if score < 40: return "Fear"
+            if score < 60: return "Neutral"
+            if score < 80: return "Greed"
+            return "Extreme Greed"
+        
+        def create_gauge(title, score):
+            classification_text = get_classification(score)
+            label = f"{score:.0f} - {classification_text}"
+            fig = go.Figure(go.Indicator(
+                mode="gauge",
+                value=score,  
+                number={'font': {'size': 24}}, 
+                title={'text': title, 'font': {'size': 25}},
+                gauge={
+                    'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "darkgray"},
+                    'bar': {'color': "#5F9BEB"},
+                    'steps': [
+                        {'range': [0, 20], 'color': "#da4453", 'name': 'Extreme Fear'},
+                        {'range': [20, 40], 'color': "#e9573f", 'name': 'Fear'},
+                        {'range': [40, 60], 'color': "#f6bb42", 'name': 'Neutral'},
+                        {'range': [60, 80], 'color': "#a0d468", 'name': 'Greed'},
+                        {'range': [80, 100], 'color': "#37bc9b", 'name': 'Extreme Greed'}
+                    ],
+                    'threshold': {
+                        'line': {'color': "#5F9BEB", 'width': 4}, 
+                        'thickness': 0.75, 
+                        'value': score
+                    }
+                }))
+            fig.add_annotation(
+                x=0.5, y=0.15, 
+                text=label, 
+                showarrow=False, 
+                font=dict(size=20, color='white') 
+            )
+            fig.update_layout(
+                font=dict(size=14),
+                margin=dict(t=10, b=10, l=50, r=50),
+                height=350,
+                template='plotly_dark'
+            )
+            return fig
+        
+        @st.cache_data(ttl=60*60*4)
+        def get_fear_greed_data():
+            """Fetches, processes, and returns the Crypto Fear & Greed Index data."""
+            API_URL = "https://api.alternative.me/fng/?limit=9999"
+            try:
+                response = requests.get(API_URL)
+                response.raise_for_status()
+                json_data = response.json()
+            except requests.exceptions.RequestException as e:
+                st.error(f"Error fetching data from the API: {e}")
+                return pd.DataFrame()
+            data_points = json_data.get('data', [])
+            if not data_points:
+                st.warning("No data found in the API response.")
+                return pd.DataFrame()
+            df = pd.DataFrame(data_points)
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
+            df = df.rename(columns={'timestamp': 'Date', 'value': 'Index_Value'})
+            df['Index_Value'] = pd.to_numeric(df['Index_Value'], errors='coerce')
+            df = df.dropna(subset=['Index_Value']).sort_values('Date', ascending=True)
+            df = df[df['Date'] >= START_DATE_FILTER].copy()
+            return df
+        
+        df = get_fear_greed_data()
+        if not df.empty:
+            latest_value = df['Index_Value'].iloc[-1]
+            col1, col2 = st.columns([3, 2]) 
+            with col1:
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=df['Date'], 
+                    y=df['Index_Value'], 
+                    mode='lines', 
+                    name='Index Value',
+                    line=dict(
+                        color='skyblue', 
+                        width=3, 
+                        shape='spline',     
+                        smoothing=1.3    
+                    )
+                ))
+                for zone_name, props in SENTIMENT_ZONES.items():
+                    fig.add_hline(
+                        y=props['y_val'],
+                        line_dash="dash" if props['y_val'] == NEUTRAL_MIDPOINT else "dot",
+                        line_color=props['color'],
+                        line_width=2 if props['y_val'] == NEUTRAL_MIDPOINT else 1.5,
+                        annotation_text=props['line_label'],
+                        annotation_position="bottom left", 
+                        annotation_font_color=props['color'],
+                        annotation_x=0.01 
+                    )
+                fig.update_layout(
+                    title={"text":f"Index Value Over Time (Past 1 Year)", "font": {"size": 25}},
+                    #xaxis_title='Date',
+                    yaxis_title='Index Value (0-100)',
+                    template='plotly_dark',
+                    height=350,
+                    yaxis=dict(
+                        range=[0, 100], 
+                        dtick=10
+                    ),
+                    hovermode="x unified",
+                    margin=dict(l=80, r=80, t=50, b=40) 
+                )
+                st.plotly_chart(fig, use_container_width=True)
+        
+            with col2:
+                gauge_fig = create_gauge("Current Fear & Greed Index", latest_value)
+                st.plotly_chart(gauge_fig, use_container_width=True)
+                # latest_date = df['Date'].iloc[-1].strftime('%Y-%m-%d')
+                # st.markdown(f"**Latest Data Point**:")
+                # st.markdown(f"**Date**: {latest_date}")
+                # st.markdown(f"**Value**: **{latest_value:.0f}**")
+                # st.markdown(f"**Sentiment**: **{get_classification(latest_value)}**")
+        else:
+            st.error("Could not load or process data for the dashboard.")
+    except Exception as e: 
+            st.write("")
+    ################################################################################################################
+    
 
     @st.cache_data(ttl=3600) 
     def create_crypto_market_heatmap(current_crypto_data):
