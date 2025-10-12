@@ -551,14 +551,25 @@ with overview_data:
             fed_fund_rate = df_latest['FED Fund Rate']
             inflation_annual_chg = df_latest['Inflation (Annual % Chg)']
             
-            analysis = ""
-            pmi_data = fetch_pmi_data(PMI_API_URL)
-            try:
+            #analysis = ""
+            #pmi_data = fetch_pmi_data(PMI_API_URL)
+            @st.cache_resource
+            def get_groq_client():
+                # It's better to store the API key in Streamlit secrets
                 api_key = st.secrets["GROQ_API_KEY"]
-                client = Groq(api_key=api_key)
+                return Groq(api_key=api_key)
+            @st.cache_data(ttl=604800)
+            def get_economic_analysis(
+                pmi_data, real_gdp, nfp, industrial_production, cpi, unemployment_rate,
+                yield_curve_spread, consumer_sentiment, debt_to_gdp_ratio, fed_fund_rate,
+                inflation_annual_chg
+            ):
+                client = get_groq_client() # Get the cached client
+            
+                # Reconstruct the prompt
                 summary_prompt = f"""
                     Analyze the provided economic data to determine the current phase of the U.S. economic cycle. The possible phases are: expansion, moving to peak, peak, moving to contraction, contraction, moving to trough, trough, or moving to expansion.
-                    
+            
                     The data are listed as follows:
                     Real GDP - {real_gdp}
                     Non-farm Payrolls - {nfp}
@@ -571,46 +582,57 @@ with overview_data:
                     FED fund rate - {fed_fund_rate}
                     Annual Inflation - {inflation_annual_chg}
                     Purchasing Managers Index (PMI) - {pmi_data}
-                    
+            
                     Your analysis must:
                     1.Prioritize the signals from leading indicators (PMI-a reading below 50 indicates possible contraction, Yield Curve- a reading below 0 indicates possible recession, Consumer Sentiment Index- a reading below 80 indicates possible contraction) to forecast direction.
                     2.Evaluate the coincident indicators (Real GDP, Non-farm Payroll, Industrial Production) to establish the current level of activity.
                     3.Incorporate lagging indicators (Unemployment Rate, Inflation) and policy/sentiment indicators (FED Fund Rate, Consumer Sentiment) to build a complete picture.
                     4.Provide a detailed explanation justifying the determined economic cycle phase by explicitly referencing the trends observed in the provided data.
                     Conclude the analysis with the final determination in the specified format.
-                    
+            
                     And provide the answer with the following format:
                     Economic Cycle level - expansion or moving to peak or peak or moving to contraction or contraction or moving to trough or trough or moving to expansion
                     """
-        
-                def analyze_stock(prompt_text, tokens):
+            
+                def _analyze_with_groq(prompt_text, tokens=10000):
                     response = client.chat.completions.create(
                         model=ai_model,
                         messages=[
                             {"role": "system", "content": "You are an experienced financial analyst with expertise in both fundamental and technical analysis."},
                             {"role": "user", "content": prompt_text}
                         ],
-                        max_tokens= tokens,
+                        max_tokens=tokens,
                         temperature=0.7
                     )
-                            
-                    raw_response = response.choices[0].message.content
-                    try:
-                        cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
-                    except: 
-                        cleaned_response = raw_response
-                    return cleaned_response
-                summary_analysis = analyze_stock(summary_prompt,10000)
-                analysis = {
-                    'summary': summary_analysis,
-                }
-            except Exception as e:
-                analysis = ""
+                    return response.choices[0].message.content
+            
+                try:
+                    raw_response = _analyze_with_groq(summary_prompt)
+                    # Apply your cleaning logic
+                    cleaned_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+                    return {'summary': cleaned_response}
+                except Exception as e:
+                    st.error(f"Error during AI analysis: {e}")
+                    return {'summary': "AI analysis is currently unavailable due to an API error."}
+                    
+            analysis = ""
+            pmi_data = fetch_pmi_data(PMI_API_URL)
+            
+            with st.spinner('Fetching and analyzing economic data... (Cached for 7 days)'):
+                analysis = get_economic_analysis(
+                    pmi_data, real_gdp, nfp, industrial_production, cpi, unemployment_rate,
+                    yield_curve_spread, consumer_sentiment, debt_to_gdp_ratio, fed_fund_rate,
+                    inflation_annual_chg
+                )
+            
             ai_ans1, ai_ans2 = st.columns([3,3])
             with ai_ans1:
                 try:
-                    with st.spinner('Analyzing stock data...'):
-                        cleaned_text = analysis['summary'].replace('\\n', '\n').replace('\\', '')
+                    summary_analysis = analysis.get('summary', '')
+                    if "unavailable" in summary_analysis:
+                        st.warning(summary_analysis)
+                    else:
+                        cleaned_text = summary_analysis.replace('\\n', '\n').replace('\\', '')
                         special_chars = ['$', '>', '<', '`', '|', '[', ']', '(', ')', '+', '{', '}', '!', '&']
                         for char in special_chars:
                             cleaned_text = cleaned_text.replace(char, f"\\{char}")
