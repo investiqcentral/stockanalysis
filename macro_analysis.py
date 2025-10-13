@@ -343,7 +343,7 @@ def plot_single_area_line(df, name, series_id, chart_type, line_color, target_li
     return fig
 
 st.title("U.S. Macroeconomics Dashboard")
-st.markdown(f"Data sourced from FRED, Yahoo Finance and DB.nomics.")
+st.markdown(f"Data sourced from FRED, Yahoo Finance, DB.nomics and API.Alternative.")
 st.info("Data updates may be delayed due to the data providers’ release schedules. For the most recent figures, please refer to the official announcements from the respective sources. To get the most accurate analysis, please verify all figures against the original source documents and official announcements. Analyses and conclusions should be based on those primary documents rather than secondary summaries or third-party reports.")
 st.write("")
 st.write("")
