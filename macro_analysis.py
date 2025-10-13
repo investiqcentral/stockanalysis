@@ -1869,6 +1869,111 @@ with commodity_market_data:
                 """
             )
 
+        ################################################ Correlation Chart #############################################################
+        st.write("")
+        st.write("")
+        
+        GOLD_TICKER = "GLD"
+        SP500_TICKER = "^GSPC"
+        BITCOIN_TICKER = "BTC-USD"
+        CRUDE_OIL_TICKER = "CL=F"
+        WINDOW_SIZE = 60
+        
+        core_col1, core_col2 = st.columns([3, 1])
+        try:
+            end_date = datetime.datetime.today()
+            start_date = end_date - relativedelta(years=5)
+            with st.spinner(f"Fetching data for {GOLD_TICKER}, {SP500_TICKER}, {BITCOIN_TICKER}, and {CRUDE_OIL_TICKER} (5 years)..."):
+                gold_data = yf.download(GOLD_TICKER, start=start_date, end=end_date)
+                sp500_data = yf.download(SP500_TICKER, start=start_date, end=end_date) 
+                bitcoin_data = yf.download(BITCOIN_TICKER, start=start_date, end=end_date)
+                crude_oil_data = yf.download(CRUDE_OIL_TICKER, start=start_date, end=end_date)
+            if gold_data.empty or sp500_data.empty or bitcoin_data.empty or crude_oil_data.empty:
+                st.error("One or more asset data not found. Check symbols or date range.")
+            else:
+                gold_returns = gold_data["Close"].pct_change().dropna()
+                sp500_returns = sp500_data["Close"].pct_change().dropna()
+                bitcoin_returns = bitcoin_data["Close"].pct_change().dropna()
+                crude_oil_returns = crude_oil_data["Close"].pct_change().dropna()
+                combined = pd.concat([gold_returns, sp500_returns, bitcoin_returns, crude_oil_returns], axis=1)
+                combined.columns = ["Gold", "S&P500", "Bitcoin", "Crude Oil"]
+                combined.dropna(inplace=True)
+                core_asset = "Gold"
+                corr_sp500 = combined[core_asset].rolling(window=WINDOW_SIZE).corr(combined["S&P500"])
+                corr_bitcoin = combined[core_asset].rolling(window=WINDOW_SIZE).corr(combined["Bitcoin"])
+                corr_crude_oil = combined[core_asset].rolling(window=WINDOW_SIZE).corr(combined["Crude Oil"])
+        
+                with core_col1:
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        x=corr_sp500.index,
+                        y=corr_sp500,
+                        mode="lines",
+                        line=dict(color="#5E9BEB", width=2),
+                        name="S&P500"
+                    ))
+                    fig.add_trace(go.Scatter(
+                        x=corr_bitcoin.index,
+                        y=corr_bitcoin,
+                        mode="lines",
+                        name="Bitcoin",
+                        line=dict(color="#F7931A", width=2)
+                    ))
+                    fig.add_trace(go.Scatter(
+                        x=corr_crude_oil.index,
+                        y=corr_crude_oil,
+                        mode="lines",
+                        name="Crude Oil",
+                        line=dict(color="#3C763D", width=2)
+                    ))
+                    fig.add_shape(
+                        type="line",
+                        x0=0, x1=1, y0=0, y1=0,
+                        xref="paper", yref="y",
+                        line=dict(color="#31333E", width=2, dash="dash"),
+                        layer="below"
+                    )
+                    fig.update_layout(
+                        title={
+                            "text":f'Gold vs. S&P 500, Bitcoin, and Crude Oil - Rolling Correlation (Window = {WINDOW_SIZE} Days)', 
+                            "font": {"size": 25}
+                        },
+                        title_y=1, title_x=0, 
+                        margin=dict(t=70, b=40, l=40, r=30),
+                        xaxis=dict(title=None), 
+                        yaxis=dict(title="Correlation", showgrid=True, range=[-1, 1]),
+                        legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
+                        height=450,
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with core_col2:
+                    correlation_sp500 = corr_sp500.dropna().iloc[-1] if not corr_sp500.dropna().empty else None
+                    correlation_bitcoin = corr_bitcoin.dropna().iloc[-1] if not corr_bitcoin.dropna().empty else None
+                    correlation_crude_oil = corr_crude_oil.dropna().iloc[-1] if not corr_crude_oil.dropna().empty else None
+                    st.metric(
+                        label="Current Correlation with S&P500",
+                        value=f"{correlation_sp500:.4f}",
+                    )
+                    st.metric(
+                        label="Current Correlation with Bitcoin",
+                        value=f"{correlation_bitcoin:.4f}",
+                    )
+                    st.metric(
+                        label="Current Correlation with Crude Oil",
+                        value=f"{correlation_crude_oil:.4f}",
+                    )
+                    st.caption("""
+                    **Correlation Range:**
+                    - **+1 (Positive):** Assets move in the same direction.
+                    - **-1 (Negative):** Assets move in opposite directions.
+                    - **0 (No Linear):** Price changes are independent.
+                    """)
+        except Exception as e:
+            st.write("")
+
+        #####################################################################################################################
+
     commodity_dashboard()
 
 ''
