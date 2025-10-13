@@ -1493,7 +1493,7 @@ with crypto_market_data:
                     x=0.5, y=0.15, 
                     text=label, 
                     showarrow=False, 
-                    font=dict(size=20, color='white') 
+                    font=dict(size=20) 
                 )
                 fig.update_layout(
                     font=dict(size=14),
