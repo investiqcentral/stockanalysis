@@ -1497,7 +1497,7 @@ with crypto_market_data:
                 )
                 fig.update_layout(
                     font=dict(size=14),
-                    margin=dict(t=10, b=10, l=50, r=50),
+                    margin=dict(t=80, b=10, l=50, r=50),
                     height=350,
                     template='plotly_dark'
                 )
