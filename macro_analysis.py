@@ -591,7 +591,7 @@ with overview_data:
                     Conclude the analysis with the final determination in the specified format.
             
                     And provide the answer with the following format:
-                    Economic Cycle level - expansion or moving to peak or peak or moving to contraction or contraction or moving to trough or trough or moving to expansion
+                    'Economic Cycle level - expansion or moving to peak or peak or moving to contraction or contraction or moving to trough or trough or moving to expansion'
                     """
             
                 def _analyze_with_groq(prompt_text, tokens=10000):
@@ -665,9 +665,8 @@ with overview_data:
                 
                     try:
                         current_index = CYCLE_PHASES.index(current_stage)
-                    except ValueError:
-                        st.error(f"Error: '{current_stage}' is not a recognized cycle phase.")
-                        st.stop()
+                    except Exception as e:
+                        st.write("")
                     
                     x_phase_points = np.linspace(0, 1.75 * np.pi, len(CYCLE_PHASES))
                     offset = x_phase_points[3] - np.pi / 2
