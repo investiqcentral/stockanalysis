@@ -633,7 +633,6 @@ with overview_data:
                         st.warning(summary_analysis)
                     else:
                         cleaned_text = summary_analysis.replace('\\n', '\n').replace('\\', '')
-                        cleaned_text = re.sub(r'\s*\$boxed\{.*?\}\s*', '', cleaned_text)
                         special_chars = ['$', '>', '<', '`', '|', '[', ']', '(', ')', '+', '{', '}', '!', '&']
                         for char in special_chars:
                             cleaned_text = cleaned_text.replace(char, f"\\{char}")
