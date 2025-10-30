@@ -588,9 +588,9 @@ with overview_data:
                     2.Evaluate the coincident indicators (Real GDP, Non-farm Payroll, Industrial Production) to establish the current level of activity.
                     3.Incorporate lagging indicators (Unemployment Rate, Inflation) and policy/sentiment indicators (FED Fund Rate, Consumer Sentiment) to build a complete picture.
                     4.Provide a detailed explanation justifying the determined economic cycle phase by explicitly referencing the trends observed in the provided data.
-                    Conclude the analysis with the final determination in the specified format.
+                    Firstly, conclude the analysis with the final determination in the specified format. For this section, provide the answer with explaination.
             
-                    And provide the answer with the following format and do not provide explaination:
+                    Secondly, provide the answer with the following format and do not provide explaination for this section:
                     Economic Cycle level - expansion or moving to peak or peak or moving to contraction or contraction or moving to trough or trough or moving to expansion
                     """
             
