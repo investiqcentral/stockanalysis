@@ -1026,7 +1026,7 @@ if st.button("Get Data"):
                     yref="paper",
                     text="52-Wk Low",
                     showarrow=False,
-                    font=dict(color="white", size=13),
+                    font=dict(size=13),
                     align="left"
                 )
                 fig.add_annotation(
