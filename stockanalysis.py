@@ -1004,7 +1004,7 @@ if st.button("Get Data"):
                             #f"${price:.2f}", 
                             f"${fiftyTwoWeekHigh:.2f}"
                         ],
-                        'tickfont': {'color': 'white', 'size': 10},
+                        'tickfont': {'size': 10},
                         'ticklen': 0,
                         'tickwidth': 0,
                         'tickcolor': 'white'
@@ -1036,7 +1036,7 @@ if st.button("Get Data"):
                     yref="paper",
                     text="52-Wk High",
                     showarrow=False,
-                    font=dict(color="white", size=13),
+                    font=dict(size=13),
                     align="right"
                 )
                 fig.update_layout(
