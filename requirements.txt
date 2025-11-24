@@ -8,4 +8,4 @@ plotly
 matplotlib
 groq
 fredapi
-finnhub
+
