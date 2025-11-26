@@ -13,6 +13,8 @@ import re
 from dateutil.relativedelta import relativedelta
 import pytz
 from groq import Groq
+from html import escape
+import uuid
 
 st.set_page_config(page_title='US Stock Analysis Tool', layout='wide', page_icon="./Image/logo.png")
 
@@ -135,87 +137,6 @@ def get_stock_data(ticker, use_ai=True):
         print("SA analysts data fetching failed.")
     ########################
     
-    ##### Market Beat forecast #####
-    try:
-        mb_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/forecast/'
-        mb_response = requests.get(mb_url)
-        mb_soup = BeautifulSoup(mb_response.content, "html.parser")
-        mb_table = mb_soup.find_all('table')[1]
-        mb_data = {}
-        mb_consensus_rating = "N/A"
-        mb_predicted_upside = "N/A"
-        mb_rating_score = "N/A"
-        if mb_table:
-            rows = mb_table.find_all('tr')
-            for row in rows:
-                cols = row.find_all('td')
-                if len(cols) >= 2:  
-                    key = cols[0].text.strip()
-                    value = cols[1].text.strip()
-                    mb_data[key] = value
-            mb_consensus_rating = mb_data.get("Consensus Rating", "N/A")
-            mb_predicted_upside = mb_data.get("Predicted Upside", "N/A")
-            mb_rating_score = mb_data.get("Consensus Rating Score", "N/A")
-            if mb_predicted_upside != "N/A":
-                match = re.search(r"([-+]?\d*\.?\d+)", mb_predicted_upside)
-            if match:
-                mb_predicted_upside = float(match.group(0))
-                mb_targetprice = 'N/A' if mb_predicted_upside == 'N/A' else (price * (mb_predicted_upside + 100)) / 100
-                mb_targetprice_value = 'N/A' if mb_targetprice == 'N/A' else f'${mb_targetprice:.2f}'
-    except Exception as e:
-        mb_targetprice_value = mb_predicted_upside = mb_consensus_rating = mb_rating_score = 'N/A'
-    ########################
-    
-    ##### Market Beat sector competitors #####
-    try:
-        mb_com_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/competitors-and-alternatives/'
-        mb_com_response = requests.get(mb_com_url)
-        mb_com_soup = BeautifulSoup(mb_com_response.content, "html.parser")
-        mb_com_table = mb_com_soup.find_all('table')[4]
-        headers = [header.get_text(strip=True) for header in mb_com_table.find_all('th')]
-        headers[2] = "Stock's Industry"
-        rows = []
-        for row in mb_com_table.find_all('tr')[1:]:
-            row_data = [cell.get_text(strip=True) for cell in row.find_all('td')]
-            rows.append(row_data)
-        mb_com_df = pd.DataFrame(rows, columns=headers)
-    except: mb_com_df = ""
-    ########################
-
-    ##### Market Beat dividend comparison #####
-    try:
-        mb_com_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/dividend/'
-        mb_com_response = requests.get(mb_com_url)
-        mb_com_soup = BeautifulSoup(mb_com_response.content, "html.parser")
-        mb_com_table = mb_com_soup.find_all('table')[0]
-        headers = [header.get_text(strip=True) for header in mb_com_table.find_all('th')]
-        rows = []
-        for row in mb_com_table.find_all('tr')[1:]:
-            row_data = [cell.get_text(strip=True) for cell in row.find_all('td')]
-            rows.append(row_data)
-        mb_div_df = pd.DataFrame(rows, columns=headers)
-        if mb_div_df.iloc[0, 0] == 'Annual Dividend':
-            mb_div_df = mb_div_df
-        else:
-            mb_div_df = ""
-    except: mb_div_df = ""
-    ########################
-
-    ##### Market Beat competitors #####
-    try:
-        mb_com_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/competitors-and-alternatives/'
-        mb_com_response = requests.get(mb_com_url)
-        mb_com_soup = BeautifulSoup(mb_com_response.content, "html.parser")
-        mb_com_table = mb_com_soup.find_all('table')[5]
-        mb_alt_headers = [mb_alt_header.get_text(strip=True) for mb_alt_header in mb_com_table.find_all('th')]
-        rows = []
-        for row in mb_com_table.find_all('tr')[1:]:
-            row_data = [cell.get_text(strip=True) for cell in row.find_all('td')]
-            rows.append(row_data)
-        mb_alt_df = pd.DataFrame(rows, columns=mb_alt_headers)
-    except: mb_alt_df = mb_alt_headers = ""
-    ########################
-    
     ##### SA metric table #####
     try:
         url = f'https://stockanalysis.com/stocks/{ticker}/financials/ratios/'
@@ -283,55 +204,6 @@ def get_stock_data(ticker, use_ai=True):
     except: sa_metrics_rs_df = rs_first_date = rs_pie_data = ""
     ########################
 
-    ##### Market Beat insider trades #####
-    try:
-        insider_mb_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/insider-trades/'
-        response = requests.get(insider_mb_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        tables = soup.find_all('table')
-        if tables and len(tables) > 0:
-            table = tables[0]
-            headers = []
-            rows = []
-            for th in table.find_all('th'):
-                headers.append(th.text.strip())
-            for tr in table.find_all('tr')[1:]:
-                row = []
-                for td in tr.find_all('td'):
-                    row.append(td.text.strip())
-                if row: 
-                    rows.append(row)
-            insider_mb = pd.DataFrame(rows, columns=headers)
-            if insider_mb.empty:
-                insider_mb = pd.DataFrame()
-        else:    
-            insider_mb = pd.DataFrame()
-    except Exception as e:
-        insider_mb = pd.DataFrame()
-    ########################
-
-    ##### Market Beat earnings estimate #####
-    try:
-        mb_earning_url = f'https://www.marketbeat.com/stocks/{exchange_value}/{upper_ticker}/earnings/'
-        mb_earning_response = requests.get(mb_earning_url)
-        mb_earning_soup = BeautifulSoup(mb_earning_response.content, "html.parser")
-        mb_earning_table = mb_earning_soup.find_all('table')[0]
-        headers = [header.get_text(strip=True) for header in mb_earning_table.find_all('th')]
-        headers[2] = "Stock's Industry"
-        rows = []
-        for row in mb_earning_table.find_all('tr')[1:]:
-            row_data = [cell.get_text(strip=True) for cell in row.find_all('td')]
-            rows.append(row_data)
-        mb_earning_df = pd.DataFrame(rows, columns=headers)
-        selected_columns = ["Quarter", "Stock's Industry", "High Estimate", "Average Estimate"]
-        mb_earning_df = mb_earning_df[selected_columns]
-        mb_earning_df = mb_earning_df.rename(columns={"Stock's Industry": "Low Estimate"})
-        mb_earning_df = mb_earning_df[~mb_earning_df['Quarter'].str.contains('FY')]
-    except Exception as e:
-        #st.write(e) 
-        mb_earning_df = ""
-    ########################
-
     ##### Yahoo Finance #####
     ##### Profile #####
     name = stock.info.get('longName', 'N/A')
@@ -352,6 +224,10 @@ def get_stock_data(ticker, use_ai=True):
     yf_targetprice = stock.info.get('targetMeanPrice', 'N/A')
     yf_consensus = stock.info.get('recommendationKey', 'N/A')
     yf_analysts_count = stock.info.get('numberOfAnalystOpinions', 'N/A')
+    yf_targethighprice = stock.info.get('targetHighPrice', 'N/A')
+    yf_targetlowprice = stock.info.get('targetLowPrice', 'N/A')
+    history = stock.history(period="12mo")
+    historical_prices = history['Close']
     ##### Valuation #####
     peRatio = stock.info.get('trailingPE', 'N/A')
     forwardPe = stock.info.get('forwardPE', 'N/A')
@@ -857,7 +733,7 @@ def get_stock_data(ticker, use_ai=True):
 
     return price, fiftyTwoWeekLow, fiftyTwoWeekHigh, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, \
     eps, pegRatio, revenue, eps_yield_value, eps_value, pegRatio_value, eps_yield, eps_trend, earnings_history, earningsDate, \
-    yf_targetprice, yf_consensus, yf_analysts_count, yf_mos, \
+    yf_targetprice, yf_consensus, yf_analysts_count, yf_mos, yf_targethighprice, yf_targetlowprice, historical_prices, \
     peRatio, forwardPe, pbRatio, pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda, \
     dividendYield, payoutRatio, dividends, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, dividend_history, exDividendDate, \
     deRatio, sa_piotroski_value, sa_altmanz_value, deRatio_value, quick_ratio, current_ratio, \
@@ -871,7 +747,6 @@ def get_stock_data(ticker, use_ai=True):
     news, \
     matching_etf, yf_com, \
     sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sa_metrics_rs_df, rs_first_date, rs_pie_data, \
-    insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, mb_earning_df, \
     end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
     hist_price, \
     analysis3, analysis2, analysis, ai_model
@@ -896,7 +771,7 @@ if st.button("Get Data"):
     try:
         price, fiftyTwoWeekLow, fiftyTwoWeekHigh, beta, name, sector, industry, employee, marketCap, longProfile, website, ticker, picture_url, country, sharesOutstanding, exchange_value, upper_ticker, previous_close, beta_value, sharesOutstanding_value, employee_value, marketCap_value, change_percent, change_dollar, \
         eps, pegRatio, revenue, eps_yield_value, eps_value, pegRatio_value, eps_yield, eps_trend, earnings_history, earningsDate, \
-        yf_targetprice, yf_consensus, yf_analysts_count, yf_mos, \
+        yf_targetprice, yf_consensus, yf_analysts_count, yf_mos, yf_targethighprice, yf_targetlowprice, historical_prices, \
         peRatio, forwardPe, pbRatio, pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda, \
         dividendYield, payoutRatio, dividends, dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value, dividend_history, exDividendDate, \
         deRatio, sa_piotroski_value, sa_altmanz_value, deRatio_value, quick_ratio, current_ratio, \
@@ -910,7 +785,6 @@ if st.button("Get Data"):
         news, \
         matching_etf, yf_com, \
         sa_growth_df, sa_metrics_df2, sa_metrics_df, sa_analysts_count, sa_analysts_consensus, sa_analysts_targetprice, sa_altmanz, sa_piotroski, sa_metrics_rs_df, rs_first_date, rs_pie_data, \
-        insider_mb, mb_alt_headers, mb_alt_df, mb_div_df, mb_com_df, mb_targetprice_value, mb_predicted_upside, mb_consensus_rating, mb_rating_score, mb_earning_df, \
         end_date, extended_data_r, macd_data_r, rsi_data_r, ta_data_r, \
         hist_price, \
         analysis3, analysis2, analysis, ai_model = get_stock_data(ticker, use_ai)
@@ -921,39 +795,98 @@ if st.button("Get Data"):
         
         st.header(f'{name}', divider='gray')
     
-        col1, col2, col3, col4 = st.columns([2, 1, 1, 3])
+        col1, col2 = st.columns([2, 3])
         with col1:
             #st.image(picture_url, width= 250)
             background_color = '#C5C6C7'
             st.markdown(f"""
                 <div style="display: flex; justify-content: center; background-color: {background_color}; padding: 10px; border-radius: 10px;">
-                    <img src="{picture_url}" width="250">
+                    <img src="{picture_url}" width="300">
                 </div>
                 """,unsafe_allow_html=True)
 
-        with col3:
-            st.metric(label='Shares Outstanding', value=sharesOutstanding_value)
-            st.metric(label='Owned by Insiders', value=insiderPct_value)
-            st.metric(label='Owned by Institutions', value=institutionsPct_value)
-
-        with col4:
-             st.markdown(f"""
-             <div style='float: left; width: 100%;'>
-                 <table style='width: 100%;'>
-                     <tr><td><strong>Sector</strong></td><td>{sector}</td></tr>
-                     <tr><td><strong>Industry</strong></td><td>{industry}</td></tr>
-                     <tr><td><strong>Employees</strong></td><td>{employee_value}</td></tr>
-                     <tr><td><strong>Market Cap</strong></td><td>{marketCap_value}M</td></tr>
-                     <tr><td><strong>Country</strong></td><td>{country}</td></tr>
-                     <tr><td><strong>Website</strong></td><td>{website}</td></tr>
-                     <tr><td><strong>Earnings Date</strong></td><td>{earningsDate}</td></tr>
-                 </table>
-             </div>
-             """, unsafe_allow_html=True)
-        ""     
+        with col2:
+            container = st.container(border=False, gap="large")
+            subcol1, subcol2 = container.columns([1,3])
+            with subcol1:
+                st.metric(label='Shares Outstanding', value=sharesOutstanding_value, border=True)
+                st.metric(label='Owned by Insiders', value=insiderPct_value, border=True)
+                st.metric(label='Owned by Institutions', value=institutionsPct_value, border=True)
+            with subcol2:
+                html = f"""
+                            <div class="card">
+                            <div class="row">
+                                <div class="label">Sector</div>
+                                <div class="value">{sector}</div>
+                            </div>
+                            <div class="row">
+                                <div class="label">Industry</div>
+                                <div class="value">{industry}</div>
+                            </div>
+                            <div class="row">
+                                <div class="label">Employees</div>
+                                <div class="value">{employee_value}</div>
+                            </div>
+                            <div class="row">
+                                <div class="label">Market Cap</div>
+                                <div class="value">{marketCap_value}M</div>
+                            </div>
+                            <div class="row">
+                                <div class="label">Country</div>
+                                <div class="value">{country}</div>
+                            </div>
+                            <div class="row">
+                                <div class="label">Website</div>
+                                <div class="value">{website}</div>
+                            </div>
+                            <div class="row last">
+                                <div class="label">Earnings Date</div>
+                                <div class="value">{earningsDate}</div>
+                            </div>
+                            </div>
+                            <style>
+                            .card {{
+                                width: 100%;
+                                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+                                color: var(--text-color); 
+                            }}
+                            .row {{
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: baseline; 
+                                padding: 10px 6px; 
+                                border: none; 
+                                margin: 0; 
+                                border-bottom: 1px solid #919191; 
+                            }}
+                            .row.last {{
+                                padding-bottom: 0;
+                                border-bottom: none;
+                            }}
+                            .label {{
+                                font-size: 15px;
+                                flex: 1 1 auto;
+                                padding-right: 12px;
+                            }}
+                            .value {{
+                                font-weight: 600;
+                                font-size: 17px;
+                                flex: 0 0 auto;
+                                text-align: right;
+                                min-width:110px;
+                            }}
+                            @media (max-width: 480px) {{
+                                .value {{ font-size: 16px; min-width: 80px; }}
+                                .label {{ font-size: 14px; }}
+                            }}
+                            </style>
+                            """
+                st.html(html)
+            ""     
         col5, col6 = st.columns([2,3])     
         with col6:
-            st.markdown(f"<div style='text-align: justify;'>{longProfile}</div>", unsafe_allow_html=True)
+            container = st.container(border=False, height=350)
+            container.markdown(f"<div style='text-align: justify;'>{longProfile}</div>", unsafe_allow_html=True)
 
         with col5:
             try:
@@ -967,9 +900,9 @@ if st.button("Get Data"):
                         y=hist_price_melted['Price'],
                         mode='lines',
                         name=ticker,
-                        line=dict(color='#DA4453', shape='spline', smoothing=1.3),
+                        line=dict(color='#3BAFDA', shape='spline', smoothing=1.3),
                         fill='tonexty',
-                        fillcolor='rgba(218, 68, 83, 0.2)', 
+                        fillcolor='rgba(59, 175, 218, 0.2)', 
                         showlegend=False,
                         hoverinfo="text",
                         text=hover_text,
@@ -982,7 +915,7 @@ if st.button("Get Data"):
                     margin=dict(t=30, b=40, l=40, r=30),
                     xaxis=dict(title=None, showticklabels=True, showgrid=True), 
                     yaxis=dict(title="Price (USD)", showticklabels=True, showgrid=True),
-                    height=350,
+                    height=250,
                 )
                 st.plotly_chart(hist_fig, use_container_width=True)
             except Exception as e:
@@ -1009,9 +942,9 @@ if st.button("Get Data"):
                         'tickwidth': 0,
                         'tickcolor': 'white'
                     },
-                    'bar': {'color': '#DA4453', 'thickness': 0.3},
+                    'bar': {'color': '#3BAFDA', 'thickness': 0.3},
                     'threshold': {
-                        'line': {'color': '#DA4453', 'width': 0},
+                        'line': {'color': '#3BAFDA', 'width': 0},
                         'thickness': 0.0,
                         'value': price
                     },
@@ -1048,17 +981,16 @@ if st.button("Get Data"):
                 st.plotly_chart(fig, use_container_width=True)
             except Exception as e:
                 st.write("")
-        
         ''
         st.caption("Data source: Yahoo Finance")
-        st.caption("Company logo source: Stockanalysis.com")
+        #st.caption("Company logo source: Stockanalysis.com")
         ''
         ''
 #############################################      #############################################
 ############################################# Tabs #############################################
 #############################################      #############################################
 
-        overview_data, comparison_data, statements_data, ratios_and_metrics_data, guru_checklist, ownership, technicalAnalysis_data, news_data, ai_analysis = st.tabs (["Overview","Comparisons","Financial Statements", "Ratios & Metrics", "Guru Checklist","Ownership","Technical Analysis","Top News", "AI Analysis"])
+        overview_data, comparison_data, statements_data, ratios_and_metrics_data, guru_checklist, technicalAnalysis_data, news_data, ai_analysis = st.tabs (["Overview","Comparisons","Financial Statements", "Ratios & Metrics", "Guru Checklist","Technical Analysis","Top News", "AI Analysis"])
 
 #############################################               #############################################
 ############################################# Overview Data #############################################
@@ -1066,224 +998,238 @@ if st.button("Get Data"):
 
         with overview_data:
 #Stock Performance
-            st.subheader('Stock Performance', divider='gray')
-            cols = st.columns(5)
-            cols[0].metric(label='Current Price',value=f'${price:,.2f}',delta=f'{change_dollar:,.2f} ({change_percent:.2f}%)',delta_color='normal')
-            cols[1].metric(label='EPS (ttm)',value=eps_value)
-            cols[2].metric(label='PEG Ratio',value=pegRatio_value)
-            cols[3].metric(label='Beta',value=beta_value)
-            cols[4].metric(label='ROE',value=roe_value)
-
-            cols1 = st.columns(5)
-            cols1[0].metric(label='PE Ratio',value=pe_value)
-            cols1[1].metric(label='Forward PE',value=forwardPe_value)
-            cols1[2].metric(label='PB Ratio',value=pbRatio_value)
-            cols1[3].metric(label='DE Ratio',value=deRatio_value)
-            cols1[4].metric(label='Revenue Growth',value=revenue_growth_current_value)
-
-            st.caption("Data source: Yahoo Finance")
+            overview_col1, overview_col2 = st.columns([2,3])
+            with overview_col1:
+                st.subheader('Stock Performance', divider='gray')
+                prices = hist_price_melted['Price'].tail(21).astype(float).tolist()
+                price_changes = [0] + [prices[i] - prices[i-1] for i in range(1, len(prices))]
+                st.metric(label='Current Price',value=f'${price:,.2f}',delta=f'{change_dollar:,.2f} ({change_percent:.2f}%)',delta_color='normal', border=True, chart_data=price_changes, chart_type="area")
+                cols1 = st.columns(2)
+                cols1[0].metric(label='PEG Ratio',value=pegRatio_value)
+                cols1[1].metric(label='Beta',value=beta_value)
+                cols2 = st.columns(2)
+                cols2[0].metric(label='ROE',value=roe_value)
+                cols2[1].metric(label='PE Ratio',value=pe_value)
+                cols3 = st.columns(2)
+                cols3[0].metric(label='EPS (ttm)',value=eps_value)
+                cols3[1].metric(label='PB Ratio',value=pbRatio_value)
+                cols4 = st.columns(2)
+                cols4[0].metric(label='DE Ratio',value=deRatio_value)
+                cols4[1].metric(label='Revenue Growth',value=revenue_growth_current_value)
+                cols5 = st.columns(2)
+                cols5[0].metric(label='Earnings Yield',value=eps_yield_value)
+                cols5[1].metric(label='Payout Ratio',value=payoutRatio_value)
             ''
-
 #Margins data
-            st.subheader('Margins', divider='gray')
-
-            mgcol1, mgcol2, mgcol3, mgcol4 = st.columns([2,2,2,2])
-            with mgcol1:
-                try:
-                    if grossmargin_value == 'N/A' or grossmargin_value <= 0:
-                        rotate = 0
-                        pie_values = [0, 1]
-                        annotation_text = "No Data"
-                    else:
-                        original_grossmargin_value = float(grossmargin_value)
-                        grossmargin_plot_value = min(original_grossmargin_value, 1.0)
-                        pie_values = [grossmargin_plot_value, 1.0 - grossmargin_plot_value]
-                        rotate = 0 if grossmargin_plot_value > 0.5 else (grossmargin_plot_value * 360) + 360
-                        annotation_text = f"{original_grossmargin_value * 100:.1f}%"
-                    fig = go.Figure(go.Pie(
-                        values=pie_values,
-                        labels=["Gross Margin", "Remaining"],
-                        hole=0.7,
-                        marker=dict(colors=["#4FC1E9", "#d3d3d3"]),
-                        textinfo="none",
-                        hoverinfo="none",
-                        rotation=rotate
-                    ))
-                    fig.update_layout(
-                        height=300,
-                        showlegend=False,
-                        title={"text": 'Gross Margin', "font": {"size": 22}},
-                        title_y=0.95,
-                        margin=dict(t=40, b=0, l=30, r=30),
-                        annotations=[{
-                            "text": annotation_text,
-                            "showarrow": False,
-                            "font_size": 22,
-                            "x": 0.5,
-                            "y": 0.5
-                        }]
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-                except:
-                    st.write("Failed to get data.")
-            with mgcol2:
-                try:
-                    if operatingmargin_value == 'N/A' or operatingmargin_value <= 0:
-                        rotate = 0
-                        pie_values = [0, 1]
-                        annotation_text = "No Data"
-                    else:
-                        original_operatingmargin_value = float(operatingmargin_value)
-                        operatingmargin_plot_value = min(original_operatingmargin_value, 1.0)
-                        pie_values = [operatingmargin_plot_value, 1.0 - operatingmargin_plot_value]
-                        rotate = 0 if operatingmargin_plot_value > 0.5 else (operatingmargin_plot_value * 360) + 360
-                        annotation_text = f"{original_operatingmargin_value * 100:.1f}%"
-                    fig = go.Figure(go.Pie(
-                        values=pie_values,
-                        labels=["Operating Margin", "Remaining"],
-                        hole=0.7,
-                        marker=dict(colors=["#48CFAD", "#d3d3d3"]),
-                        textinfo="none",
-                        hoverinfo="none",
-                        rotation=rotate
-                    ))
-                    fig.update_layout(
-                        height=300,
-                        showlegend=False,
-                        title={"text": 'Operating Margin', "font": {"size": 22}},
-                        title_y=0.95,
-                        margin=dict(t=40, b=0, l=30, r=30),
-                        annotations=[{
-                            "text": annotation_text,
-                            "showarrow": False,
-                            "font_size": 22,
-                            "x": 0.5,
-                            "y": 0.5
-                        }]
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-                except:
-                    st.write("Failed to get data.")
-            with mgcol3:
-                try:
-                    if profitmargin_value == 'N/A' or profitmargin_value <= 0:
-                        rotate = 0
-                        pie_values = [0, 1]
-                        annotation_text = "No Data"
-                    else:
-                        original_profitmargin_value = float(profitmargin_value)
-                        profitmargin_plot_value = min(original_profitmargin_value, 1.0)
-                        pie_values = [profitmargin_plot_value, 1.0 - profitmargin_plot_value]
-                        rotate = 0 if profitmargin_plot_value > 0.5 else (profitmargin_plot_value * 360) + 360
-                        annotation_text = f"{original_profitmargin_value * 100:.1f}%"
-                    fig = go.Figure(go.Pie(
-                        values=pie_values,
-                        labels=["Profit Margin", "Remaining"],
-                        hole=0.7,
-                        marker=dict(colors=["#FFCE54", "#d3d3d3"]),
-                        textinfo="none",
-                        hoverinfo="none",
-                        rotation=rotate
-                    ))
-                    fig.update_layout(
-                        height=300,
-                        showlegend=False,
-                        title={"text": 'Profit Margin', "font": {"size": 22}},
-                        title_y=0.95,
-                        margin=dict(t=40, b=0, l=30, r=30),
-                        annotations=[{
-                            "text": annotation_text,
-                            "showarrow": False,
-                            "font_size": 22,
-                            "x": 0.5,
-                            "y": 0.5
-                        }]
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-                except:
-                    st.write("Failed to get data.")
-            with mgcol4:
-                try:
-                    if fcfmargin_value == 'N/A' or fcfmargin_value <= 0:
-                        rotate = 0
-                        pie_values = [0, 1]
-                        annotation_text = "No Data"
-                    else:
-                        original_fcf_value = float(fcfmargin_value)
-                        fcf_plot_value = min(original_fcf_value, 1.0)
-                        pie_values = [fcf_plot_value, 1.0 - fcf_plot_value]
-                        rotate = 0 if fcf_plot_value > 0.5 else (fcf_plot_value * 360) + 360
-                        annotation_text = f"{original_fcf_value * 100:.1f}%"
-                    fig = go.Figure(go.Pie(
-                        values=pie_values,
-                        labels=["FCF Margin", "Remaining"],
-                        hole=0.7,
-                        marker=dict(colors=["#ED5565", "#d3d3d3"]),
-                        textinfo="none",
-                        hoverinfo="none",
-                        rotation=rotate
-                    ))
-                    fig.update_layout(
-                        height=300,
-                        showlegend=False,
-                        title={"text": 'FCF Margin', "font": {"size": 22}},
-                        title_y=0.95,
-                        margin=dict(t=40, b=0, l=30, r=30),
-                        annotations=[{
-                            "text": annotation_text,
-                            "showarrow": False,
-                            "font_size": 22,
-                            "x": 0.5,
-                            "y": 0.5
-                        }]
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-                except:
-                    st.write("Failed to get data.")
-            st.caption("Data source: Yahoo Finance")
-            ''
-
-#Dividend data
-            st.subheader('Dividends & Yields', divider='gray')
-            if dividendYield == 'N/A':
-                st.write(f'{name} has no dividend data.')
-            else:
-                col1, col2 = st.columns([1, 3])
-                with col1:
-                    st.metric(label='Dividend per share',value=dividends_value)
-                    st.metric(label='Dividend Yield',value=dividendYield_value)
-                    st.metric(label='Payout Ratio',value=payoutRatio_value)
-                    st.metric(label='Ex-Dividend Date',value=exDividendDate_value)
-                    st.metric(label='Earnings Yield',value=eps_yield_value)
-
-                with col2:
+            with overview_col2:
+                st.subheader('Margins', divider='gray')
+                mgcol1, mgcol2 = st.columns(2)
+                with mgcol1:
                     try:
-                        data_yearly = dividend_history.resample('YE').sum().reset_index()
-                        data_yearly['Year'] = data_yearly['Date'].dt.year
-                        data_yearly = data_yearly[['Year', 'Dividends']]
-                        if dividends != 'N/A':
-                            data_yearly.loc[data_yearly.index[-1], 'Dividends'] = dividends
-                        tick_angle = 0 if len(data_yearly) < 20 else -90
-                        fig = go.Figure()
-                        fig.add_trace(
-                            go.Bar(
-                                x=data_yearly['Year'],
-                                y=data_yearly['Dividends'],
-                                name="Dividends",
-                                marker=dict(color='#AC92EC', cornerradius=30),
-                            )
-                        )
+                        if grossmargin_value == 'N/A' or grossmargin_value <= 0:
+                            rotate = 0
+                            pie_values = [0, 1]
+                            annotation_text = "No Data"
+                        else:
+                            original_grossmargin_value = float(grossmargin_value)
+                            grossmargin_plot_value = min(original_grossmargin_value, 1.0)
+                            pie_values = [grossmargin_plot_value, 1.0 - grossmargin_plot_value]
+                            rotate = 0 if grossmargin_plot_value > 0.5 else (grossmargin_plot_value * 360) + 360
+                            annotation_text = f"{original_grossmargin_value * 100:.1f}%"
+                        fig = go.Figure(go.Pie(
+                            values=pie_values,
+                            labels=["Gross Margin", "Remaining"],
+                            hole=0.7,
+                            marker=dict(colors=["#4FC1E9", "#d3d3d3"]),
+                            textinfo="none",
+                            hoverinfo="none",
+                            rotation=rotate
+                        ))
                         fig.update_layout(
-                            title={"text":'Dividends History', "font": {"size": 22}},
-                            title_y=1,  
-                            title_x=0.75, 
-                            margin=dict(t=30, b=40, l=40, r=30),
-                            xaxis_title=None,
-                            yaxis_title="Dividends (USD)",
-                            xaxis=dict(type='category',tickangle=tick_angle),
+                            height=200,
+                            showlegend=False,
+                            title={"text": 'Gross Margin', "font": {"size": 18}},
+                            title_y=0.95,
+                            margin=dict(t=40, b=0, l=30, r=30),
+                            annotations=[{
+                                "text": annotation_text,
+                                "showarrow": False,
+                                "font_size": 22,
+                                "x": 0.5,
+                                "y": 0.5
+                            }]
                         )
                         st.plotly_chart(fig, use_container_width=True)
-                    except: st.write ("Failed to get dividend history.")
+                    except:
+                        st.write("Failed to get data.")
+                    #
+                    try:
+                        if profitmargin_value == 'N/A' or profitmargin_value <= 0:
+                            rotate = 0
+                            pie_values = [0, 1]
+                            annotation_text = "No Data"
+                        else:
+                            original_profitmargin_value = float(profitmargin_value)
+                            profitmargin_plot_value = min(original_profitmargin_value, 1.0)
+                            pie_values = [profitmargin_plot_value, 1.0 - profitmargin_plot_value]
+                            rotate = 0 if profitmargin_plot_value > 0.5 else (profitmargin_plot_value * 360) + 360
+                            annotation_text = f"{original_profitmargin_value * 100:.1f}%"
+                        fig = go.Figure(go.Pie(
+                            values=pie_values,
+                            labels=["Profit Margin", "Remaining"],
+                            hole=0.7,
+                            marker=dict(colors=["#FFCE54", "#d3d3d3"]),
+                            textinfo="none",
+                            hoverinfo="none",
+                            rotation=rotate
+                        ))
+                        fig.update_layout(
+                            height=200,
+                            showlegend=False,
+                            title={"text": 'Profit Margin', "font": {"size": 18}},
+                            title_y=0.95,
+                            margin=dict(t=40, b=0, l=30, r=30),
+                            annotations=[{
+                                "text": annotation_text,
+                                "showarrow": False,
+                                "font_size": 22,
+                                "x": 0.5,
+                                "y": 0.5
+                            }]
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    except:
+                        st.write("Failed to get data.")
+                    #
+                with mgcol2:
+                    try:
+                        if operatingmargin_value == 'N/A' or operatingmargin_value <= 0:
+                            rotate = 0
+                            pie_values = [0, 1]
+                            annotation_text = "No Data"
+                        else:
+                            original_operatingmargin_value = float(operatingmargin_value)
+                            operatingmargin_plot_value = min(original_operatingmargin_value, 1.0)
+                            pie_values = [operatingmargin_plot_value, 1.0 - operatingmargin_plot_value]
+                            rotate = 0 if operatingmargin_plot_value > 0.5 else (operatingmargin_plot_value * 360) + 360
+                            annotation_text = f"{original_operatingmargin_value * 100:.1f}%"
+                        fig = go.Figure(go.Pie(
+                            values=pie_values,
+                            labels=["Operating Margin", "Remaining"],
+                            hole=0.7,
+                            marker=dict(colors=["#48CFAD", "#d3d3d3"]),
+                            textinfo="none",
+                            hoverinfo="none",
+                            rotation=rotate
+                        ))
+                        fig.update_layout(
+                            height=200,
+                            showlegend=False,
+                            title={"text": 'Operating Margin', "font": {"size": 18}},
+                            title_y=0.95,
+                            margin=dict(t=40, b=0, l=30, r=30),
+                            annotations=[{
+                                "text": annotation_text,
+                                "showarrow": False,
+                                "font_size": 22,
+                                "x": 0.5,
+                                "y": 0.5
+                            }]
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    except:
+                        st.write("Failed to get data.")
+                    
+                    try:
+                        if fcfmargin_value == 'N/A' or fcfmargin_value <= 0:
+                            rotate = 0
+                            pie_values = [0, 1]
+                            annotation_text = "No Data"
+                        else:
+                            original_fcf_value = float(fcfmargin_value)
+                            fcf_plot_value = min(original_fcf_value, 1.0)
+                            pie_values = [fcf_plot_value, 1.0 - fcf_plot_value]
+                            rotate = 0 if fcf_plot_value > 0.5 else (fcf_plot_value * 360) + 360
+                            annotation_text = f"{original_fcf_value * 100:.1f}%"
+                        fig = go.Figure(go.Pie(
+                            values=pie_values,
+                            labels=["FCF Margin", "Remaining"],
+                            hole=0.7,
+                            marker=dict(colors=["#ED5565", "#d3d3d3"]),
+                            textinfo="none",
+                            hoverinfo="none",
+                            rotation=rotate
+                        ))
+                        fig.update_layout(
+                            height=200,
+                            showlegend=False,
+                            title={"text": 'FCF Margin', "font": {"size": 18}},
+                            title_y=0.95,
+                            margin=dict(t=40, b=0, l=30, r=30),
+                            annotations=[{
+                                "text": annotation_text,
+                                "showarrow": False,
+                                "font_size": 22,
+                                "x": 0.5,
+                                "y": 0.5
+                            }]
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    except:
+                        st.write("Failed to get data.") 
+                
+                st.subheader('Dividends', divider='gray')
+                if dividendYield == 'N/A':
+                    st.write(f'{name} has no dividend data.')
+                else:
+                    col1, col2 = st.columns([1, 3])
+                    with col1:
+                        st.metric(label='Dividend per share',value=dividends_value)
+                        st.metric(label='Dividend Yield',value=dividendYield_value)
+                    with col2:
+                        try:
+                            data_yearly = dividend_history.resample('YE').sum().reset_index()
+                            data_yearly['Year'] = data_yearly['Date'].dt.year
+                            data_yearly = data_yearly[['Year', 'Dividends']]
+                            if dividends != 'N/A':
+                                data_yearly.loc[data_yearly.index[-1], 'Dividends'] = dividends
+                            tick_angle = 0 if len(data_yearly) < 20 else -90
+                            fig = go.Figure()
+                            fig.add_trace(
+                                go.Bar(
+                                    x=data_yearly['Year'],
+                                    y=data_yearly['Dividends'],
+                                    name="Dividends",
+                                    marker=dict(color='#AC92EC', cornerradius=30),
+                                )
+                            )
+                            fig.update_layout(
+                                title={"text":'Dividends History', "font": {"size": 18}},
+                                # title_y=1,  
+                                # title_x=0.5, 
+                                margin=dict(t=30, b=40, l=40, r=30),
+                                height=200,
+                                xaxis_title=None,
+                                yaxis_title="Dividends (USD)",
+                                xaxis=dict(type='category',tickangle=tick_angle),
+                            )
+                            if 'exDividendDate_value' in locals():
+                                fig.add_annotation(
+                                    text=f"Ex-Dividend Date: {exDividendDate_value}", 
+                                    xref="paper",  
+                                    yref="paper",
+                                    x=0.01,        
+                                    y=0.98,        
+                                    showarrow=False,
+                                    bordercolor="#ccc",
+                                    borderwidth=1,
+                                    borderpad=4,
+                                    opacity=0.8,
+                                    align="left",
+                                    font=dict(size=12)
+                                )
+                            st.plotly_chart(fig, use_container_width=True)
+                        except: st.write ("Failed to get dividend history.")
             st.caption("Data source: Yahoo Finance")
 
 #Earnings History
@@ -1294,42 +1240,105 @@ if st.button("Get Data"):
                 earnings_data = earnings_data[~earnings_data.index.duplicated(keep='first')]
                 with ecol1:
                     if 'epsEstimate' in earnings_data.columns and 'epsActual' in earnings_data.columns:
-                        df = earnings_data.reset_index().melt(id_vars=['quarter'], value_vars=['epsEstimate', 'epsActual'], var_name='variable', value_name='value')
-                        df['quarter'] = pd.to_datetime(df['quarter']).dt.strftime('%Y-%m-%d')
-                        actual_data = df[df['variable'] == 'epsActual']
-                        estimate_data = df[df['variable'] == 'epsEstimate']
-                        bar = go.Bar(
-                            x=actual_data['quarter'],  
-                            y=actual_data['value'],
-                            name='Actual',
-                            marker=dict(color='#FFCE54'),
-                        )
-                        estimate = go.Scatter(
-                            x=estimate_data['quarter'], 
-                            y=estimate_data['value'],
-                            mode='markers+lines',
+                        df_plot = earnings_data.copy().reset_index()
+                        df_plot['quarter'] = pd.to_datetime(df_plot['quarter']).dt.strftime('%Y-%m-%d')
+                        df_plot['surprise'] = df_plot['epsActual'] - df_plot['epsEstimate']
+                        def format_surprise(row):
+                            surprise_val = row['surprise']
+                            if surprise_val > 0.005:
+                                status = 'Beat'
+                                color = 'green'
+                            elif surprise_val < -0.005:
+                                status = 'Missed'
+                                color = 'red'
+                            else:
+                                status = 'Beat' 
+                                color = 'green'
+                            value_str = f"{abs(surprise_val):.2f}"
+                            return pd.Series([status, value_str, color])
+
+                        df_plot[['status', 'value_str', 'color']] = df_plot.apply(format_surprise, axis=1)
+                        df_plot['label_text'] = df_plot['status'] + ': ' + df_plot['value_str']
+                        all_eps_values = pd.concat([df_plot['epsEstimate'], df_plot['epsActual']])
+                        min_eps = all_eps_values.min()
+                        max_eps = all_eps_values.max()
+                        y_range_min = min_eps * 0.95 if min_eps > 0 else min_eps * 1.05
+                        y_range_max = max_eps * 1.05
+                        
+                        fig = go.Figure()
+                        fig.add_trace(go.Scatter(
+                            x=df_plot['quarter'], 
+                            y=df_plot['epsEstimate'],
+                            mode='markers',
                             name='Estimate',
-                            marker=dict(color='red', size=10),
-                            line=dict(width=3)
-                        )
-                        fig = go.Figure(data=[bar, estimate])
+                            marker=dict(
+                                size=25,
+                                color='#5990c7',
+                                opacity=0.8,
+                            )
+                        ))
+                        fig.add_trace(go.Scatter(
+                            x=df_plot['quarter'], 
+                            y=df_plot['epsActual'],
+                            mode='markers',
+                            name='Actual',
+                            marker=dict(
+                                size=25, 
+                                color='#38b000', 
+                                opacity=0.8,
+                            )
+                        ))
+                        annotations = []
+                        for i, row in df_plot.iterrows():
+                            annotations.append(dict(
+                                xref='x',
+                                yref='paper', 
+                                x=row['quarter'],
+                                y=-0.1, 
+                                text=row['label_text'],
+                                font=dict(
+                                    color=row['color'], 
+                                    size=12,
+                                    weight='bold'
+                                ),
+                                showarrow=False,
+                                xanchor='center',
+                                yanchor='top'
+                            ))
                         fig.update_layout(
-                            title={"text":'Earnings Estimate vs Actual',"font": {"size": 20}},
+                            title={"text": 'Historical EPS Surprises',"font": {"size": 24}},
                             title_y=1,  
                             title_x=0, 
-                            margin=dict(t=30, b=40, l=40, r=30),
+                            margin=dict(t=80, b=40, l=40, r=30), 
                             xaxis_title=None,
-                            yaxis_title='Earnings',
-                            xaxis=dict(type='category',showgrid=True),
-                            yaxis=dict(showgrid=True),
-                            barmode='group',
-                            height=400,
-                            width=600,
+                            yaxis_title='Quarterly EPS',
+                            xaxis=dict(
+                                type='category',
+                                showgrid=False, 
+                                tickangle=-0, 
+                                tickfont=dict(size=12),
+                                showticklabels=True
+                            ),
+                            yaxis=dict(
+                                showgrid=True,
+                                zeroline=True,
+                                range=[y_range_min, y_range_max] 
+                            ),
+                            height=300,
+                            width=700,
+                            annotations=annotations,
+                            legend=dict(
+                                orientation="h",
+                                yanchor="bottom",
+                                y=1,
+                                xanchor="center",
+                                x=0.5,
+                                traceorder='normal',
+                                tracegroupgap=5
+                            ),
                         )
                         st.plotly_chart(fig, use_container_width=True)
                         st.caption("Data source: Yahoo Finance")
-                    else:
-                        st.write(f'{name} has no earning estimates data.')
                 
                 with ecol2:
                     last_eps_difference = earnings_data['epsDifference'].iloc[-1]
@@ -1384,7 +1393,7 @@ if st.button("Get Data"):
                             yaxis=dict(title="Estimate (USD)", showticklabels=True, showgrid=True),
                             barmode='group',
                             margin=dict(t=30, b=40, l=40, r=30),
-                            height=400,
+                            height=300,
                             showlegend=True,
                             legend=dict(
                                 orientation="h",
@@ -1446,7 +1455,7 @@ if st.button("Get Data"):
                                         title='EPS',
                                         showgrid=True
                                     ),
-                                    height=400,
+                                    height=300,
                                     legend=dict(title_text=None),
                             )
                             st.plotly_chart(fig, use_container_width=True)
@@ -1479,7 +1488,7 @@ if st.button("Get Data"):
                                     yaxis_title='Value',
                                     xaxis=dict(tickmode='array', tickvals=eps_unique_years_sorted, autorange='reversed',showgrid=True),
                                     yaxis=dict(showgrid=True),
-                                    height=400
+                                    height=300
                                 )
                                 st.plotly_chart(figg, use_container_width=True)
                             except: st.write("Failed to get EPS trend.")
@@ -1521,7 +1530,7 @@ if st.button("Get Data"):
                         xaxis=dict(tickmode='array', tickvals=growth_unique_years_sorted,showgrid=True),
                         yaxis=dict(showgrid=True),
                         legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
-                        height=400
+                        height=300
                     )
                     st.plotly_chart(fig_growth, use_container_width=True)
                 
@@ -1583,207 +1592,417 @@ if st.button("Get Data"):
 # Scores
             st.subheader('Scores', divider='gray')
             try:
-                score_col1, score_col2 = st.columns([2,3])
+                score_col1, score_col2 = st.columns([3,2])
                 with score_col1:
-                    if sa_piotroski_value != 'N/A':
-                        fig = go.Figure(go.Indicator(
-                            mode="gauge",
-                            gauge={
-                                'shape': "bullet",
-                                'axis': {
-                                    'range': [0, 9], 
-                                    'visible': True,
-                                    'tickcolor': 'white',
-                                    'ticklen': 0,
-                                    'showticklabels': True,
-                                    'tickwidth': 0
-                                },
-                                'bar': {'color': "#5F9BEB", 'thickness':0.5},
-                                'threshold': {
-                                    'line': {'color': "blue", 'width': 0},
-                                    'thickness': 0.5,
-                                    'value': sa_piotroski_value
-                                },
-                                'steps': [
-                                    {'range': [0, 1.8], 'color': "#ED2C0A"},
-                                    {'range': [1.8, 3.6], 'color': "#F0702C"},
-                                    {'range': [3.6, 5.4], 'color': "#FBB907"},
-                                    {'range': [5.4, 7.2], 'color': "#B0B431"},
-                                    {'range': [7.2, 9], 'color': "#88B03E"}
-                                ],
-                            },
-                            value=sa_piotroski_value,
-                            domain={'x': [0.1, 1], 'y': [0, 1]},
-                            title={'text': f"{sa_piotroski_value:,.0f}/9"}
-                        ))
-            
-                        fig.update_layout(
-                            height=100,
-                            margin=dict(l=30, r=30, t=30, b=30),
-                            title={
-                                'text': "Piotroski F-Score",
-                                'y':1,
-                                'x':0,
-                                'xanchor':'left',
-                                'yanchor':'top',
-                                'font':{'size':20}
-                            }
-                        )
-                        st.plotly_chart(fig, use_container_width=True)
-                    else:
-                        st.warning("Piotroski F-Score data is not available.")
+                    try:
+                        p_val = float(sa_piotroski_value)
+                    except Exception:
+                        p_val = 0.0
+                    p_min, p_max = 0.0, 9.0
+                    p_pct = max(0, min(100, (p_val - p_min) / (p_max - p_min) * 100))
+                    p_display = f"{int(round(p_val))}/9"
+                    html = f"""
+                    <div style="height:110px; overflow:hidden;">
+                        <div>
+                            <div class="score-row">
+                                <div class="score-title">Piotroski F-Score</div>
+                                <div class="score-value">{escape(p_display)}</div>
+                                <div class="bar-wrap">
+                                    <div class="bar piotroski">
+                                        <div class="bar-ticks-container">
+                                            {"".join([f'<span class="piotroski-tick-label">{i}</span>' for i in range(10)])}
+                                        </div>
+                                    </div>
+                                    <div class="pointer" style="left:{p_pct}%;">&#9660;</div>
+                                </div>
+                            </div>
+                        </div>
+                    <style>
+                    .body {{
+                        margin:0; 
+                        padding:12px 18px 6px 18px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+                        overflow: hidden;
+                        color: var(--text-color);
+                    }}
+                    .score-row {{
+                        display:flex;
+                        align-items:center;
+                        gap:20px;
+                        padding:24px 0;
+                        border-bottom:1px solid var(--border-color); 
+                    }}
+                    .score-title {{
+                        flex:0 0 220px;
+                        font-size:22px;
+                        font-weight:600;
+                    }}
+                    .score-value {{
+                        flex:0 0 90px;
+                        font-size:28px;
+                        font-weight:600;
+                        text-align:left;
+                    }}
+                    .bar-wrap {{
+                        position:relative;
+                        flex:1;
+                        height:40px; 
+                        display:flex;
+                        align-items:flex-start;
+                        padding-top:10px; 
+                    }}
+                    .bar {{
+                        width:100%;
+                        height:26px;
+                        border-radius:6px;
+                        position:relative;
+                        overflow:hidden;
+                    }}
+                    .bar.piotroski {{
+                        background: linear-gradient(90deg, #e74c3c 0%, #f39c12 45%, #27ae60 100%);
+                    }}
+                    .bar.altman {{
+                        background: linear-gradient(90deg, #e74c3c 0%, #f1a94b 33%, #f7d26b 66%, #2ecc71 100%);
+                    }}
+                    .bar-ticks-container {{
+                        position:absolute;
+                        top:0;
+                        left:0;
+                        right:0;
+                        bottom:0;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        font-size:13px;
+                        padding:0 4px;
+                        color: #FFFFFF; 
+                        font-weight: 600;
+                        pointer-events:none;
+                    }}
+                    .piotroski-tick-label {{
+                        flex: 1;
+                        text-align: center;
+                        line-height: 26px; 
+                        width: calc(100% / 10); 
+                    }}
+                    .altman-z-labels-inside {{
+                        position:absolute;
+                        top:0;
+                        left:0;
+                        right:0;
+                        bottom:0;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        font-size:14px;
+                        padding:0 8px;
+                        color: #FFFFFF; 
+                        font-weight: 600;
+                        pointer-events:none;
+                    }}
+                    .altman-z-labels-inside span {{
+                        text-align: center;
+                        padding: 0 5px;
+                    }}
+                    .altman-z-labels-inside span:nth-child(1) {{ flex: 1.8; text-align: left; }}
+                    .altman-z-labels-inside span:nth-child(3) {{ flex: 7.0; text-align: right; }}
+                    .pointer {{
+                        position:absolute;
+                        top: 0px; 
+                        transform:translateX(-50%);
+                        font-size:25px;
+                        color: var(--text-color);
+                        line-height: 0;
+                    }}
+                    </style>
+                    </div>
+                    """
+                    st.html(html)
                 with score_col2:
                     st.caption("A company with a high Piotroski F-Score (say, 7 or above) is likely to be in good financial health, and may therefore be a good investment. Conversely, a company with a low score (say, 3 or below) may be in poor financial health, and may therefore be a risky investment.")
             except Exception as e:
+                st.write(e)
                 st.warning("Piotroski F-Score data is not available.")
             
             try:
-                score_col3, score_col4 = st.columns([2,3])
+                score_col3, score_col4 = st.columns([3,2])
                 with score_col3:
-                    if sa_altmanz_value != 'N/A':
-                        fig = go.Figure(go.Indicator(
-                            mode="gauge",
-                            gauge={
-                                'shape': "bullet",
-                                'axis': {
-                                    'range': [0, 4], 
-                                    'visible': True,
-                                    'tickcolor': 'white',
-                                    'ticklen': 0,
-                                    'showticklabels': True,
-                                    'tickwidth': 0
-                                },
-                                'bar': {'color': "#5F9BEB", 'thickness':0.5},
-                                'threshold': {
-                                    'line': {'color': "blue", 'width': 0},
-                                    'thickness': 0.5,
-                                    'value': sa_altmanz_value
-                                },
-                                'steps': [
-                                    {'range': [0, 1.8], 'color': "#ED2C0A"},
-                                    {'range': [1.8, 3.0], 'color': "#FBB907"},
-                                    {'range': [3.0, 4.0], 'color': "#88B03E"}
-                                ],
-                            },
-                            value=sa_altmanz_value,
-                            domain={'x': [0.1, 1], 'y': [0, 1]},
-                            title={'text': f"{sa_altmanz_value}"}
-                        ))
-            
-                        fig.update_layout(
-                            height=100,
-                            margin=dict(l=30, r=30, t=30, b=30),
-                            title={
-                                'text': "Altman Z-Score",
-                                'y':1,
-                                'x':0,
-                                'xanchor':'left',
-                                'yanchor':'top',
-                                'font':{'size':20}
-                            }
-                        )
-                        st.plotly_chart(fig, use_container_width=True)
-                    else:
-                        st.warning("Altman Z-Score data is not available.")
+                    try:
+                        z_val = float(sa_altmanz_value)
+                    except Exception:
+                        z_val = 0.0
+                    z_min = 0.0
+                    z_default_max = 10.0
+                    z_max = max(z_default_max, abs(z_val))
+                    z_pct = max(0, min(100, (z_val - z_min) / (z_max - z_min) * 100)) if z_max != z_min else 0
+                    z_display = f"{z_val:.2f}"
+                    html = f"""
+                    <div style="height:110px; overflow:hidden;">
+                        <div>
+                            <div class="score-row" style="padding-top:28px;">
+                                <div class="score-title">Altman Z-Score</div>
+                                <div class="score-value">{escape(z_display)}</div>
+                                <div style="flex:1;">
+                                    <div class="bar-wrap">
+                                        <div class="bar altman">
+                                            <div class="altman-z-labels-inside">
+                                                <span>Distress</span>
+                                                <span>Safe</span>
+                                            </div>
+                                        </div>
+                                        <div class="pointer" style="left:{z_pct}%;">&#9660;</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <style>
+                    .body {{
+                        margin:0; 
+                        padding:12px 18px 6px 18px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+                        overflow: hidden;
+                        color: var(--text-color);
+                    }}
+                    .score-row {{
+                        display:flex;
+                        align-items:center;
+                        gap:20px;
+                        padding:24px 0;
+                        border-bottom:1px solid var(--border-color); 
+                    }}
+                    .score-title {{
+                        flex:0 0 220px;
+                        font-size:22px;
+                        font-weight:600;
+                    }}
+                    .score-value {{
+                        flex:0 0 90px;
+                        font-size:28px;
+                        font-weight:600;
+                        text-align:left;
+                    }}
+                    .bar-wrap {{
+                        position:relative;
+                        flex:1;
+                        height:40px; 
+                        display:flex;
+                        align-items:flex-start;
+                        padding-top:10px; 
+                    }}
+                    .bar {{
+                        width:100%;
+                        height:26px;
+                        border-radius:6px;
+                        position:relative;
+                        overflow:hidden;
+                    }}
+                    .bar.piotroski {{
+                        background: linear-gradient(90deg, #e74c3c 0%, #f39c12 45%, #27ae60 100%);
+                    }}
+                    .bar.altman {{
+                        background: linear-gradient(90deg, #e74c3c 0%, #f1a94b 33%, #f7d26b 66%, #2ecc71 100%);
+                    }}
+                    .bar-ticks-container {{
+                        position:absolute;
+                        top:0;
+                        left:0;
+                        right:0;
+                        bottom:0;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        font-size:13px;
+                        padding:0 4px;
+                        color: #FFFFFF; 
+                        font-weight: 600;
+                        pointer-events:none;
+                    }}
+                    .piotroski-tick-label {{
+                        flex: 1;
+                        text-align: center;
+                        line-height: 26px; 
+                        width: calc(100% / 10); 
+                    }}
+                    .altman-z-labels-inside {{
+                        position:absolute;
+                        top:0;
+                        left:0;
+                        right:0;
+                        bottom:0;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        font-size:14px;
+                        padding:0 8px;
+                        color: #FFFFFF; 
+                        font-weight: 600;
+                        pointer-events:none;
+                    }}
+                    .altman-z-labels-inside span {{
+                        text-align: center;
+                        padding: 0 5px;
+                    }}
+                    .altman-z-labels-inside span:nth-child(1) {{ flex: 1.8; text-align: left; }}
+                    .altman-z-labels-inside span:nth-child(3) {{ flex: 7.0; text-align: right; }}
+                    .pointer {{
+                        position:absolute;
+                        top: 0px; 
+                        transform:translateX(-50%);
+                        font-size:25px;
+                        color: var(--text-color);
+                        line-height: 0;
+                    }}
+                    </style>
+                    </div>
+                    """
+                    st.html(html)
                 with score_col4:
                     st.caption("A score below 1.8 signals the company is likely headed for bankruptcy, while companies with scores above 3 are not likely to go bankrupt. Investors may consider purchasing a stock if its Altman Z-Score value is closer to 3 and selling, or shorting, a stock if the value is closer to 1.8.")
             except Exception as e:
+                st.write(e)
                 st.warning("Altman Z-Score data is not available.")
             st.caption("Data source: Stockanalysis.com")
 
 #Analysts Ratings
             st.subheader('Analysts Ratings', divider='gray')
-            try: sa_price_float = float(sa_analysts_targetprice.replace('$', ''))
-            except: sa_price_float = 'N/A'
-            try: sa_mos = ((sa_price_float - price)/sa_price_float) * 100
-            except: sa_mos = 'N/A'
+            t_col1, t_col2, t_col3 = st.columns([3, 1, 1])
             try:
-                counts = {
-                'Buy': authors_buy_count,
-                'Sell': authors_sell_count,
-                'Hold': authors_hold_count,
-                'Strong Buy': authors_strongbuy_count,
-                'Strong Sell': authors_strongsell_count
-                }
-                largest_count_type = max(counts, key=counts.get)
-                largest_value = round(counts[largest_count_type])
+                with t_col1:
+                    last_date = historical_prices.index[-1]
+                    last_price = historical_prices.iloc[-1]
+                    forecast_date = last_date + pd.DateOffset(months=12)
+                    fig = go.Figure()
+                    historical_color = '#3BAFDA'
+                    fig.add_trace(go.Scatter(
+                        x=historical_prices.index,
+                        y=historical_prices,
+                        mode='lines',
+                        name='Past 12 Months',
+                        line=dict(
+                            color=historical_color, 
+                            width=2,
+                            shape='spline',
+                            smoothing=1.3
+                        ),
+                        showlegend=False
+                    ))
+                    label_date = historical_prices.index.max() + pd.DateOffset(months=12)
+
+                    def add_target_line(fig, target_price, label_text, line_color, is_mean=False):
+                        if target_price is None or target_price == 'N/A' or not isinstance(target_price, (int, float)):
+                            return
+                        line_x = [last_date, label_date]
+                        line_y = [last_price, target_price]
+                        fig.add_trace(go.Scatter(
+                            x=line_x,
+                            y=line_y,
+                            mode='lines',
+                            name=label_text,
+                            line=dict(
+                                color=line_color,
+                                width=2,
+                                dash='dot'
+                            ),
+                            showlegend=False
+                        ))
+                        fig.add_trace(go.Scatter(
+                            x=[last_date, label_date],
+                            y=[last_price, target_price],
+                            mode='markers',
+                            marker=dict(
+                                size=8, 
+                                color=line_color,
+                                line=dict(width=1, color=line_color)
+                            ),
+                            showlegend=False
+                        ))
+                        fig.add_annotation(
+                            x=label_date,
+                            y=target_price,
+                            text=f"<b>{label_text}: ${target_price:.2f}",
+                            showarrow=False,
+                            xshift=20,
+                            yshift=0,
+                            xanchor='left',
+                            font=dict(color=line_color, size=14)
+                        )
+
+                    plot_high_low = False
+                    if all(isinstance(p, (int, float)) for p in [yf_targethighprice, yf_targetlowprice, yf_targetprice]):
+                        if not (yf_targethighprice == yf_targetlowprice and yf_targethighprice == yf_targetprice):
+                            plot_high_low = True
+
+                    if plot_high_low:
+                        add_target_line(fig, yf_targethighprice, 'High', 'green')
+                        add_target_line(fig, yf_targetlowprice, 'Low', 'red')
+                        add_target_line(fig, yf_targetprice, 'Average', '#3BAFDA')
+                    else:
+                        add_target_line(fig, yf_targetprice, 'Average', '#3BAFDA')
+
+                    start_date = historical_prices.index.min()
+                    date_range = label_date - start_date
+                    x_axis_max = label_date + pd.DateOffset(months=3) 
+                    all_prices = historical_prices.tolist()
+                    if yf_targethighprice != 'N/A': all_prices.append(yf_targethighprice)
+                    if yf_targetlowprice != 'N/A': all_prices.append(yf_targetlowprice)
+                    min_y = min(all_prices) * 0.95 if all_prices else 0
+                    max_y = max(all_prices) * 1.05 if all_prices else 400
+                    fig.update_layout(
+                        title={"text":f'Past 12 Months | 12 Month Forecast for {upper_ticker}', "font": {"size": 22}},
+                        xaxis_title=None, 
+                        yaxis_title=None, 
+                        showlegend=False,
+                        yaxis=dict(
+                            tickprefix="$", 
+                            range=[min_y, max_y]
+                        ),
+                        xaxis=dict(
+                            range=[start_date, x_axis_max], 
+                            tickvals=[start_date, last_date.normalize() - pd.DateOffset(months=6), last_date.normalize(), label_date.normalize()],
+                            ticktext=[start_date.strftime('%b %Y'), (last_date - pd.DateOffset(months=6)).strftime('%b %Y'), last_date.strftime('%b %Y'), label_date.strftime('%b %Y')]
+                        ),
+                        hovermode="x unified",
+                        height=400,
+                        margin=dict(r=150)
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
             except Exception as e:
-                largest_count_type = 'N/A'
-                largest_value = 'N/A'
-            col1, col2, col3 = st.columns([3, 3, 3])
-            try:
-                yf_targetprice_value = 'N/A' if yf_targetprice == 'N/A' else f'${yf_targetprice:.2f}'
-            except: yf_targetprice_value = 'N/A'
-            yf_mos_value = 'N/A' if yf_mos == 'N/A' else f'{yf_mos:.2f}%'
-            yf_consensus_value = 'N/A' if yf_consensus == 'none' else yf_consensus
-            with col1:
-                st.markdown(''':violet-background[Yahoo Finance]''')
-                st.write(f'Price Target: {yf_targetprice_value}')
-                st.write(f'Forecasted Difference: {yf_mos_value}')
-                st.write(f'Analyst Consensus: {yf_consensus_value}')
-                st.write(f'Analyst Count: {yf_analysts_count}')
-                ''
+                st.write("No data available")
+                #st.error(f"Error displaying chart: {e}")
 
-            with col3:
-                st.markdown(''':blue-background[MarketBeat]''')
-                st.write(f'Price Target: {mb_targetprice_value}')
-                st.write(f'Forecasted Difference: {mb_predicted_upside}%')
-                st.write(f'Analyst Consensus: {mb_consensus_rating}')
-                st.write(f'Rating Score: {mb_rating_score}')
-                ''
-
-            sa_mos_value = 'N/A' if sa_mos == 'N/A' else f'{sa_mos:.2f}%'
-            with col2:
-                st.markdown(''':blue-background[Stockanalysis.com]''')
-                st.write(f'Price Target: {sa_analysts_targetprice}')
-                st.write(f'Forecasted Difference: {sa_mos_value}')
-                st.write(f'Analyst Consensus: {sa_analysts_consensus}')
-                st.write(f'Analyst Count: {sa_analysts_count}')
-                ''
-            ''
-            st.subheader("Sustainability", divider = 'gray')
-            #st.caption("This section shows the ESG risk ratings of '" + name + "' .")
+            with t_col2:
+                try:
+                    if yf_consensus == 'strong_buy':
+                        yf_consensus_display = 'Strong Buy'
+                    elif yf_consensus == 'strong_sell':
+                        yf_consensus_display = 'Strong Sell'
+                    else:
+                        yf_consensus_display = yf_consensus.replace('_', ' ').title()
+                    st.metric(label="Consensus", value=f"{yf_consensus_display.upper()}", help="Overall recommendation from analysts.", border=True)
+                    st.metric(label="Margin of Safety", value=f"{yf_mos:.2f}%" if yf_mos != 'N/A' else 'N/A', help="Percentage difference between Target Price and Current Price.", border=True)
+                    st.metric(label="Analysts Count", value=f"{yf_analysts_count}", help="Number of analysts providing opinions.", border=True)
+                except Exception as e:
+                    st.write("No data available")
+                    #st.error(f"Error displaying metrics: {e}")
 
 #Risk gauge
-#Gauge Plot
-            def plot_gauge():
-                max_value = 100
-                gauge = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=totalEsg_value,
-                    title={'text': "Total ESG Risk"},
-                    gauge={
-                        'axis': {'range': [None, max_value]},
-                        'bar': {'color': "#5F9BEB"},
-                        'steps': [
-                            {'range': [0, max_value * 0.25], 'color': "#CCD1D9"},
-                            {'range': [max_value * 0.25, max_value * 0.5], 'color': "#FFCE54"},
-                            {'range': [max_value * 0.5, max_value * 0.75], 'color': "#FB6E51"},
-                            {'range': [max_value * 0.75, max_value], 'color': "#ED5565"},
-                        ],
-                    }
-                ))
-                gauge.update_layout(
-                    autosize=False,
-                    width=400,  
-                    height=350, 
-                    margin={'l': 50, 'r': 50, 't': 50, 'b': 50} 
-                )
-                st.plotly_chart(gauge,use_container_width=True)
-            gauge_pcol1, gauge_pcol2, gauge_pcol3= st.columns ([3,1,3])
-            with gauge_pcol1:
-                plot_gauge()
+            st.subheader("Sustainability", divider = 'gray')
+            gauge_pcol1, gauge_pcol2= st.columns ([3,3])
 #Risk Scores
-            with gauge_pcol2:
-                st.metric(label='Environmental Risk',value=enviScore)
-                st.metric(label='Social Risk',value=socialScore)
-                st.metric(label='Governance Risk',value=governScore)
+            with gauge_pcol1:
+                esg1,esg2 = st.columns(2)
+                with esg1:
+                    st.metric(label='Total ESG Risk',value=totalEsg_value, border=True)
+                    st.metric(label='Social Risk',value=socialScore, border=True)
+                with esg2:
+                    st.metric(label='Environmental Risk',value=enviScore, border=True)
+                    st.metric(label='Governance Risk',value=governScore, border=True)
             if enviScore == socialScore == governScore == 'N/A':
                     st.markdown(''':red[No ESG Data.]''')
             else:
                 ''
 #Descriptions
-            with gauge_pcol3:
+            with gauge_pcol2:
                 st.caption("Total ESG Risk: Companies with ESG scores closer to 100 are considered to have significant ESG-related risks and challenges that could potentially harm their long-term sustainability.")
                 st.caption("Environmental Risk: This reflects the company’s impact on the environment. e.g. carbon emissions, waste management, energy efficiency.")
                 st.caption("Social Risk: This measures the company’s relationships with employees, suppliers, customers, and the community. e.g. human rights, labor practices, diversity, and community engagement.")
@@ -1890,433 +2109,7 @@ if st.button("Get Data"):
                 except Exception as e:
                     st.write("")
                 ''
-                
             st.caption("Data source: Yahoo Finance")
-            ''
-            st.subheader("Industry and Sector Comparison", divider = 'gray')
-            isc_all_fail = True
-            try:
-                col1,col2,col3= st.columns([3,3,3])
-                with col1:  
-                        vscolors = ['#4FC1E9', '#48CFAD', '#EC87C0', '#FFCE54']
-                        chart1_success = False
-                        try:
-                            numeric_df = mb_com_df.copy()
-                            def convert_to_billions(value):
-                                if 'T' in value:
-                                    return float(value.replace('$', '').replace('T', '')) * 1000
-                                elif 'B' in value:
-                                    return float(value.replace('$', '').replace('B', ''))
-                                elif 'M' in value:
-                                    return float(value.replace('$', '').replace('M', '')) / 1000
-                                return float(value.replace('$', ''))
-                            income_data = mb_com_df[mb_com_df['Metric'] == 'Net Income']
-                            income_values = [convert_to_billions(str(x)) for x in income_data.iloc[0, 1:]]
-                            fig4 = go.Figure()
-                            fig4.add_trace(go.Bar(
-                                x=mb_com_df.columns[1:],
-                                y=income_values,
-                                text=[f"${x:.2f}B" for x in income_values],
-                                textposition='auto',
-                                marker=dict(cornerradius=5),
-                                marker_color=vscolors
-                            ))
-                            fig4.add_shape(
-                                type="line",
-                                x0=0,
-                                x1=1,
-                                y0=0,
-                                y1=0,
-                                xref="paper",
-                                yref="y",
-                                line=dict(color="#656D78", width=2)
-                            )
-                            fig4.update_layout(
-                                title={"text":"Net Income Comparison (in Billions USD)","font": {"size": 15}},
-                                xaxis_title=None,
-                                xaxis=dict(tickfont=dict(size=10)),
-                                yaxis_title='Net Income (Billion $)',
-                                height=300,
-                                margin=dict(t=30, b=40, l=40, r=30),
-                                showlegend=False
-                            )
-                            st.plotly_chart(fig4, use_container_width=True)
-                            chart1_success = True
-                            isc_all_fail = False
-                        except Exception as e:
-                            if not isc_all_fail:
-                                st.warning("Net Income Comparison: No data available.")
-                            
-                with col2:            
-                        chart2_success = False
-                        try:
-                            ratio_metrics = ['P/E Ratio', 'Price / Sales', 'Price / Cash', 'Price / Book']
-                            ratio_data = numeric_df[numeric_df['Metric'].isin(ratio_metrics)]
-                            fig2 = go.Figure()
-                            for i,column in enumerate(mb_com_df.columns[1:]):
-                                fig2.add_trace(go.Bar(
-                                    name=column,
-                                    x=ratio_metrics,
-                                    y=ratio_data[column],
-                                    text=ratio_data[column],  
-                                    textposition='auto',
-                                    textangle=-90,
-                                    marker=dict(cornerradius=5),
-                                    marker_color=vscolors[i]
-                                ))
-                            fig2.add_shape(
-                                type="line",
-                                x0=0,
-                                x1=1,
-                                y0=0,
-                                y1=0,
-                                xref="paper",
-                                yref="y",
-                                line=dict(color="#656D78", width=2)
-                            )
-                            fig2.update_layout(
-                                title={"text":"Ratios Comparison","font": {"size": 15}},
-                                xaxis_title=None,
-                                xaxis=dict(tickfont=dict(size=10)),
-                                yaxis_title='Value',
-                                barmode='group',
-                                height=300,
-                                margin=dict(t=30, b=40, l=40, r=30),
-                                showlegend=True,
-                                legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
-                            )
-                            st.plotly_chart(fig2, use_container_width=True)
-                            chart2_success = True
-                            isc_all_fail = False
-                        except Exception as e:
-                            if not isc_all_fail:
-                                st.warning("Ratio Comparison: No data available.")
-                with col3:
-                        chart3_success = False
-                        try:
-                            performance_metrics = ['7 Day Performance', '1 Month Performance', '1 Year Performance']
-                            performance_data = numeric_df[numeric_df['Metric'].isin(performance_metrics)]
-                            fig3 = go.Figure()
-                            for i,column in enumerate(mb_com_df.columns[1:]):
-                                fig3.add_trace(go.Bar(
-                                    name=column,
-                                    x=performance_metrics,
-                                    y=performance_data[column],
-                                    text=performance_data[column],
-                                    textposition='auto',
-                                    textangle=-90,
-                                    marker=dict(cornerradius=5),
-                                    marker_color=vscolors[i]
-                                ))
-                            fig3.add_shape(
-                                type="line",
-                                x0=0,
-                                x1=1,
-                                y0=0,
-                                y1=0,
-                                xref="paper",
-                                yref="y",
-                                line=dict(color="#656D78", width=2)
-                            )
-                            fig3.update_layout(
-                                title={"text":"Performance Comparison","font": {"size": 15}},
-                                xaxis_title=None,
-                                xaxis=dict(tickfont=dict(size=10)),
-                                yaxis_title='Performance (%)',
-                                barmode='group',
-                                height=300,
-                                margin=dict(t=30, b=40, l=40, r=30),
-                                showlegend=True,
-                                legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010)
-                            )
-                            st.plotly_chart(fig3, use_container_width=True)
-                            chart3_success = True
-                            isc_all_fail = False
-                        except Exception as e:
-                            if not isc_all_fail:
-                                st.warning("Performance Comparison: No data available.")
-                            
-            except Exception as e:
-                st.warning(f"Valuation Comparison: No data available.")
-            if isc_all_fail:
-                st.write("There is no data available.")
-            st.caption("Data source: Market Beat")
-            ''            
-                
-            st.subheader("Dividend Comparison", divider = 'gray')
-            dc_all_fail = True
-            try:
-                col5, col6, col7 = st.columns([3,3,3])
-                with col5:
-                        chart4_success = False
-                        try:
-                            numeric_df = mb_div_df.copy()
-                            for col in numeric_df.columns:
-                                if col != "Type":
-                                    mask = numeric_df['Type'] != 'Track Record'
-                                    numeric_df.loc[mask, col] = numeric_df.loc[mask, col].replace('[\$,\%]', '', regex=True).astype(float)
-                            vscolors2 = ['#4FC1E9', '#48CFAD', '#EC87C0', '#FFCE54']
-                            annual_data = numeric_df[numeric_df['Type'] == 'Annual Dividend']
-                            values = annual_data.iloc[0, 1:]
-                            if values.isnull().all() or (values.fillna(0) == 0).all():
-                                raise ValueError("All values are zero or missing.")
-                            fig1 = go.Figure()
-                            fig1.add_trace(go.Bar(
-                                x=mb_div_df.columns[1:],
-                                y=annual_data.iloc[0, 1:],
-                                text=[f"${x:.2f}" for x in annual_data.iloc[0, 1:]],
-                                textposition='auto',
-                                marker=dict(cornerradius=5),
-                                marker_color=vscolors2[:3]
-                            ))
-                            fig1.add_shape(
-                                type="line",
-                                x0=0,
-                                x1=1,
-                                y0=0,
-                                y1=0,
-                                xref="paper",
-                                yref="y",
-                                line=dict(color="#656D78", width=2)
-                            )
-                            fig1.update_layout(
-                                title={"text":"Annual Dividend Comparison","font": {"size": 15}},
-                                xaxis_title=None,
-                                xaxis=dict(tickfont=dict(size=10)),
-                                yaxis_title='Annual Dividend ($)',
-                                height=300,
-                                margin=dict(t=30, b=40, l=40, r=30),
-                                showlegend=False
-                            )
-                            st.plotly_chart(fig1, use_container_width=True)
-                            chart4_success = True
-                            dc_all_fail = False
-                        except Exception as e:
-                            if not dc_all_fail:
-                                st.warning("Annual Dividend Comparison: No data available.")
-                with col6:
-                        chart5_success = False
-                        try:
-                            yield_data = numeric_df[numeric_df['Type'] == 'Dividend Yield']
-                            values = yield_data.iloc[0, 1:]
-                            if values.isnull().all() or (values.fillna(0) == 0).all():
-                                raise ValueError("All values are zero or missing.")
-                            fig2 = go.Figure()
-                            fig2.add_trace(go.Bar(
-                                x=mb_div_df.columns[1:],
-                                y=yield_data.iloc[0, 1:],
-                                text=[f"{x:.2f}%" for x in yield_data.iloc[0, 1:]],
-                                textposition='auto',
-                                marker=dict(cornerradius=5),
-                                marker_color=vscolors2[:3]
-                            ))
-                            fig2.add_shape(
-                                type="line",
-                                x0=0,
-                                x1=1,
-                                y0=0,
-                                y1=0,
-                                xref="paper",
-                                yref="y",
-                                line=dict(color="#656D78", width=2)
-                            )
-                            fig2.update_layout(
-                                title={"text":"Dividend Yield Comparison","font": {"size": 15}},
-                                xaxis_title=None,
-                                xaxis=dict(tickfont=dict(size=10)),
-                                yaxis_title='Dividend Yield (%)',
-                                height=300,
-                                margin=dict(t=30, b=40, l=40, r=30),
-                                showlegend=False
-                            )
-                            st.plotly_chart(fig2, use_container_width=True)
-                            chart5_success = True
-                            dc_all_fail = False
-                        except Exception as e:
-                            if not dc_all_fail:
-                                st.warning("Dividend Yield Comparison: No data available.")
-                with col7:
-                        chart6_success = False
-                        try:
-                            growth_data = numeric_df[numeric_df['Type'] == 'Annualized 3-Year Dividend Growth']
-                            values = growth_data.iloc[0, 1:]
-                            if values.isnull().all() or (values.fillna(0) == 0).all():
-                                raise ValueError("All values are zero or missing.")
-                            fig3 = go.Figure()
-                            fig3.add_trace(go.Bar(
-                                x=mb_div_df.columns[1:],
-                                y=growth_data.iloc[0, 1:],
-                                text=[f"{x:.2f}%" for x in growth_data.iloc[0, 1:]],
-                                textposition='auto',
-                                marker=dict(cornerradius=5),
-                                marker_color=vscolors2[:3]
-                            ))
-                            fig3.add_shape(
-                                type="line",
-                                x0=0,
-                                x1=1,
-                                y0=0,
-                                y1=0,
-                                xref="paper",
-                                yref="y",
-                                line=dict(color="#656D78", width=2)
-                            )
-                            fig3.update_layout(
-                                title={"text":"Annualized 3-Year Dividend Growth Comparison","font": {"size": 15}},
-                                xaxis_title=None,
-                                xaxis=dict(tickfont=dict(size=10)),
-                                yaxis_title='Growth Rate (%)',
-                                height=300,
-                                margin=dict(t=30, b=40, l=40, r=30),
-                                showlegend=False
-                            )
-                            st.plotly_chart(fig3, use_container_width=True)
-                            chart6_success = True
-                            dc_all_fail = False
-                        except Exception as e:
-                            if not dc_all_fail:
-                                st.warning("Dividend Growth Comparison: No data available.")
-            except Exception as e:
-                st.warning(f"Dividends Comparison: No data available.")
-            if dc_all_fail:
-                st.write("There is no data available.")
-            st.caption("Data source: Market Beat")
-            ''
-
-            try:
-                SPECIAL_TICKERS = {'NVDA', 'ARM', 'NXPI', 'LHX', 'AVGO', 'QCOM', 'TXN', 'INTC', 'STM',
-                                    'THO', 'EME', 'KBR', 'ACM', 'PCAR', 'HPQ', 'SAP', 'PAR', 'USNA', 'NU'
-                                    }
-                def clean_ticker_name(text):
-                    for ticker in SPECIAL_TICKERS:
-                        if text.startswith(ticker):
-                            remaining = text[len(ticker):].strip()
-                            return f"{ticker} {remaining}"
-                    match = re.match(r"([A-Z]+)([A-Z][a-z].*)", text)
-                    if match:
-                        ticker, name = match.groups()
-                        return f"{ticker} {name.strip()}"
-                    return text
-                mb_alt_df[mb_alt_headers[0]] = mb_alt_df[mb_alt_headers[0]].apply(clean_ticker_name)
-                def get_star_rating(rating_text):
-                    try:
-                        rating = round(float(rating_text.split(' ')[0]))
-                        return '★' * rating + '☆' * (5 - rating)
-                    except ValueError:
-                        return rating_text
-                mb_alt_df[mb_alt_headers[1]] = mb_alt_df[mb_alt_headers[1]].apply(get_star_rating)
-                def add_space_after_dollar(text):
-                    string = re.sub(r'(\$\d+\.\d{2})(\d+\.\d+%)', r'\1 \2', text)
-                    string = re.sub(r'(\$\d+\.\d{2})([+-])', r'\1 \2', string)
-                    return string
-                mb_alt_df[mb_alt_headers[2]] = mb_alt_df[mb_alt_headers[2]].apply(add_space_after_dollar)
-                mb_alt_df[mb_alt_headers[3]] = mb_alt_df[mb_alt_headers[3]].apply(add_space_after_dollar)
-                mb_alt_df = mb_alt_df.iloc[:, :-1]
-                st.subheader(f'{name} Competitors List',divider = 'gray')
-                st.dataframe(mb_alt_df,hide_index=True,use_container_width=True)
-                st.caption("Data source: Market Beat")
-                ''
-                compcol3,compcol4 = st.columns([3,1])
-                with compcol3:
-                    try:
-                        ticker_2 = mb_alt_df.iloc[1, 0].split()[0]
-                        ticker2 = '' if len(ticker_2) > 4 else ticker_2
-                        ticker_3 = mb_alt_df.iloc[2, 0].split()[0]
-                        ticker3 = '' if len(ticker_3) > 4 else ticker_3
-                        ticker_4 = mb_alt_df.iloc[3, 0].split()[0]
-                        ticker4 = '' if len(ticker_4) > 4 else ticker_4
-                        scompare_tickers = [upper_ticker for upper_ticker in (upper_ticker, ticker2, ticker3, ticker4) if upper_ticker]
-                        if scompare_tickers:
-                            send = datetime.datetime.today()
-                            sstart = send - relativedelta(years=5)
-                            def relativereturn(mb_alt_df):
-                                rel = mb_alt_df.pct_change()
-                                cumret = (1+rel).cumprod()-1
-                                cumret = cumret.fillna(0)
-                                return cumret
-                            mb_alt_df = relativereturn(yf.download(scompare_tickers, sstart.strftime('%Y-%m-%d'), send.strftime('%Y-%m-%d'))['Close'])
-                            mb_alt_df_melted = mb_alt_df.reset_index().melt(id_vars='Date', var_name='Ticker', value_name='Relative Return')
-                            #unique_years_sorted = df_melted['Date'].dt.year.unique()
-                            custom_colors = {
-                                                upper_ticker: '#DA4453',  
-                                                ticker2: '#4FC1E9',
-                                                ticker3: '#A0D468',
-                                                ticker4: '#FFCE54'
-                            }
-                            custom_colors = {k: v for k, v in custom_colors.items() if k in scompare_tickers}
-                            def plot_relative_return_comparison(mb_alt_df_melted, custom_colors, upper_ticker):
-                                df_plot = mb_alt_df_melted.copy()
-                                fig = go.Figure()
-                                for ticker in df_plot['Ticker'].unique():
-                                    df_ticker = df_plot[df_plot['Ticker'] == ticker]
-                                    show_labels = True if ticker == df_plot['Ticker'].unique()[-1] else False
-                                    fig.add_trace(
-                                        go.Scatter(
-                                            x=df_ticker['Date'],
-                                            y=df_ticker['Relative Return'],
-                                            mode='lines',
-                                            name=ticker,
-                                            line=dict(color=custom_colors.get(ticker, '#1f77b4'), shape='spline', smoothing=1.3),
-                                            showlegend=True,
-                                            hoverinfo="text",
-                                            text=[f"{date}: {ret*100:.2f}%" for date, ret in zip(df_ticker['Date'], df_ticker['Relative Return'])]
-                                        )
-                                    )
-                                fig.add_shape(
-                                    type="line",
-                                    x0=0,
-                                    x1=1,
-                                    y0=0,
-                                    y1=0,
-                                    xref="paper",
-                                    yref="y",
-                                    line=dict(color="#31333E", width=3),
-                                    layer="below"
-                                )
-                                fig.update_layout(
-                                    title={"text":f'{upper_ticker} - 5 Years Price Performance Comparison With Competitors', "font": {"size": 22}},
-                                    title_y=1,  
-                                    title_x=0, 
-                                    margin=dict(t=30, b=40, l=40, r=30),
-                                    xaxis=dict(
-                                        title=None,
-                                        showticklabels=show_labels,
-                                        showgrid=True
-                                    ),
-                                    yaxis=dict(
-                                        title="Cumulative Relative Return",
-                                        showgrid=True
-                                    ),
-                                    legend=dict(yanchor="top",y=0.99,xanchor="left",x=0.010),
-                                    height=500,
-                                )
-                                st.plotly_chart(fig, use_container_width=True)
-                            plot_relative_return_comparison(mb_alt_df_melted, custom_colors, upper_ticker)
-                            st.caption("Data source: Yahoo Finance")
-                    except Exception as e:
-                        print(f"Failed to scrape ticker data from table.")
-                with compcol4:
-                    try:
-                        st.subheader("5 Years Performance Summary")
-                        last_values = mb_alt_df_melted.groupby('Ticker').last()
-                        for ticker in scompare_tickers:
-                            if ticker in last_values.index:
-                                st.metric(
-                                    label=ticker,
-                                    value=f"{last_values.loc[ticker, 'Relative Return']*100:.2f}%"
-                                )
-                        st.write("")  # Add some spacing
-                        best_performer = last_values['Relative Return'].idxmax()
-                        worst_performer = last_values['Relative Return'].idxmin()
-                        best_return = last_values.loc[best_performer, 'Relative Return']
-                        worst_return = last_values.loc[worst_performer, 'Relative Return']
-                        
-                        summary = f"Among the competitors, {best_performer} showed the strongest performance with {best_return*100:.2f}% return, while {worst_performer} had the lowest return at {worst_return*100:.2f}%."
-                        st.caption(summary)       
-                    except Exception as e:
-                        st.write("")
-            except Exception as e:
-                print(f"Failed to scrape ticker data from table.")
 
             ''
             st.subheader("Correlation", divider = 'gray')
@@ -3168,210 +2961,157 @@ if st.button("Get Data"):
 #############################################                      ############################################# 
 
         with ratios_and_metrics_data:
+            CUSTOM_CARD_STYLE = """
+            <style>
+            .card {
+                width: 100%;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+                color: var(--text-color); 
+            }
+            .card-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+                margin-bottom: 5px;
+                padding: 5px 6px;
+                border-bottom: 2px solid #919191; /* Separator for the title */
+                color: var(--text-color);
+            }
+            .row {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline; 
+                padding: 10px 6px; 
+                border: none; 
+                margin: 0; 
+                border-bottom: 1px solid #d3d3d3; /* Lighter separator for rows */
+            }
+            .row.last {
+                padding-bottom: 10px;
+                border-bottom: none;
+            }
+            .label {
+                font-size: 15px;
+                flex: 1 1 auto;
+                padding-right: 12px;
+            }
+            .value {
+                font-weight: 600;
+                font-size: 17px;
+                flex: 0 0 auto;
+                text-align: right;
+                min-width:110px;
+            }
+            @media (max-width: 480px) {
+                .value { font-size: 16px; min-width: 80px; }
+                .label { font-size: 14px; }
+            }
+            </style>
+            """
+            def generate_ratio_card_html(title, data):
+                """Generates the HTML string for a ratio card."""
+                rows_html = ""
+                for i, (label, value) in enumerate(data):
+                    is_last = " last" if i == len(data) - 1 else ""
+                    rows_html += f"""
+                    <div class="row{is_last}">
+                        <div class="label">{label}</div>
+                        <div class="value">{value}</div>
+                    </div>
+                    """
+                html = f"""
+                <div class="card">
+                    <div class="card-title">{title}</div>
+                    {rows_html}
+                </div>
+                """
+                return html
+
             st.subheader("Ratios & Metrics", divider ='gray')
+            st.html(CUSTOM_CARD_STYLE)
             try:
-                rm_col1,rm_col2, rm_col3 = st.columns([3,1,3])
+                rm_col1, rm_col2 = st.columns([3,3])
                 with rm_col1:
-                    earnings_data = {
-                        'Earnings': ['EPS', 'EPS Yield', 'PEG Ratio'],
-                        '': [eps_value, eps_yield_value, pegRatio_value]
-                    }
-                    df = pd.DataFrame(earnings_data)
-                    st.dataframe(
-                        df,
-                        hide_index=True,
-                        use_container_width=True,
-                        column_config={
-                            "Earnings": st.column_config.Column(
-                                "Earnings",
-                                width="large"
-                            ),
-                            "": st.column_config.Column(
-                                "",
-                                width="small"
-                            )
-                        }
-                    )
-                    st.write(" ")
-                    
-                    valuation_ratios_data = {
-                        'Valuation Ratios': ['PE', 'Forward PE', 'PB', 'EV/EBITDA'],
-                        '': [pe_value, forwardPe_value, pbRatio_value, ev_to_ebitda]
-                    }
-                    df = pd.DataFrame(valuation_ratios_data)
-                    st.dataframe(
-                        df,
-                        hide_index=True,
-                        use_container_width=True,
-                        column_config={
-                            "Valuation Ratios": st.column_config.Column(
-                                "Valuation Ratios",
-                                width="large"
-                            ),
-                            "": st.column_config.Column(
-                                "",
-                                width="small"
-                            )
-                        }
-                    )
+                    earnings_data = [
+                        ('EPS', eps_value), 
+                        ('EPS Yield', eps_yield_value), 
+                        ('PEG Ratio', pegRatio_value)
+                    ]
+                    e_container = st.container(border=True)
+                    e_container.html(generate_ratio_card_html('Earnings', earnings_data))
                     st.write(" ")
 
-                    dividends_data = {
-                        'Dividends': ['Dividend Per Share', 'Dividend Yield', 'Payout Ratio', 'Ex-Dividend Date'],
-                        '': [dividends_value, dividendYield_value, payoutRatio_value, exDividendDate_value]
-                    }
-                    df = pd.DataFrame(dividends_data)
-                    st.dataframe(
-                        df,
-                        hide_index=True,
-                        use_container_width=True,
-                        column_config={
-                            "Dividends": st.column_config.Column(
-                                "Dividends",
-                                width="large"
-                            ),
-                            "": st.column_config.Column(
-                                "",
-                                width="small"
-                            )
-                        }
-                    )
+                    valuation_ratios_data = [
+                        ('PE', pe_value), 
+                        ('Forward PE', forwardPe_value), 
+                        ('PB', pbRatio_value), 
+                        ('EV/EBITDA', ev_to_ebitda)
+                    ]
+                    v_container = st.container(border=True)
+                    v_container.html(generate_ratio_card_html('Valuation Ratios', valuation_ratios_data))
                     st.write(" ")
 
-                    growth_data = {
-                        'Growth': ['Revenue Growth', 'Earnings Growth'],
-                        '': [revenue_growth_current_value, earnings_growth_value]
-                    }
-                    df = pd.DataFrame(growth_data)
-                    st.dataframe(
-                        df,
-                        hide_index=True,
-                        use_container_width=True,
-                        column_config={
-                            "Growth": st.column_config.Column(
-                                "Growth",
-                                width="large"
-                            ),
-                            "": st.column_config.Column(
-                                "",
-                                width="small"
-                            )
-                        }
-                    )
+                    dividends_data = [
+                        ('Dividend Per Share', dividends_value), 
+                        ('Dividend Yield', dividendYield_value), 
+                        ('Payout Ratio', payoutRatio_value), 
+                        ('Ex-Dividend Date', exDividendDate_value)
+                    ]
+                    d_container = st.container(border=True)
+                    d_container.html(generate_ratio_card_html('Dividends', dividends_data))
                     st.write(" ")
 
-                with rm_col3:
-
-                    financial_health_data = {
-                        'Financial Health': ['DE', 'Current Ratio', 'Quick Ratio'],
-                        '': [deRatio_value, current_ratio, quick_ratio]
-                    }
-                    df = pd.DataFrame(financial_health_data)
-                    st.dataframe(
-                        df,
-                        hide_index=True,
-                        use_container_width=True,
-                        column_config={
-                            "Financial Health": st.column_config.Column(
-                                "Financial Health",
-                                width="large"
-                            ),
-                            "": st.column_config.Column(
-                                "",
-                                width="small"
-                            )
-                        }
-                    )
+                    growth_data = [
+                        ('Revenue Growth', revenue_growth_current_value), 
+                        ('Earnings Growth', earnings_growth_value)
+                    ]
+                    g_container = st.container(border=True)
+                    g_container.html(generate_ratio_card_html('Growth', growth_data))
                     st.write(" ")
 
-                    efficiency_data = {
-                        'Efficiency': ['Return on Assets', 'Return on Equity'],
-                        '': [roa_value, roe_value]
-                    }
-                    df = pd.DataFrame(efficiency_data)
-                    st.dataframe(
-                        df,
-                        hide_index=True,
-                        use_container_width=True,
-                        column_config={
-                            "Efficiency": st.column_config.Column(
-                                "Efficiency",
-                                width="large"
-                            ),
-                            "": st.column_config.Column(
-                                "",
-                                width="small"
-                            )
-                        }
-                    )
+                with rm_col2:
+                    financial_health_data = [
+                        ('DE', deRatio_value), 
+                        ('Current Ratio', current_ratio), 
+                        ('Quick Ratio', quick_ratio)
+                    ]
+                    f_container = st.container(border=True)
+                    f_container.html(generate_ratio_card_html('Financial Health', financial_health_data))
                     st.write(" ")
 
-                    margin_data = {
-                        'Margin': ['Profit Margin', 'Gross Margin', 'Operating Margin', 'FCF Margin'],
-                        '': [profitmargin_pct, grossmargin_pct, operatingmargin_pct, fcfmargin_pct]
-                    }
-                    df = pd.DataFrame(margin_data)
-                    st.dataframe(
-                        df,
-                        hide_index=True,
-                        use_container_width=True,
-                        column_config={
-                            "Margin": st.column_config.Column(
-                                "Margin",
-                                width="large"
-                            ),
-                            "": st.column_config.Column(
-                                "",
-                                width="small"
-                            )
-                        }
-                    )
+                    efficiency_data = [
+                        ('Return on Assets', roa_value), 
+                        ('Return on Equity', roe_value)
+                    ]
+                    ef_container = st.container(border=True)
+                    ef_container.html(generate_ratio_card_html('Efficiency', efficiency_data))
                     st.write(" ")
 
-                    holdings_data = {
-                        'Holdings': ['Owned by Insiders', 'Owned by Institutions'],
-                        '': [insiderPct_value, institutionsPct_value]
-                    }
-                    df = pd.DataFrame(holdings_data)
-                    st.dataframe(
-                        df,
-                        hide_index=True,
-                        use_container_width=True,
-                        column_config={
-                            "Holdings": st.column_config.Column(
-                                "Holdings",
-                                width="large"
-                            ),
-                            "": st.column_config.Column(
-                                "",
-                                width="small"
-                            )
-                        }
-                    )
+                    margin_data = [
+                        ('Profit Margin', profitmargin_pct), 
+                        ('Gross Margin', grossmargin_pct), 
+                        ('Operating Margin', operatingmargin_pct), 
+                        ('FCF Margin', fcfmargin_pct)
+                    ]
+                    m_container = st.container(border=True)
+                    m_container.html(generate_ratio_card_html('Margin', margin_data))
                     st.write(" ")
 
-                    scores_data = {
-                        'Scores': ['Piotroski F-Score', 'Altman Z-Score'],
-                        '': [sa_piotroski_value, sa_altmanz_value]
-                    }
-                    df = pd.DataFrame(scores_data)
-                    st.dataframe(
-                        df,
-                        hide_index=True,
-                        use_container_width=True,
-                        column_config={
-                            "Scores": st.column_config.Column(
-                                "Scores",
-                                width="large"
-                            ),
-                            "": st.column_config.Column(
-                                "",
-                                width="small"
-                            )
-                        }
-                    )
+                    holdings_data = [
+                        ('Owned by Insiders', insiderPct_value), 
+                        ('Owned by Institutions', institutionsPct_value)
+                    ]
+                    h_container = st.container(border=True)
+                    h_container.html(generate_ratio_card_html('Holdings', holdings_data))
                     st.write(" ")
-            except: 
+
+                    scores_data = [
+                        ('Piotroski F-Score', sa_piotroski_value), 
+                        ('Altman Z-Score', sa_altmanz_value)
+                    ]
+                    s_container = st.container(border=True)
+                    s_container.html(generate_ratio_card_html('Scores', scores_data))
+                    st.write(" ")
+            except Exception: 
                 st.warning("Ratios & Metrics section is not available currently.")
 
 
@@ -3921,38 +3661,6 @@ if st.button("Get Data"):
             except Exception as e:
                 st.warning("Guru checklist is currently unavailable.")
 
-#############################################                #############################################
-############################################# Insider Trades #############################################
-#############################################                ############################################# 
-        with ownership:
-            def highlight_insider_trades(val):
-                if val == 'Buy':
-                    bscolor = '#37BC9B'
-                elif val == 'Sell':
-                    bscolor = '#DA4453'
-                else:
-                    bscolor ='#AAB2BD'
-                return f'background-color: {bscolor}; color: white'
-            st.subheader("Insider Trades", divider ='gray')
-            try:
-                insider_mb = pd.DataFrame(insider_mb).iloc[:, :-2]
-                def is_valid_date(value):
-                    try:
-                        pd.to_datetime(value)
-                        return True
-                    except ValueError:
-                        return False
-                unwanted_string = "Get Insider Trades Delivered To Your InboxEnter your email address below to receive a concise daily summary of insider buying activity, insider selling activity and changes in hedge fund holdings."
-                filtered_insider_mb = insider_mb[
-                    insider_mb["Transaction Date"].apply(lambda x: is_valid_date(x) and x != unwanted_string)
-                ]
-                filtered_insider_mb['Transaction Date'] = pd.to_datetime(filtered_insider_mb['Transaction Date']).dt.strftime('%Y-%m-%d')
-                st.dataframe(filtered_insider_mb.style.applymap(highlight_insider_trades, subset=['Buy/Sell']), use_container_width=True, hide_index=True, height = 400)
-                st.caption("Data source: Market Beat")
-            except Exception as e:
-                st.warning("Insider information is not available.")
-            ''
-
 #############################################                         #############################################
 ############################################# Technical Analysis Data #############################################
 #############################################                         #############################################
@@ -4127,6 +3835,7 @@ if st.button("Get Data"):
                                     return last_cross
                                 cross_20_50 = detect_cross(data, 'SMA20', 'SMA50', 20, 50)
                                 cross_50_200 = detect_cross(data, 'SMA50', 'SMA200', 50, 200)
+
                                 def get_sentiment_label(score):
                                     if score <= 20:
                                         return "Strong Negative Bias"
@@ -4138,6 +3847,7 @@ if st.button("Get Data"):
                                         return "Positive Bias"
                                     else:
                                         return "Strong Positive Bias"
+
                                 def consensus(value, thresholds):
                                     if value < thresholds[0]:
                                         return "Strong Sell"
@@ -4150,27 +3860,64 @@ if st.button("Get Data"):
                                     else:
                                         return "Strong Buy"
                                 def create_gauge(title, score):
+                                    min_score = 0
+                                    max_score = 100
+                                    score = max(min_score, min(max_score, score))
+                                    normalized_score = (score - min_score) / (max_score - min_score)
+                                    rotation_degrees = int(round(-90 + (normalized_score * 180)))
+                                    uid = str(uuid.uuid4()).replace("-", "_")
+
+                                    OUTER_DIAMETER = 300 
+                                    ARC_THICKNESS = 40 
+                                    INNER_DIAMETER = OUTER_DIAMETER - (2 * ARC_THICKNESS) 
+                                    GAUGE_HEIGHT = OUTER_DIAMETER / 2 
+                                    NEEDLE_LENGTH = GAUGE_HEIGHT * 0.5 
+                                    
                                     label = get_sentiment_label(score)
-                                    fig = go.Figure(go.Indicator(
-                                        mode="gauge",
-                                        value=score,  
-                                        number={'font': {'size': 24}},  
-                                        title={'text': title, 'font': {'size': 20}},
-                                        gauge={'axis': {'range': [0, 100]},
-                                            'bar': {'color': "#5F9BEB"},
-                                            'steps': [
-                                                {'range': [0, 15], 'color': "#da4453", 'name': 'Strong Neg'},
-                                                {'range': [15, 45], 'color': "#e9573f", 'name': 'Neg'},
-                                                {'range': [45, 55], 'color': "#f6bb42", 'name': 'Neutral'},
-                                                {'range': [55, 85], 'color': "#a0d468", 'name': 'Pos'},
-                                                {'range': [85, 100], 'color': "#37bc9b", 'name': 'Strong Pos'}]}))
-                                    fig.add_annotation(x=0.5, y=0.25, text=label, showarrow=False, font=dict(size=20))
-                                    fig.update_layout(
-                                        font=dict(size=14),
-                                        margin=dict(t=10, b=0, l=50, r=50),
-                                        height=350
-                                        )
-                                    return fig
+                                    color_gradient = f"""
+                                        background: conic-gradient(
+                                            from -180deg,
+                                            #da4453 0%, #da4453 15%,
+                                            #e9573f 15%, #e9573f 45%,
+                                            #f6bb42 45%, #f6bb42 55%,
+                                            #a0d468 55%, #a0d468 85%,
+                                            #37bc9b 85%, #37bc9b 100%
+                                        );
+                                    """
+                                    gauge_html = f"""
+                                    <style>
+                                        .gauge-container-{uid} {{ width: 100%; display: flex; flex-direction: column; align-items: center; padding-top: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: var(--text-color); background: transparent; height: 350px; }}
+                                        .gauge-title-{uid} {{ font-size: 20px; font-weight: bold; margin-bottom: 10px; }}
+                                        .gauge-{uid} {{ width: {OUTER_DIAMETER}px; height: {GAUGE_HEIGHT}px; position: relative; overflow: hidden; background: transparent; }}
+                                        .gauge__arc-{uid} {{ position: absolute; top: 0; left: 0; width: {OUTER_DIAMETER}px; height: {OUTER_DIAMETER}px; border-radius: 50%; {color_gradient} mask: radial-gradient(circle at 50% 50%, transparent 0, transparent {INNER_DIAMETER / 2}px, black {INNER_DIAMETER / 2}px); -webkit-mask: radial-gradient(circle at 50% 50%, transparent 0, transparent {INNER_DIAMETER / 2}px, black {INNER_DIAMETER / 2}px); clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 0% 50%); -webkit-clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 0% 50%); z-index: 1; }}
+                                        .gauge__needle-{uid} {{ position: absolute; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: {NEEDLE_LENGTH}px solid #5F9BEB; top: {GAUGE_HEIGHT - NEEDLE_LENGTH - 15}px; left: 50%; transform-origin: bottom center; transform: translate(-50%) rotate({rotation_degrees}deg); transition: transform 1s ease-out; z-index: 5; }}
+                                        .gauge__center-dot-{uid} {{ position: absolute; width: 30px; height: 30px; background-color: #5F9BEB; border-radius: 50%; top: {GAUGE_HEIGHT - 15 - 15}px; left: 50%; transform: translateX(-50%); z-index: 10; }}
+                                        .gauge__center-dot2-{uid} {{ position: absolute; width: 14px; height: 14px; background-color: white; border-radius: 50%; top: calc({GAUGE_HEIGHT - 15 - 15}px + 8px); left: 50%; transform: translateX(-50%); z-index: 15; }}
+                                        .gauge__label-container-{uid} {{ width: {OUTER_DIAMETER}px; position: relative; margin-top: 5px; display: flex; justify-content: space-between; padding: 0 5px; }}
+                                        .gauge__min-label-{uid}, .gauge__max-label-{uid} {{ font-weight: normal; font-size: 1.1em; }}
+                                        .gauge__current-label-{uid} {{ text-align: center; margin-top: 15px; font-size: 20px; font-weight: normal; position: relative; top: -30px; }}
+                                    </style>
+                                    <div class="gauge-container-{uid}">
+                                        <div class="gauge-title-{uid}">{title}</div>
+                                        <div class="gauge-{uid}">
+                                            <div class="gauge__arc-{uid}"></div>
+                                            <div class="gauge__needle-{uid}"></div>
+                                            <div class="gauge__center-dot-{uid}"></div>
+                                            <div class="gauge__center-dot2-{uid}"></div>
+                                        </div>
+                                        <div class="gauge__label-container-{uid}">
+                                            <span class="gauge__min-label-{uid}">0</span> <span class="gauge__max-label-{uid}">100</span>
+                                        </div>
+                                        <div class="gauge__current-label-{uid}">
+                                            {label} 
+                                        </div>
+                                    </div>
+                                    """
+                                    return gauge_html
+                                gauge_html_overall = create_gauge("Overall Consensus",overall_score)
+                                gauge_html_ma = create_gauge("Moving Average Consensus",ma_score)
+                                gauge_html_macd = create_gauge("MACD Consensus",macd_score)
+                                gauge_html_rsi = create_gauge("RSI Consensus",rsi_score)
                                 #thresholds for table
                                 ta_data['STOCH Consensus'] = ta_data['%K'].astype(float).apply(lambda x: consensus(x, [20, 40, 60, 80]))
                                 ta_data['ADX Consensus'] = ta_data['ADX'].astype(float).apply(lambda x: "Strong Trend" if x > 25 else "Weak Trend")
@@ -4524,7 +4271,7 @@ if st.button("Get Data"):
                                 #
                                 overall_col1, overall_col2 = st.columns ([2,3])
                                 with overall_col1:
-                                    st.plotly_chart(create_gauge("Overall Consensus", overall_score))
+                                    st.html(gauge_html_overall)
                                 with overall_col2:
                                     latest_data =  ta_data[['STOCH', 'ADX', 'Williams %R', 'CCI', 'ROC', 'UO', 
                                     'STOCH Consensus', 'ADX Consensus', 'Williams %R Consensus', 
@@ -4543,11 +4290,11 @@ if st.button("Get Data"):
                                 #st.subheader("",divider = 'gray')
                                 gauge_col1, gauge_col2, gauge_col3 = st.columns([3,3,3])
                                 with gauge_col1:
-                                    st.plotly_chart(create_gauge("Moving Average Consensus", ma_score))
+                                    st.html(gauge_html_ma)
                                 with gauge_col2:
-                                    st.plotly_chart(create_gauge("MACD Consensus", macd_score))
+                                    st.html(gauge_html_macd)
                                 with gauge_col3:
-                                    st.plotly_chart(create_gauge("RSI Consensus", rsi_score))
+                                    st.html(gauge_html_rsi)
                                 
                                 st.plotly_chart(fig)
                                 ''
