@@ -1592,275 +1592,216 @@ if st.button("Get Data"):
 # Scores
             st.subheader('Scores', divider='gray')
             try:
-                score_col1, score_col2 = st.columns([3,2])
+                score_col1, score_col2, score_col3, score_col4 = st.columns([1.5, 0.7, 3, 2.5])
+                try:
+                    p_val = float(sa_piotroski_value)
+                except Exception:
+                    p_val = 0.0
+                p_min, p_max = 0.0, 9.0
+                p_pct = max(0, min(100, (p_val - p_min) / (p_max - p_min) * 100))
+                p_display = f"{int(round(p_val))}/9"
                 with score_col1:
-                    try:
-                        p_val = float(sa_piotroski_value)
-                    except Exception:
-                        p_val = 0.0
-                    p_min, p_max = 0.0, 9.0
-                    p_pct = max(0, min(100, (p_val - p_min) / (p_max - p_min) * 100))
-                    p_display = f"{int(round(p_val))}/9"
-                    html = f"""
-                    <div style="height:110px; overflow:hidden;">
-                        <div>
-                            <div class="score-row">
-                                <div class="score-title">Piotroski F-Score</div>
-                                <div class="score-value">{escape(p_display)}</div>
-                                <div class="bar-wrap">
-                                    <div class="bar piotroski">
-                                        <div class="bar-ticks-container">
-                                            {"".join([f'<span class="piotroski-tick-label">{i}</span>' for i in range(10)])}
-                                        </div>
-                                    </div>
-                                    <div class="pointer" style="left:{p_pct}%;">&#9660;</div>
-                                </div>
-                            </div>
-                        </div>
-                    <style>
-                    .body {{
-                        margin:0; 
-                        padding:12px 18px 6px 18px;
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-                        overflow: hidden;
-                        color: var(--text-color);
-                    }}
-                    .score-row {{
-                        display:flex;
-                        align-items:center;
-                        gap:20px;
-                        padding:24px 0;
-                        border-bottom:1px solid var(--border-color); 
-                    }}
-                    .score-title {{
-                        flex:0 0 220px;
-                        font-size:22px;
-                        font-weight:600;
-                    }}
-                    .score-value {{
-                        flex:0 0 90px;
-                        font-size:28px;
-                        font-weight:600;
-                        text-align:left;
-                    }}
-                    .bar-wrap {{
-                        position:relative;
-                        flex:1;
-                        height:40px; 
-                        display:flex;
-                        align-items:flex-start;
-                        padding-top:10px; 
-                    }}
-                    .bar {{
-                        width:100%;
-                        height:26px;
-                        border-radius:6px;
-                        position:relative;
-                        overflow:hidden;
-                    }}
-                    .bar.piotroski {{
-                        background: linear-gradient(90deg, #e74c3c 0%, #f39c12 45%, #27ae60 100%);
-                    }}
-                    .bar.altman {{
-                        background: linear-gradient(90deg, #e74c3c 0%, #f1a94b 33%, #f7d26b 66%, #2ecc71 100%);
-                    }}
-                    .bar-ticks-container {{
-                        position:absolute;
-                        top:0;
-                        left:0;
-                        right:0;
-                        bottom:0;
-                        display:flex;
-                        justify-content:space-between;
-                        align-items:center;
-                        font-size:13px;
-                        padding:0 4px;
-                        color: #FFFFFF; 
-                        font-weight: 600;
-                        pointer-events:none;
-                    }}
-                    .piotroski-tick-label {{
-                        flex: 1;
-                        text-align: center;
-                        line-height: 26px; 
-                        width: calc(100% / 10); 
-                    }}
-                    .altman-z-labels-inside {{
-                        position:absolute;
-                        top:0;
-                        left:0;
-                        right:0;
-                        bottom:0;
-                        display:flex;
-                        justify-content:space-between;
-                        align-items:center;
-                        font-size:14px;
-                        padding:0 8px;
-                        color: #FFFFFF; 
-                        font-weight: 600;
-                        pointer-events:none;
-                    }}
-                    .altman-z-labels-inside span {{
-                        text-align: center;
-                        padding: 0 5px;
-                    }}
-                    .altman-z-labels-inside span:nth-child(1) {{ flex: 1.8; text-align: left; }}
-                    .altman-z-labels-inside span:nth-child(3) {{ flex: 7.0; text-align: right; }}
-                    .pointer {{
-                        position:absolute;
-                        top: 0px; 
-                        transform:translateX(-50%);
-                        font-size:25px;
-                        color: var(--text-color);
-                        line-height: 0;
-                    }}
-                    </style>
+                    html_title = f"""
+                    <div class="score-row-title">
+                        <div class="score-title">Piotroski F-Score</div>
                     </div>
                     """
-                    st.html(html)
+                    st.html(html_title)
                 with score_col2:
+                    html_value = f"""
+                    <div class="score-row-value">
+                        <div class="score-value-only">{escape(p_display)}</div>
+                    </div>
+                    """
+                    st.html(html_value)
+                with score_col3:
+                    html_bar = f"""
+                    <div class="score-row-bar">
+                        <div class="bar-wrap">
+                            <div class="bar piotroski">
+                                <div class="bar-ticks-container">
+                                    {"".join([f'<span class="piotroski-tick-label">{i}</span>' for i in range(10)])}
+                                </div>
+                            </div>
+                            <div class="pointer" style="left:{p_pct}%;">&#9660;</div>
+                        </div>
+                    </div>
+                    """
+                    st.html(html_bar)
+                with score_col4:
                     st.caption("A company with a high Piotroski F-Score (say, 7 or above) is likely to be in good financial health, and may therefore be a good investment. Conversely, a company with a low score (say, 3 or below) may be in poor financial health, and may therefore be a risky investment.")
+
+                html_styles = f"""
+                <style>
+                .body {{
+                    margin:0; 
+                    padding:12px 18px 6px 18px;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+                    overflow: hidden;
+                    color: var(--text-color);
+                }}
+                /* New wrapper styles for alignment in the new column structure */
+                .score-row-title, .score-row-value, .score-row-bar {{
+                    height: 110px; /* Match the height of the original container */
+                    display: flex;
+                    align-items: center;
+                    padding: 0; /* Remove original padding */
+                }}
+                
+                /* Original Styles modified for new structure */
+                .score-title {{
+                    font-size:22px;
+                    font-weight:600;
+                    /* Removed flex properties, let column handle width */
+                    width: 100%;
+                }}
+                .score-value-only {{
+                    font-size:28px;
+                    font-weight:600;
+                    text-align:left;
+                    /* Removed flex properties, let column handle width */
+                    width: 100%;
+                }}
+                .bar-wrap {{
+                    position:relative;
+                    flex:1;
+                    height:40px; 
+                    display:flex;
+                    align-items:flex-start;
+                    padding-top:10px; 
+                    width: 100%; /* Ensure it fills the column */
+                }}
+                .bar {{
+                    width:100%;
+                    height:26px;
+                    border-radius:6px;
+                    position:relative;
+                    overflow:hidden;
+                }}
+                .bar.piotroski {{
+                    background: linear-gradient(90deg, #e74c3c 0%, #f39c12 45%, #27ae60 100%);
+                }}
+                .bar.altman {{
+                    background: linear-gradient(90deg, #e74c3c 0%, #f1a94b 33%, #f7d26b 66%, #2ecc71 100%);
+                }}
+                .bar-ticks-container {{
+                    position:absolute;
+                    top:0;
+                    left:0;
+                    right:0;
+                    bottom:0;
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    font-size:13px;
+                    padding:0 4px;
+                    color: #FFFFFF; 
+                    font-weight: 600;
+                    pointer-events:none;
+                }}
+                .piotroski-tick-label {{
+                    flex: 1;
+                    text-align: center;
+                    line-height: 26px; 
+                    width: calc(100% / 10); 
+                }}
+                .altman-z-labels-inside {{
+                    position:absolute;
+                    top:0;
+                    left:0;
+                    right:0;
+                    bottom:0;
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    font-size:14px;
+                    padding:0 8px;
+                    color: #FFFFFF; 
+                    font-weight: 600;
+                    pointer-events:none;
+                }}
+                .altman-z-labels-inside span {{
+                    text-align: center;
+                    padding: 0 5px;
+                }}
+                .altman-z-labels-inside span:nth-child(1) {{ flex: 1.8; text-align: left; }}
+                .altman-z-labels-inside span:nth-child(3) {{ flex: 7.0; text-align: right; }}
+                .pointer {{
+                    position:absolute;
+                    top: 0px; 
+                    transform:translateX(-50%);
+                    font-size:25px;
+                    color: var(--text-color);
+                    line-height: 0;
+                }}
+                /* Original score-row is no longer needed but its border-bottom style is applied to the title for a visual separator */
+                .score-row-title {{
+                    border-bottom:1px solid var(--border-color);
+                    height: 110px; 
+                }}
+                .score-row-value {{
+                    border-bottom:1px solid var(--border-color);
+                    height: 110px; 
+                }}
+                .score-row-bar {{
+                    border-bottom:1px solid var(--border-color);
+                    height: 110px; 
+                }}
+                </style>
+                """
+                st.html(html_styles)
             except Exception as e:
                 st.write(e)
                 st.warning("Piotroski F-Score data is not available.")
-            
+
             try:
-                score_col3, score_col4 = st.columns([3,2])
-                with score_col3:
-                    try:
-                        z_val = float(sa_altmanz_value)
-                    except Exception:
-                        z_val = 0.0
-                    z_min = 0.0
-                    z_default_max = 10.0
-                    z_max = max(z_default_max, abs(z_val))
-                    z_pct = max(0, min(100, (z_val - z_min) / (z_max - z_min) * 100)) if z_max != z_min else 0
-                    z_display = f"{z_val:.2f}"
-                    html = f"""
-                    <div style="height:110px; overflow:hidden;">
-                        <div>
-                            <div class="score-row" style="padding-top:28px;">
-                                <div class="score-title">Altman Z-Score</div>
-                                <div class="score-value">{escape(z_display)}</div>
-                                <div style="flex:1;">
-                                    <div class="bar-wrap">
-                                        <div class="bar altman">
-                                            <div class="altman-z-labels-inside">
-                                                <span>Distress</span>
-                                                <span>Safe</span>
-                                            </div>
-                                        </div>
-                                        <div class="pointer" style="left:{z_pct}%;">&#9660;</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <style>
-                    .body {{
-                        margin:0; 
-                        padding:12px 18px 6px 18px;
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-                        overflow: hidden;
-                        color: var(--text-color);
-                    }}
-                    .score-row {{
-                        display:flex;
-                        align-items:center;
-                        gap:20px;
-                        padding:24px 0;
-                        border-bottom:1px solid var(--border-color); 
-                    }}
-                    .score-title {{
-                        flex:0 0 220px;
-                        font-size:22px;
-                        font-weight:600;
-                    }}
-                    .score-value {{
-                        flex:0 0 90px;
-                        font-size:28px;
-                        font-weight:600;
-                        text-align:left;
-                    }}
-                    .bar-wrap {{
-                        position:relative;
-                        flex:1;
-                        height:40px; 
-                        display:flex;
-                        align-items:flex-start;
-                        padding-top:10px; 
-                    }}
-                    .bar {{
-                        width:100%;
-                        height:26px;
-                        border-radius:6px;
-                        position:relative;
-                        overflow:hidden;
-                    }}
-                    .bar.piotroski {{
-                        background: linear-gradient(90deg, #e74c3c 0%, #f39c12 45%, #27ae60 100%);
-                    }}
-                    .bar.altman {{
-                        background: linear-gradient(90deg, #e74c3c 0%, #f1a94b 33%, #f7d26b 66%, #2ecc71 100%);
-                    }}
-                    .bar-ticks-container {{
-                        position:absolute;
-                        top:0;
-                        left:0;
-                        right:0;
-                        bottom:0;
-                        display:flex;
-                        justify-content:space-between;
-                        align-items:center;
-                        font-size:13px;
-                        padding:0 4px;
-                        color: #FFFFFF; 
-                        font-weight: 600;
-                        pointer-events:none;
-                    }}
-                    .piotroski-tick-label {{
-                        flex: 1;
-                        text-align: center;
-                        line-height: 26px; 
-                        width: calc(100% / 10); 
-                    }}
-                    .altman-z-labels-inside {{
-                        position:absolute;
-                        top:0;
-                        left:0;
-                        right:0;
-                        bottom:0;
-                        display:flex;
-                        justify-content:space-between;
-                        align-items:center;
-                        font-size:14px;
-                        padding:0 8px;
-                        color: #FFFFFF; 
-                        font-weight: 600;
-                        pointer-events:none;
-                    }}
-                    .altman-z-labels-inside span {{
-                        text-align: center;
-                        padding: 0 5px;
-                    }}
-                    .altman-z-labels-inside span:nth-child(1) {{ flex: 1.8; text-align: left; }}
-                    .altman-z-labels-inside span:nth-child(3) {{ flex: 7.0; text-align: right; }}
-                    .pointer {{
-                        position:absolute;
-                        top: 0px; 
-                        transform:translateX(-50%);
-                        font-size:25px;
-                        color: var(--text-color);
-                        line-height: 0;
-                    }}
-                    </style>
+                score_col5, score_col6, score_col7, score_col8 = st.columns([1.5, 0.7, 3, 2.5])
+                try:
+                    z_val = float(sa_altmanz_value)
+                except Exception:
+                    z_val = 0.0
+                z_min = 0.0
+                z_default_max = 10.0
+                z_max = max(z_default_max, abs(z_val))
+                z_pct = max(0, min(100, (z_val - z_min) / (z_max - z_min) * 100)) if z_max != z_min else 0
+                z_display = f"{z_val:.2f}"
+                with score_col5:
+                    html_title = f"""
+                    <div class="score-row-title" style="padding-top:28px; height:82px;">
+                        <div class="score-title">Altman Z-Score</div>
                     </div>
                     """
-                    st.html(html)
-                with score_col4:
+                    st.html(html_title)
+                with score_col6:
+                    html_value = f"""
+                    <div class="score-row-value" style="padding-top:28px; height:82px;">
+                        <div class="score-value-only">{escape(z_display)}</div>
+                    </div>
+                    """
+                    st.html(html_value)
+                with score_col7:
+                    html_bar = f"""
+                    <div class="score-row-bar" style="padding-top:28px; height:82px;">
+                        <div style="flex:1;">
+                            <div class="bar-wrap">
+                                <div class="bar altman">
+                                    <div class="altman-z-labels-inside">
+                                        <span>Distress</span>
+                                        <span>Safe</span>
+                                    </div>
+                                </div>
+                                <div class="pointer" style="left:{z_pct}%;">&#9660;</div>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                    st.html(html_bar)
+                with score_col8:
                     st.caption("A score below 1.8 signals the company is likely headed for bankruptcy, while companies with scores above 3 are not likely to go bankrupt. Investors may consider purchasing a stock if its Altman Z-Score value is closer to 3 and selling, or shorting, a stock if the value is closer to 1.8.")
             except Exception as e:
                 st.write(e)
                 st.warning("Altman Z-Score data is not available.")
+
             st.caption("Data source: Stockanalysis.com")
 
 #Analysts Ratings
